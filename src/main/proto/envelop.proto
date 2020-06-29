@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+//demo
+package br.com.oprodutor.origins.proto;
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+message UUID {
+  string value = 1;
+}
+
+message Envelop {
+
+  UUID causation = 1;
+  UUID correlation = 2;
+  google.protobuf.Struct event = 3;
+
+}
+
+message Harvested {
+
+  google.protobuf.Timestamp harvestAt = 1;
+  UUID harvestBy = 2;
+
+}
+
+message RetailerReceived {
+
+  google.protobuf.Timestamp receivedAt = 1;
+  UUID receivedBy = 2;
+
+}
+
