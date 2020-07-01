@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+//demo
+package br.com.oprodutor.origins.proto;
+
+option java_outer_classname = "EnvelopUsingOneOfV1";
+
+import "urn.proto";
+import "domain_events_v1.proto";
+
+message EnvelopOneOf {
+
+  Urn causation = 1;
+  Urn correlation = 2;
+
+  oneof event {
+    Harvested harvested = 3;
+    RetailerReceived retailerReceived = 4;
+  };
+
+}
+

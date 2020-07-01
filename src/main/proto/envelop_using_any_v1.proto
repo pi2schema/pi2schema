@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+//demo
+package br.com.oprodutor.origins.proto;
+
+option java_outer_classname = "EnvelopUsingAnyV1";
+
+import "google/protobuf/any.proto";
+
+import "urn.proto";
+
+message EnvelopAny {
+
+  Urn causation = 1;
+  Urn correlation = 2;
+
+  google.protobuf.Any event = 3;
+
+}
