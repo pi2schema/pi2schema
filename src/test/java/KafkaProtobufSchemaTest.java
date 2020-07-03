@@ -6,7 +6,6 @@ import br.com.oprodutor.origins.proto.UrnOuterClass.Urn;
 import com.google.protobuf.Any;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Timestamp;
-import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer;
 import org.apache.kafka.clients.admin.AdminClient;
@@ -26,19 +25,17 @@ import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 public class KafkaProtobufSchemaTest {
 
-    private static final Map<String, String> KAFKA_INFRA_CONFIG = Map.of(
-            ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092",
-            AbstractKafkaSchemaSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG, "http://127.0.0.1:8081"
-    );
 
-    private static final Map<String, String> KAFKA_PRODUCER_CONFIG = Map.of(
+    static final Map<String, String> KAFKA_PRODUCER_CONFIG = Map.of(
             ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName(),
             ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, KafkaProtobufSerializer.class.getName()
     );
 
-    private static final Map<String, String> KAFKA_CONSUMER_CONFIG = Map.of(
+    static final Map<String, String> KAFKA_CONSUMER_CONFIG = Map.of(
             ConsumerConfig.GROUP_ID_CONFIG, "test-proto",
             ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "true",
             ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, "1000",
@@ -54,13 +51,13 @@ public class KafkaProtobufSchemaTest {
     @BeforeEach
     public void setUp() {
         producerConfig = new Properties();
-        producerConfig.putAll(KAFKA_INFRA_CONFIG);
+        producerConfig.putAll(KafkaSimpleConfig.KAFKA_INFRA_CONFIG);
         adminClient = AdminClient.create(producerConfig);
 
         producerConfig.putAll(KAFKA_PRODUCER_CONFIG);
 
         consumerConfig = new Properties();
-        consumerConfig.putAll(KAFKA_INFRA_CONFIG);
+        consumerConfig.putAll(KafkaSimpleConfig.KAFKA_INFRA_CONFIG);
         consumerConfig.putAll(KAFKA_CONSUMER_CONFIG);
     }
 
@@ -83,7 +80,7 @@ public class KafkaProtobufSchemaTest {
                 .forEach(producer::send);
         producer.close();
 
-        CountDownLatch consumeLatch = new CountDownLatch(events.size());
+        CountDownLatch consumptionLatch = new CountDownLatch(events.size());
         ConcurrentKafkaConsumer<String, EnvelopOneOf> consumer = new ConcurrentKafkaConsumer<>(
                 consumerConfig,
                 newTopic.name(),
@@ -95,14 +92,16 @@ public class KafkaProtobufSchemaTest {
                     };
 
                     System.out.println("Simply consuming one of events" + event);
-                    consumeLatch.countDown();
+                    consumptionLatch.countDown();
                 });
 
         new Thread(consumer).start();
 
         producer.close(Duration.ofSeconds(30));
-        consumeLatch.await(30, TimeUnit.SECONDS);
+        consumptionLatch.await(30, TimeUnit.SECONDS);
         consumer.shutdown();
+
+        assertEquals(0, consumptionLatch.getCount());
 
 //        adminClient.deleteTopics(asList(newTopic.name()));
     }
@@ -128,30 +127,35 @@ public class KafkaProtobufSchemaTest {
                 .forEach(producer::send);
         producer.close();
 
-        CountDownLatch consumeLatch = new CountDownLatch(events.size());
+        CountDownLatch consumptionLatch = new CountDownLatch(events.size());
         ConcurrentKafkaConsumer<String, EnvelopAny> consumer = new ConcurrentKafkaConsumer<>(
                 consumerConfig,
                 newTopic.name(),
                 record -> {
-                    consumeLatch.countDown();
+                    consumptionLatch.countDown();
 
                     try {
-                        if (record.value().getEvent().is(Harvested.class)) {
-                            System.out.println(record.value().getEvent().unpack(Harvested.class));
+                        Any event = record.value().getEvent();
+                        if (event.is(Harvested.class)) {
+                            System.out.println(event.unpack(Harvested.class));
                         }
-                        else if (record.value().getEvent().is(RetailerReceived.class)){
-                            System.out.println(record.value().getEvent().unpack(RetailerReceived.class));
+                        else if (event.is(RetailerReceived.class)){
+                            System.out.println(event.unpack(RetailerReceived.class));
+                        }
+                        else {
+                            System.out.print("Unexpected event " + event);
                         }
                     } catch (InvalidProtocolBufferException e) {
                         e.printStackTrace();
                     }
-//                    record.value().getEvent().
                 });
 
         new Thread(consumer).start();
 
-        consumeLatch.await(30, TimeUnit.SECONDS);
+        consumptionLatch.await(30, TimeUnit.SECONDS);
         consumer.shutdown();
+
+        assertEquals(0, consumptionLatch.getCount());
 
     }
 
