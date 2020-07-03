@@ -1,0 +1,26 @@
+{
+  "namespace": "avro",
+  "type": "record",
+  "name": "AvroEnvelop",
+  "doc": "Envelop for domain events",
+  "fields": [
+    {
+      "name": "causation",
+      "type": "string"
+    },
+    {
+      "name": "correlation",
+      "type": "string"
+    },
+    {
+      "name": "data",
+      "type": [
+        "null",
+        "boolean",
+        "Harvested",
+        "RetailerReceived"
+      ],
+      "default": null
+    }
+  ]
+}

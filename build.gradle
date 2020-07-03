@@ -1,13 +1,16 @@
 buildscript {
     dependencies {
         classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.12'
+
+        classpath "com.commercehub.gradle.plugin:gradle-avro-plugin:0.21.0"
     }
 }
 
 plugins {
     id 'java'
-    id "com.google.protobuf" version "0.8.12"
     id 'idea'
+    id "com.google.protobuf" version "0.8.12"
+    id "com.commercehub.gradle.plugin.avro" version "0.21.0"
 }
 
 group 'com.github.gustavomonarin'
@@ -18,8 +21,15 @@ java {
     targetCompatibility(JavaVersion.VERSION_14)
 }
 
+tasks.withType(JavaCompile) {
+    options.incremental = true
+    options.compilerArgs.add("--enable-preview") // records and switch features in preview ;)
+}
+
 repositories {
     mavenCentral()
+
+    jcenter()
 
     //confluent jars are found on mavencentral but pom descriptors are missing causing gradle to fail
     maven { url 'https://packages.confluent.io/maven/' }
@@ -28,8 +38,12 @@ repositories {
 dependencies {
 
     compile group: 'org.apache.kafka', name: 'kafka-clients', version: '2.5.0'
+
     compile group: 'io.confluent', name: 'kafka-protobuf-serializer', version: '5.5.0'
     compile group: 'com.google.protobuf', name: 'protobuf-java', version: '3.12.2'
+
+    compile group: 'org.apache.avro', name: 'avro', version: '1.10.0'
+    compile group: 'io.confluent', name: 'kafka-avro-serializer', version: '5.5.0'
 
     compile group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
 
@@ -53,6 +67,7 @@ idea {
 
 test {
     useJUnitPlatform()
+    jvmArgs("--enable-preview")
     testLogging {
         events "passed", "skipped", "failed"
     }
