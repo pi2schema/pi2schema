@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+//demo
+package origins.proto;
+
+// should be replaced by specialized urns / further think on it
+message Urn {
+  string identifier = 1;
+}

@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-//demo
-package br.com.oprodutor.origins.proto;
-
-message Urn {
-  string identifier = 1;
-}

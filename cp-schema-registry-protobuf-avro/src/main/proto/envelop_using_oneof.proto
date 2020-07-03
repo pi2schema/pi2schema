@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+//demo
+package origins.proto.oneof;
+
+option java_outer_classname = "EnvelopOneOfOuterClass";
+
+import "google/protobuf/timestamp.proto";
+import "urn.proto";
+
+message EnvelopOneOf {
+
+  Urn causation = 2;
+  Urn correlation = 3;
+
+  oneof event {
+    Harvested harvested = 4;
+    RetailerReceived retailerReceived = 5;
+  };
+
+}
+
+message Harvested {
+
+  Urn id = 1;
+  google.protobuf.Timestamp harvestedAt = 2;
+  Urn harvestedBy = 3;
+
+}
+
+message RetailerReceived {
+
+  Urn id = 1;
+  google.protobuf.Timestamp receivedAt = 2;
+  Urn receivedBy = 3;
+
+}

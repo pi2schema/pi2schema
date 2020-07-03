@@ -35,7 +35,7 @@ public class KafkaAvroSchemaRegistryTest {
     );
 
     static final Map<String, String> KAFKA_CONSUMER_CONFIG = Map.of(
-            ConsumerConfig.GROUP_ID_CONFIG, "test-proto",
+            ConsumerConfig.GROUP_ID_CONFIG, "test-avro",
             ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "true",
             ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, "1000",
             ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest",
@@ -94,7 +94,7 @@ public class KafkaAvroSchemaRegistryTest {
         producer.close();
 
         CountDownLatch consumptionLatch = new CountDownLatch(events.size());
-        ConcurrentKafkaConsumer<String, AvroEnvelop> consumer = new ConcurrentKafkaConsumer<>(
+        KafkaConsumerRunner<String, AvroEnvelop> consumer = new KafkaConsumerRunner<>(
                 consumerConfig,
                 newTopic.name(),
                 record -> {
