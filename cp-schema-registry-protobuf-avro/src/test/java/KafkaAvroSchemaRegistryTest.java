@@ -82,6 +82,7 @@ public class KafkaAvroSchemaRegistryTest {
                         .setCorrelation(UUID.randomUUID().toString())
                         .setData(
                                 Harvested.newBuilder()
+                                        .setPropertyId(UUID.randomUUID().toString())
                                         .setHarvestedAt(ZonedDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME))
                                         .setHarvestedBy(UUID.randomUUID().toString())
                                         .build()
@@ -91,6 +92,7 @@ public class KafkaAvroSchemaRegistryTest {
                         .setCorrelation(UUID.randomUUID().toString())
                         .setData(
                                 RetailerReceived.newBuilder()
+                                        .setRetailerId(UUID.randomUUID().toString())
                                         .setReceivedAt(ZonedDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME))
                                         .setReceivedBy(UUID.randomUUID().toString())
                                         .build()
@@ -160,7 +162,7 @@ public class KafkaAvroSchemaRegistryTest {
                 record -> {
                     consumptionLatch.countDown();
 
-                    log("Received event type %s", record.value().getData().getClass());
+                    log("Received event type %s \n", record.value().getData().getClass());
 
                     Object event = record.value().getData();
                     if(event instanceof Harvested harvested){

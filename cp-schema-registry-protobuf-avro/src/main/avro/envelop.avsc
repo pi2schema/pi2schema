@@ -16,12 +16,15 @@
       "name": "data",
       "type": [
         "null",
-        "boolean",
         {
           "type": "record",
           "name": "Harvested",
           "doc": "Harvested event",
           "fields": [
+            {
+              "name": "propertyId",
+              "type": "string"
+            },
             {
               "name": "harvestedAt",
               "type": "string"
@@ -37,6 +40,10 @@
           "name": "RetailerReceived",
           "doc": "RetailerReceived event",
           "fields": [
+            {
+              "name": "retailerId",
+              "type": "string"
+            },
             {
               "name": "receivedAt",
               "type": "string"
