@@ -5,7 +5,7 @@ The opportunity to experiment / review schema decisions made in the past are unf
 
 This repo intends to review some limitations faced in the past with avro schema specially when using it with multiple domain events from the same aggregate in the same topic to avoid unnecessary reordering complexity. 
 
-On the other hand also would like to review the extreme flexibility  faced using pure CloudEvents + json with lose or no  schema at all.
+On the other extreme I would like to review the early experience of using  using pure CloudEvents + json  which brings flexibility of json schema or no schema at all with some other constraints.
 
 For a more detailed comparison  on the schema evolution and domain evolution comparing avro and protobuf, see the [sub-project readme](cp-schema-registry-protobuf-avro/README.md)
 

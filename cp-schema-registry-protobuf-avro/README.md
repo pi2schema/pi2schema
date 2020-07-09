@@ -63,10 +63,10 @@ if (event.is(EnvelopAnyOuterClass.Harvested.class)) {
 }
 ```
 
-#### google.protobuf.Any:
-*Any JSON object. See `struct.proto`.* Will stop here :), although istio has do some interesting work around it and apparently in the clojure world it seems quite natural. more?
+#### google.protobuf.Struct:
+*Any JSON object. See `struct.proto`.* Will stop here :), although Istio has some interesting work around it and apparently in the clojure world it seems quite natural. more?
 
 ### Build system and gradle support
 Even the build system  scenario has changed quite a lot. 
 
-A couple of years, a bit more, gradle support for avro and schema registry was quite limited compared to the available plugins for maven and its well-defined lifecycle.  As of 2020, maven still seems to have a more mature ecosystem including the official confluent schema plugins  however one can easy find third party plugins  for the serialization and also for the schema registry. This repository experiments in both including schema validation. [TODO]
+A couple of years, a bit more, gradle support for avro and schema registry was quite limited compared to the available plugins for Maven and its well-defined lifecycle.  As of 2020, maven still seems to have a more mature ecosystem including the official confluent schema plugins  however one can easy find third party plugins  for the serialization also for the schema registry. This repository experiments in both including schema validation. [TODO]
