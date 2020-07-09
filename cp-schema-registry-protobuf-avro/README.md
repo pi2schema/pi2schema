@@ -19,9 +19,10 @@ Union types are powerful, but you must take care when changing them. If you want
     
 Once an initial version of the schema is published and used by the consumers extending the union type with new types will give the following error:
 
-````
-add exception here
-````
+```
+Caused by: org.apache.avro.AvroTypeException: Found **NewType**, expecting union
+	at org.apache.avro.io.ResolvingDecoder.doAction(ResolvingDecoder.java:308)
+```
 
 The suggested solution for this case is to replace the unique union field by multiple nullable fields for each possible type. Although this solution works for the consumer the code becomes unnatural and the event confusing. 
 
