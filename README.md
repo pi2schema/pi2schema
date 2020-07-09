@@ -17,6 +17,6 @@ Please feel free to reach me out by mail / twitter / issues in case of any sugge
 
 ### Next
 * GDPR, LGPD schema following the privacy by design principle, from the beginning with a clear contract and transparent for impl
-* Urn schema for resource identification as of pcalcado 
+* Urn schema for resource identification [ref pcalcado](https://philcalcado.com/2017/03/22/pattern_using_seudo-uris_with_microservices.html)
 * Event Modeling [Adam Dymitruk](https://www.eventmodeling.org) as a code / executable specification
 * Recent developments in the CloudEvents specification, including [Re-Introducing protobuf](https://github.com/cloudevents/spec/pull/626)
