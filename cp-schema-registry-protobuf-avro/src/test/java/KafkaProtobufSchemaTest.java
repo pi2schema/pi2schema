@@ -76,7 +76,7 @@ public class KafkaProtobufSchemaTest {
 
         NewTopic oneOf = new NewTopic(TOPIC_PROTOBUF_ONE_OF, 1, (short) 1);
         NewTopic any = new NewTopic(TOPIC_PROTOBUF_ANY, 1, (short) 1);
-    adminClient.createTopics(List.of(oneOf, any));
+        adminClient.createTopics(List.of(oneOf, any));
     }
 
 

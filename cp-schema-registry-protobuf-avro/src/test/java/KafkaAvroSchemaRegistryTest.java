@@ -7,12 +7,14 @@ import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -23,6 +25,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -44,16 +47,15 @@ public class KafkaAvroSchemaRegistryTest {
             KafkaAvroDeserializerConfig.SPECIFIC_AVRO_READER_CONFIG, "true"
     );
 
-    private AdminClient adminClient;
-    private Properties consumerConfig;
-    private Properties producerConfig;
+    private static final String TOPIC_AVRO = "origins-avro";
 
-    @BeforeEach
-    public void setUp() {
+    private static Properties consumerConfig;
+    private static Properties producerConfig;
+
+    @BeforeAll
+    public static void kafkaConfigurationProperties() {
         producerConfig = new Properties();
         producerConfig.putAll(KafkaSimpleConfig.KAFKA_INFRA_CONFIG);
-        adminClient = AdminClient.create(producerConfig);
-
         producerConfig.putAll(KAFKA_PRODUCER_CONFIG);
 
         consumerConfig = new Properties();
@@ -61,10 +63,18 @@ public class KafkaAvroSchemaRegistryTest {
         consumerConfig.putAll(KAFKA_CONSUMER_CONFIG);
     }
 
+    @BeforeAll
+    public static void createTopicsIfNotExistent(){
+        Properties adminProperties = new Properties();
+        adminProperties.putAll(KafkaSimpleConfig.KAFKA_INFRA_CONFIG);
+        AdminClient adminClient = AdminClient.create(adminProperties);
+
+        NewTopic avro = new NewTopic(TOPIC_AVRO, 1, (short) 1);
+        adminClient.createTopics(List.of(avro));
+    }
+
     @Test
     void testAvroEventSchema() throws InterruptedException {
-        NewTopic newTopic = new NewTopic("origins-avro", 1, (short) 1);
-        adminClient.createTopics(List.of(newTopic));
 
         List<AvroEnvelop> events = List.of(
                 AvroEnvelop.newBuilder()
@@ -89,14 +99,14 @@ public class KafkaAvroSchemaRegistryTest {
 
         KafkaProducer<String, AvroEnvelop> producer = new KafkaProducer<>(producerConfig);
         events.stream()
-                .map(e -> new ProducerRecord<>(newTopic.name(), e.getCausation(), e))
+                .map(e -> new ProducerRecord<>(TOPIC_AVRO, e.getCausation(), e))
                 .forEach(producer::send);
         producer.close();
 
         CountDownLatch consumptionLatch = new CountDownLatch(events.size());
         KafkaConsumerRunner<String, AvroEnvelop> consumer = new KafkaConsumerRunner<>(
                 consumerConfig,
-                newTopic.name(),
+                TOPIC_AVRO,
                 record -> {
                     consumptionLatch.countDown();
 
@@ -105,10 +115,10 @@ public class KafkaAvroSchemaRegistryTest {
 
                     Object event = record.value().getData();
                     if(event instanceof Harvested harvested){
-                        System.out.println("harvested: " + harvested);
+                        System.out.println("Harvested event: " + harvested);
                     }
                     else if (event instanceof RetailerReceived received){
-                        System.out.println("received" + received);
+                        System.out.println("Retailer Received" + received);
                     }
                     else {
                         System.out.println("Unknown event " + event);
@@ -124,5 +134,57 @@ public class KafkaAvroSchemaRegistryTest {
 
         assertEquals(0, consumptionLatch.getCount());
 //        adminClient.deleteTopics(asList(newTopic.name()));
+    }
+
+
+    @Test
+    void consumeAllMessagesFromTopic() throws ExecutionException, InterruptedException {
+
+        Properties adminProperties = new Properties();
+        adminProperties.putAll(KafkaSimpleConfig.KAFKA_INFRA_CONFIG);
+        AdminClient adminClient = AdminClient.create(adminProperties);
+
+        Map<TopicPartition, OffsetAndMetadata> current = adminClient.listConsumerGroupOffsets("test-avro")
+                .partitionsToOffsetAndMetadata()
+                .get();
+
+        log("current topic description: %s", current);
+
+        TopicPartition topicPartition = new TopicPartition(TOPIC_AVRO, 0);
+        adminClient.alterConsumerGroupOffsets("test-avro", Map.of(topicPartition, new OffsetAndMetadata(0L)));
+
+        CountDownLatch consumptionLatch = new CountDownLatch((int) current.get(topicPartition).offset());
+        KafkaConsumerRunner<String, AvroEnvelop> consumer = new KafkaConsumerRunner<>(
+                consumerConfig,
+                TOPIC_AVRO,
+                record -> {
+                    consumptionLatch.countDown();
+
+                    log("Received event type %s", record.value().getData().getClass());
+
+                    Object event = record.value().getData();
+                    if(event instanceof Harvested harvested){
+                        System.out.println("Harvested event: " + harvested);
+                    }
+                    else if (event instanceof RetailerReceived received){
+                        System.out.println("Retailer Received" + received);
+                    }
+                    else {
+                        System.out.println("Unknown event " + event);
+                    }
+
+                });
+
+        new Thread(consumer).start();
+
+        consumptionLatch.await(30, TimeUnit.SECONDS);
+        consumer.shutdown();
+
+        assertEquals(0, consumptionLatch.getCount());
+    }
+
+
+    private void log(String format, Object ... args){
+        System.out.printf(format, args);
     }
 }
