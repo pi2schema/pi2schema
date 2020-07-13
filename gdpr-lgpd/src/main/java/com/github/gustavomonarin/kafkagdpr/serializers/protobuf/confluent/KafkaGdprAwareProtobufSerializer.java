@@ -16,11 +16,10 @@ public class KafkaGdprAwareProtobufSerializer<T extends Message> implements Seri
         this.inner = new KafkaProtobufSerializer<>();
     }
 
-    KafkaGdprAwareProtobufSerializer(
-            SchemaRegistryClient schemaRegistry,
-            Map<String, ?> configuration,
-            Class<T> clazz) {
-        this.inner = new KafkaProtobufSerializer<>(schemaRegistry, configuration);
+    KafkaGdprAwareProtobufSerializer(SchemaRegistryClient schemaRegistry,
+                                     Map<String, ?> configs,
+                                     Class<T> clazz) {
+        this.inner = new KafkaProtobufSerializer<>(schemaRegistry, configs);
     }
 
     @Override
