@@ -13,6 +13,12 @@ plugins {
 group 'com.github.gustavomonarin'
 version '1.0-SNAPSHOT'
 
+
+java {
+    sourceCompatibility(JavaVersion.VERSION_1_8)
+    targetCompatibility(JavaVersion.VERSION_1_8)
+}
+
 repositories {
     mavenCentral()
 
@@ -23,14 +29,16 @@ repositories {
 
 dependencies {
 
-    compile group: 'org.apache.kafka', name: 'kafka-clients', version: '2.5.0'
+    compile 'org.apache.kafka:kafka-clients:2.5.0'
 
-    compile group: 'io.confluent', name: 'kafka-protobuf-serializer', version: '5.5.0'
-    compile group: 'com.google.protobuf', name: 'protobuf-java', version: '3.12.2'
+    compile 'io.confluent:kafka-protobuf-serializer:5.5.0'
+    compile 'com.google.protobuf:protobuf-java:3.12.2'
 
-    compile group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
+    compile 'ch.qos.logback:logback-classic:1.2.3'
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.6.2'
+    testImplementation 'org.assertj:assertj-core:3.16.1'
+
 }
 
 protobuf {

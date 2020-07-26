@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package com.github.gustavomonarin.gdpr;
+
+import 'google/protobuf/timestamp.proto';
+
+import 'encrypted_personal_data.proto';
+
+message FarmerRegisteredEvent {
+
+  string uuid = 1;
+
+  oneof personal_data {
+    ContactInfo contact_info = 2;
+    EncryptedPersonalData encryptedPersonalData = 3;
+  }
+
+  google.protobuf.Timestamp registeredAt = 4;
+  string referer = 5;
+
+}
+
+message ContactInfo {
+  string name = 1;
+  string phone_number = 2;
+  string email = 3;
+}

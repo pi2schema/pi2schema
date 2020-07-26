@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package com.github.gustavomonarin.gdpr;
+
+message EncryptedPersonalData {
+  string subject_id = 1;
+  string kms_id = 2;
+  bytes data = 3;
+}

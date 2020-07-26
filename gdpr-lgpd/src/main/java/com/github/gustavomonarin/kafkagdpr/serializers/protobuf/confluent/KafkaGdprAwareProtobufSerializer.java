@@ -4,13 +4,17 @@ import com.google.protobuf.Message;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer;
 import org.apache.kafka.common.header.Headers;
+import org.apache.kafka.common.header.internals.RecordHeaders;
 import org.apache.kafka.common.serialization.Serializer;
 
 import java.util.Map;
 
 public class KafkaGdprAwareProtobufSerializer<T extends Message> implements Serializer<T> {
 
+    private static final RecordHeaders EMPTY_HEADERS = new RecordHeaders();
+
     private final KafkaProtobufSerializer<T> inner;
+    private final EncryptionEngine<T> encryptionEngine = new EncryptionEngine<>();
 
     public KafkaGdprAwareProtobufSerializer() {
         this.inner = new KafkaProtobufSerializer<>();
@@ -29,12 +33,18 @@ public class KafkaGdprAwareProtobufSerializer<T extends Message> implements Seri
 
     @Override
     public byte[] serialize(String topic, T data) {
-        return inner.serialize(topic, data);
+        return this.serialize(topic, EMPTY_HEADERS, data);
     }
 
     @Override
     public byte[] serialize(String topic, Headers headers, T data) {
-        return inner.serialize(topic, headers, data);
+        if (data == null) {
+            return null;
+        }
+
+        T encrypted = encryptionEngine.encrypt(data);
+
+        return inner.serialize(topic, headers, encrypted);
     }
 
     @Override

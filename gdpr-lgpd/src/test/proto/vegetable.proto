@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+//example of message with non personal data information only.
+
+package com.acme;
+
+message Vegetable {
+
+}
