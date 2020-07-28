@@ -5,10 +5,11 @@ package com.github.gustavomonarin.gdpr;
 import 'google/protobuf/timestamp.proto';
 
 import 'encrypted_personal_data.proto';
+import 'subject.proto';
 
 message FarmerRegisteredEvent {
 
-  string uuid = 1;
+  string uuid = 1 [(.com.github.gustavomonarin.gdpr.subject_identifier) = true];
 
   oneof personal_data {
     ContactInfo contact_info = 2;

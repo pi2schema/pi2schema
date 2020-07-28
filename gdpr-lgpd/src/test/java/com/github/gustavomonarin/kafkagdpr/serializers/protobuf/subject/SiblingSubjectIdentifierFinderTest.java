@@ -1,0 +1,60 @@
+package com.github.gustavomonarin.kafkagdpr.serializers.protobuf.subject;
+
+import com.acme.FarmerRegisteredEventFixture;
+import com.acme.InvalidSubjectIdentifiers;
+import com.github.gustavomonarin.gdpr.FarmerRegisteredEventOuterClass.FarmerRegisteredEvent;
+import com.google.protobuf.Descriptors;
+import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+
+class SiblingSubjectIdentifierFinderTest {
+
+    private final SubjectIdentifierFinder finder = new SiblingSubjectIdentifierFinder();
+
+    @Test
+    void shouldFindTheSubjectIdentifierInAValidEvent() {
+        FarmerRegisteredEvent.Builder johnDoeRegistration = FarmerRegisteredEventFixture.johnDoe();
+        Descriptors.OneofDescriptor oneOfDescriptor = johnDoeRegistration
+                .getDescriptorForType()
+                .getOneofs()
+                .get(0);
+
+        SubjectIdentifierFieldDefinition subjectIdentifierFieldDefinition = finder.find(oneOfDescriptor);
+
+        assertThat(subjectIdentifierFieldDefinition).isNotNull();
+        assertThat(subjectIdentifierFieldDefinition.actualValueFrom(johnDoeRegistration))
+                .isEqualTo(johnDoeRegistration.getUuid());
+    }
+
+    @Test
+    void shouldThrowSubjectIdentifierNotFound() {
+        Descriptors.OneofDescriptor personalDataField = InvalidSubjectIdentifiers.MissingSubjectIdentifierAnnotation
+                .getDescriptor()
+                .getOneofs().get(0);
+
+        assertThatExceptionOfType(SubjectIdentifierNotFoundException.class)
+                .isThrownBy(() ->
+                        finder.find(personalDataField)
+                )
+                .withMessage("The strategy SiblingSubjectIdentifierFinder has not found any possible identifiers for the field" +
+                        " com.acme.MissingSubjectIdentifierAnnotation.personal_data while exact one is required");
+
+    }
+
+    @Test
+    public void shouldThrowTooManySubjectIdentifiers() {
+        Descriptors.OneofDescriptor personalDataField = InvalidSubjectIdentifiers.MultipleSiblingsSubjectIdentifiers
+                .getDescriptor()
+                .getOneofs()
+                .get(0);
+
+        assertThatExceptionOfType(TooManySubjectIdentifiersException.class)
+                .isThrownBy(() ->
+                        finder.find(personalDataField)
+                )
+                .withMessage("The strategy SiblingSubjectIdentifierFinder has found 2 possible identifiers for the field" +
+                        " com.acme.MultipleSiblingsSubjectIdentifiers.personal_data while exact one is required");
+    }
+}

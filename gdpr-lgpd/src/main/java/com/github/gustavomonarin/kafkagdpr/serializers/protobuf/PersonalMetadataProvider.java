@@ -1,6 +1,8 @@
 package com.github.gustavomonarin.kafkagdpr.serializers.protobuf;
 
-import com.google.protobuf.Descriptors;
+import com.github.gustavomonarin.kafkagdpr.serializers.protobuf.subject.SiblingSubjectIdentifierFinder;
+import com.github.gustavomonarin.kafkagdpr.serializers.protobuf.subject.SubjectIdentifierFinder;
+import com.google.protobuf.Descriptors.Descriptor;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
@@ -13,11 +15,18 @@ import static java.util.stream.Collectors.toList;
 
 public class PersonalMetadataProvider {
 
-    public PersonalMetadata forDescriptor(@NotNull Descriptors.Descriptor descriptorForType) {
+    private final SubjectIdentifierFinder subjectIdentifierFinder = new SiblingSubjectIdentifierFinder();
+
+    public PersonalMetadata forDescriptor(@NotNull Descriptor descriptorForType) {
+        //protobuf oneOf strategy
         List<OneOfEncryptableField> encryptableFields = descriptorForType.getOneofs()
                 .stream()
                 .filter(OneOfEncryptableField::isEncryptable)
-                .map(OneOfEncryptableField::new)
+                .map(oneOfField ->
+                        new OneOfEncryptableField(
+                                oneOfField,
+                                subjectIdentifierFinder.find(oneOfField))
+                )
                 .collect(collectingAndThen(toList(), Collections::unmodifiableList));
 
         return new PersonalMetadata(encryptableFields);

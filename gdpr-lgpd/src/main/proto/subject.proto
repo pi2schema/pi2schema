@@ -1,0 +1,11 @@
+import "google/protobuf/descriptor.proto";
+
+//TODO: move to a nice project
+package com.github.gustavomonarin.gdpr;
+
+extend google.protobuf.FieldOptions {
+
+  //TODO this should be registered in here:
+  optional bool subject_identifier = 700001;
+
+}

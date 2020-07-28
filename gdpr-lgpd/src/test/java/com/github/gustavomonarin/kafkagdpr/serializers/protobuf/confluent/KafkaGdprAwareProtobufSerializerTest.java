@@ -88,7 +88,13 @@ class KafkaGdprAwareProtobufSerializerTest {
         FarmerRegisteredEvent actual = deserializer.deserialize(topic, data);
 
         //then
-        assertThat(actual.getUuid()).isEqualTo(uuid);
-        assertThat(actual.getPersonalDataCase()).isEqualTo(FarmerRegisteredEvent.PersonalDataCase.ENCRYPTEDPERSONALDATA);
+        assertThat(actual.getUuid())
+                .isEqualTo(uuid);
+
+        assertThat(actual.getPersonalDataCase())
+                .isEqualTo(FarmerRegisteredEvent.PersonalDataCase.ENCRYPTEDPERSONALDATA);
+
+        assertThat(actual.getEncryptedPersonalData().getSubjectId())
+                .isEqualTo(uuid);
     }
 }
