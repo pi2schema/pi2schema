@@ -6,41 +6,51 @@ import com.github.gustavomonarin.gdpr.EncryptedPersonalDataOuterClass.EncryptedP
 import com.github.gustavomonarin.kafkagdpr.serializers.protobuf.subject.SubjectIdentifierFieldDefinition;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.Descriptors.FieldDescriptor;
+import com.google.protobuf.Descriptors.OneofDescriptor;
 import com.google.protobuf.Message;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.List;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
-public class OneOfEncryptableField {
+public class OneOfPersonalDataFieldDefinition {
 
     private static final Predicate<FieldDescriptor> isEncryptedFieldType = (f) ->
             EncryptedPersonalData.getDescriptor().getFullName().equals(f.getMessageType().getFullName());
 
-    private final Descriptors.OneofDescriptor containerOneOfDescriptor;
+    private final OneofDescriptor containerOneOfDescriptor;
     private final SubjectIdentifierFieldDefinition subjectIdentifierFieldDefinition;
+    private final FieldDescriptor targetFieldForEncryption;
 
-    public OneOfEncryptableField(Descriptors.OneofDescriptor descriptor,
-                                 SubjectIdentifierFieldDefinition subjectIdentifierFieldDefinition) {
+    public OneOfPersonalDataFieldDefinition(@NotNull OneofDescriptor descriptor,
+                                            @NotNull SubjectIdentifierFieldDefinition subjectIdentifierFieldDefinition) {
         this.containerOneOfDescriptor = descriptor;
         this.subjectIdentifierFieldDefinition = subjectIdentifierFieldDefinition;
+        this.targetFieldForEncryption = determineEncryptionField();
     }
 
-    static boolean isEncryptable(@NotNull Descriptors.OneofDescriptor descriptor) {
-        //TODO this validation should be on metadata generation
+    static boolean hasPersonalData(@NotNull OneofDescriptor descriptor) {
         return descriptor.getFields()
                 .stream()
                 .anyMatch(isEncryptedFieldType);
     }
 
-    private FieldDescriptor targetField() {
-        Stream<FieldDescriptor> encryptedFieldTypes = containerOneOfDescriptor.getFields()
+    private FieldDescriptor determineEncryptionField() {
+        List<FieldDescriptor> encryptionFields = containerOneOfDescriptor.getFields()
                 .stream()
-                .filter(isEncryptedFieldType);
+                .filter(isEncryptedFieldType)
+                .collect(Collectors.toList());
 
+        if (encryptionFields.isEmpty()) {
+            throw new EncryptionTargetFieldNotFoundException(containerOneOfDescriptor.getFullName());
+        }
 
-        //TODO on metadageneration, save target, which is immutable for the same metadata, no need to inspect again
-        return encryptedFieldTypes.findFirst().orElseThrow(RuntimeException::new);
+        if(encryptionFields.size() > 1){
+            throw new TooManyEncryptionTargetFieldsException(containerOneOfDescriptor.getFullName(), encryptionFields.size());
+        }
+
+        return encryptionFields.get(0);
     }
 
     public void swapToEncrypted(Message.Builder encryptingBuilder) {
@@ -49,7 +59,7 @@ public class OneOfEncryptableField {
         Message toBeEncrypted = (Message) encryptingBuilder.getField(unencryptedField);
 
         encryptingBuilder.clearOneof(containerOneOfDescriptor);
-        encryptingBuilder.setField(targetField(), crypted(encryptingBuilder));
+        encryptingBuilder.setField(targetFieldForEncryption, crypted(encryptingBuilder));
 
     }
 

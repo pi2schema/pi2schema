@@ -4,13 +4,13 @@ import java.util.List;
 
 public class PersonalMetadata {
 
-    private final List<OneOfEncryptableField> encryptableFields;
+    private final List<OneOfPersonalDataFieldDefinition> encryptableFields;
 
-    public PersonalMetadata(List<OneOfEncryptableField> encryptableFields) {
+    public PersonalMetadata(List<OneOfPersonalDataFieldDefinition> encryptableFields) {
         this.encryptableFields = encryptableFields;
     }
 
-    public List<OneOfEncryptableField> getEncryptableFields() {
+    public List<OneOfPersonalDataFieldDefinition> getEncryptableFields() {
         return encryptableFields;
     }
 

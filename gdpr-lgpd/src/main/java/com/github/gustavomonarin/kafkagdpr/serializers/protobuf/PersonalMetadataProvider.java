@@ -19,11 +19,11 @@ public class PersonalMetadataProvider {
 
     public PersonalMetadata forDescriptor(@NotNull Descriptor descriptorForType) {
         //protobuf oneOf strategy
-        List<OneOfEncryptableField> encryptableFields = descriptorForType.getOneofs()
+        List<OneOfPersonalDataFieldDefinition> encryptableFields = descriptorForType.getOneofs()
                 .stream()
-                .filter(OneOfEncryptableField::isEncryptable)
+                .filter(OneOfPersonalDataFieldDefinition::hasPersonalData)
                 .map(oneOfField ->
-                        new OneOfEncryptableField(
+                        new OneOfPersonalDataFieldDefinition(
                                 oneOfField,
                                 subjectIdentifierFinder.find(oneOfField))
                 )
