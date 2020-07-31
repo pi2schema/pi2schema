@@ -1,8 +1,10 @@
-package com.github.gustavomonarin.kafkagdpr.serializers.protobuf;
+package com.github.gustavomonarin.kafkagdpr.protobuf.personaldata;
 
 import com.acme.FarmerRegisteredEventFixture;
 import com.acme.FruitFixture;
 import com.acme.PlantaeOuterClass;
+import com.github.gustavomonarin.kafkagdpr.protobuf.personaldata.PersonalMetadata;
+import com.github.gustavomonarin.kafkagdpr.protobuf.personaldata.PersonalMetadataProvider;
 import com.google.protobuf.Descriptors.Descriptor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,7 +28,7 @@ class PersonalMetadataProviderTest {
 
         PersonalMetadata metadata = personalMetadataProvider.forDescriptor(descriptorWithoutOneOf);
 
-        assertThat(metadata.containsEncryptableFields())
+        assertThat(metadata.requiresEncryption())
                 .isFalse();
     }
 
@@ -40,7 +42,7 @@ class PersonalMetadataProviderTest {
 
         PersonalMetadata metadata = personalMetadataProvider.forDescriptor(descriptorWithOneOf);
 
-        assertThat(metadata.containsEncryptableFields())
+        assertThat(metadata.requiresEncryption())
                 .isFalse();
     }
 
@@ -52,7 +54,7 @@ class PersonalMetadataProviderTest {
 
         PersonalMetadata metadata = personalMetadataProvider.forDescriptor(descriptor);
 
-        assertThat(metadata.containsEncryptableFields())
+        assertThat(metadata.requiresEncryption())
                 .isTrue();
     }
 

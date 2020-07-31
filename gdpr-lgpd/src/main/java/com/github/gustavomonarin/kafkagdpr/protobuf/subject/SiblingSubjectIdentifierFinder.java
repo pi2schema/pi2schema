@@ -1,18 +1,22 @@
-package com.github.gustavomonarin.kafkagdpr.serializers.protobuf.subject;
+package com.github.gustavomonarin.kafkagdpr.protobuf.subject;
 
 import com.github.gustavomonarin.gdpr.Subject;
-import com.google.protobuf.Descriptors;
+import com.github.gustavomonarin.kafkagdpr.core.subject.SubjectIdentifierFinder;
+import com.github.gustavomonarin.kafkagdpr.core.subject.SubjectIdentifierNotFoundException;
+import com.github.gustavomonarin.kafkagdpr.core.subject.TooManySubjectIdentifiersException;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+import static com.google.protobuf.Descriptors.FieldDescriptor;
+import static com.google.protobuf.Descriptors.OneofDescriptor;
 import static java.util.stream.Collectors.toList;
 
-public class SiblingSubjectIdentifierFinder implements SubjectIdentifierFinder {
+public class SiblingSubjectIdentifierFinder implements SubjectIdentifierFinder<OneofDescriptor> {
 
     @Override
-    public SubjectIdentifierFieldDefinition find(@NotNull Descriptors.OneofDescriptor fieldDescriptor) {
-        List<Descriptors.FieldDescriptor> subjectsFields = fieldDescriptor.getContainingType() //parent
+    public ProtobufSubjectIdentifierFieldDefinition find(@NotNull OneofDescriptor fieldDescriptor) {
+        List<FieldDescriptor> subjectsFields = fieldDescriptor.getContainingType() //parent
                 .getFields() //siblings
                 .stream()
                 .filter(f -> f.getOptions().getExtension(Subject.subjectIdentifier))
@@ -28,7 +32,7 @@ public class SiblingSubjectIdentifierFinder implements SubjectIdentifierFinder {
                     subjectsFields.size());
         }
 
-        return new SubjectIdentifierFieldDefinition(subjectsFields.get(0));
+        return new ProtobufSubjectIdentifierFieldDefinition(subjectsFields.get(0));
     }
 
 }

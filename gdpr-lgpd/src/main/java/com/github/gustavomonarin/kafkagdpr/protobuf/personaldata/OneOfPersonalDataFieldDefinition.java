@@ -1,9 +1,12 @@
-package com.github.gustavomonarin.kafkagdpr.serializers.protobuf;
+package com.github.gustavomonarin.kafkagdpr.protobuf.personaldata;
 
 
 import com.github.gustavomonarin.gdpr.EncryptedPersonalDataOuterClass;
 import com.github.gustavomonarin.gdpr.EncryptedPersonalDataOuterClass.EncryptedPersonalData;
-import com.github.gustavomonarin.kafkagdpr.serializers.protobuf.subject.SubjectIdentifierFieldDefinition;
+import com.github.gustavomonarin.kafkagdpr.core.personaldata.EncryptionTargetFieldNotFoundException;
+import com.github.gustavomonarin.kafkagdpr.core.personaldata.PersonalDataFieldDefinition;
+import com.github.gustavomonarin.kafkagdpr.core.personaldata.TooManyEncryptionTargetFieldsException;
+import com.github.gustavomonarin.kafkagdpr.protobuf.subject.ProtobufSubjectIdentifierFieldDefinition;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.OneofDescriptor;
@@ -14,17 +17,18 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public class OneOfPersonalDataFieldDefinition {
+public class OneOfPersonalDataFieldDefinition
+        implements PersonalDataFieldDefinition<Message.Builder> {
 
     private static final Predicate<FieldDescriptor> isEncryptedFieldType = (f) ->
             EncryptedPersonalData.getDescriptor().getFullName().equals(f.getMessageType().getFullName());
 
     private final OneofDescriptor containerOneOfDescriptor;
-    private final SubjectIdentifierFieldDefinition subjectIdentifierFieldDefinition;
+    private final ProtobufSubjectIdentifierFieldDefinition subjectIdentifierFieldDefinition;
     private final FieldDescriptor targetFieldForEncryption;
 
     public OneOfPersonalDataFieldDefinition(@NotNull OneofDescriptor descriptor,
-                                            @NotNull SubjectIdentifierFieldDefinition subjectIdentifierFieldDefinition) {
+                                            @NotNull ProtobufSubjectIdentifierFieldDefinition subjectIdentifierFieldDefinition) {
         this.containerOneOfDescriptor = descriptor;
         this.subjectIdentifierFieldDefinition = subjectIdentifierFieldDefinition;
         this.targetFieldForEncryption = determineEncryptionField();
@@ -34,6 +38,17 @@ public class OneOfPersonalDataFieldDefinition {
         return descriptor.getFields()
                 .stream()
                 .anyMatch(isEncryptedFieldType);
+    }
+
+    @Override
+    public void swapToEncrypted(Message.Builder buildingInstance) {
+        Descriptors.FieldDescriptor unencryptedField = buildingInstance.getOneofFieldDescriptor(containerOneOfDescriptor);
+
+        Message toBeEncrypted = (Message) buildingInstance.getField(unencryptedField);
+
+        buildingInstance.clearOneof(containerOneOfDescriptor);
+        buildingInstance.setField(targetFieldForEncryption, crypted(buildingInstance));
+
     }
 
     private FieldDescriptor determineEncryptionField() {
@@ -46,21 +61,11 @@ public class OneOfPersonalDataFieldDefinition {
             throw new EncryptionTargetFieldNotFoundException(containerOneOfDescriptor.getFullName());
         }
 
-        if(encryptionFields.size() > 1){
+        if (encryptionFields.size() > 1) {
             throw new TooManyEncryptionTargetFieldsException(containerOneOfDescriptor.getFullName(), encryptionFields.size());
         }
 
         return encryptionFields.get(0);
-    }
-
-    public void swapToEncrypted(Message.Builder encryptingBuilder) {
-        Descriptors.FieldDescriptor unencryptedField = encryptingBuilder.getOneofFieldDescriptor(containerOneOfDescriptor);
-
-        Message toBeEncrypted = (Message) encryptingBuilder.getField(unencryptedField);
-
-        encryptingBuilder.clearOneof(containerOneOfDescriptor);
-        encryptingBuilder.setField(targetFieldForEncryption, crypted(encryptingBuilder));
-
     }
 
     @NotNull

@@ -1,4 +1,4 @@
-package com.github.gustavomonarin.kafkagdpr.serializers.protobuf;
+package com.github.gustavomonarin.kafkagdpr.core.personaldata;
 
 import com.github.gustavomonarin.gdpr.EncryptedPersonalDataOuterClass.EncryptedPersonalData;
 

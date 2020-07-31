@@ -1,4 +1,4 @@
-package com.github.gustavomonarin.kafkagdpr.serializers.protobuf.confluent;
+package com.github.gustavomonarin.kafkagdpr.protobuf.kafka.serializers;
 
 import com.acme.FruitFixture;
 import com.acme.FruitOuterClass.Fruit;

@@ -1,7 +1,9 @@
-package com.github.gustavomonarin.kafkagdpr.serializers.protobuf;
+package com.github.gustavomonarin.kafkagdpr.protobuf.personaldata;
 
 import com.acme.InvalidOneOfPersonalData;
-import com.github.gustavomonarin.kafkagdpr.serializers.protobuf.subject.SubjectIdentifierFieldDefinition;
+import com.github.gustavomonarin.kafkagdpr.core.personaldata.EncryptionTargetFieldNotFoundException;
+import com.github.gustavomonarin.kafkagdpr.core.personaldata.TooManyEncryptionTargetFieldsException;
+import com.github.gustavomonarin.kafkagdpr.protobuf.subject.ProtobufSubjectIdentifierFieldDefinition;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.OneofDescriptor;
 import org.junit.jupiter.api.Test;
@@ -15,7 +17,7 @@ class OneOfPersonalDataFieldDefinitionTest {
 
         Descriptor descriptor = InvalidOneOfPersonalData.MissingEncryptedPersonalDataField.getDescriptor();
         OneofDescriptor personalDataField = descriptor.getOneofs().get(0);
-        SubjectIdentifierFieldDefinition subjectField = new SubjectIdentifierFieldDefinition(descriptor.getFields().get(0));
+        ProtobufSubjectIdentifierFieldDefinition subjectField = new ProtobufSubjectIdentifierFieldDefinition(descriptor.getFields().get(0));
 
 
         assertThatExceptionOfType(EncryptionTargetFieldNotFoundException.class)
@@ -32,7 +34,7 @@ class OneOfPersonalDataFieldDefinitionTest {
 
         Descriptor descriptor = InvalidOneOfPersonalData.MultipleEncryptedPersonalDataField.getDescriptor();
         OneofDescriptor personalDataField = descriptor.getOneofs().get(0);
-        SubjectIdentifierFieldDefinition subjectField = new SubjectIdentifierFieldDefinition(descriptor.getFields().get(0));
+        ProtobufSubjectIdentifierFieldDefinition subjectField = new ProtobufSubjectIdentifierFieldDefinition(descriptor.getFields().get(0));
 
 
         assertThatExceptionOfType(TooManyEncryptionTargetFieldsException.class)

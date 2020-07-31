@@ -1,4 +1,4 @@
-package com.github.gustavomonarin.kafkagdpr.serializers.protobuf.subject;
+package com.github.gustavomonarin.kafkagdpr.core.subject;
 
 public class SubjectIdentifierNotFoundException extends RuntimeException {
 

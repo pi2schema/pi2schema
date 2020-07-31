@@ -6,4 +6,4 @@
  *
  * @since 1.0
  */
-package com.github.gustavomonarin.kafkagdpr.serializers.protobuf.confluent;
+package com.github.gustavomonarin.kafkagdpr.protobuf.kafka.serializers;

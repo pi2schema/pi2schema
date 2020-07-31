@@ -1,8 +1,10 @@
-package com.github.gustavomonarin.kafkagdpr.serializers.protobuf.subject;
+package com.github.gustavomonarin.kafkagdpr.protobuf.subject;
 
 import com.acme.FarmerRegisteredEventFixture;
 import com.acme.InvalidSubjectIdentifiers;
 import com.github.gustavomonarin.gdpr.FarmerRegisteredEventOuterClass.FarmerRegisteredEvent;
+import com.github.gustavomonarin.kafkagdpr.core.subject.SubjectIdentifierNotFoundException;
+import com.github.gustavomonarin.kafkagdpr.core.subject.TooManySubjectIdentifiersException;
 import com.google.protobuf.Descriptors;
 import org.junit.jupiter.api.Test;
 
@@ -11,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 class SiblingSubjectIdentifierFinderTest {
 
-    private final SubjectIdentifierFinder finder = new SiblingSubjectIdentifierFinder();
+    private final SiblingSubjectIdentifierFinder finder = new SiblingSubjectIdentifierFinder();
 
     @Test
     void shouldFindTheSubjectIdentifierInAValidEvent() {
@@ -21,7 +23,7 @@ class SiblingSubjectIdentifierFinderTest {
                 .getOneofs()
                 .get(0);
 
-        SubjectIdentifierFieldDefinition subjectIdentifierFieldDefinition = finder.find(oneOfDescriptor);
+        ProtobufSubjectIdentifierFieldDefinition subjectIdentifierFieldDefinition = finder.find(oneOfDescriptor);
 
         assertThat(subjectIdentifierFieldDefinition).isNotNull();
         assertThat(subjectIdentifierFieldDefinition.actualValueFrom(johnDoeRegistration))
