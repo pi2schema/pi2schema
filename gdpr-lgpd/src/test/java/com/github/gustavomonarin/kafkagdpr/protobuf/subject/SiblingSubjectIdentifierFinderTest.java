@@ -26,7 +26,7 @@ class SiblingSubjectIdentifierFinderTest {
         ProtobufSubjectIdentifierFieldDefinition subjectIdentifierFieldDefinition = finder.find(oneOfDescriptor);
 
         assertThat(subjectIdentifierFieldDefinition).isNotNull();
-        assertThat(subjectIdentifierFieldDefinition.actualValueFrom(johnDoeRegistration))
+        assertThat(subjectIdentifierFieldDefinition.subjectFrom(johnDoeRegistration))
                 .isEqualTo(johnDoeRegistration.getUuid());
     }
 

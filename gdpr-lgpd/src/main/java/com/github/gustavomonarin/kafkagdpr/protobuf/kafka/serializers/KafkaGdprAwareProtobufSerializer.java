@@ -1,5 +1,6 @@
 package com.github.gustavomonarin.kafkagdpr.protobuf.kafka.serializers;
 
+import com.github.gustavomonarin.kafkagdpr.core.kms.Encryptor;
 import com.google.protobuf.Message;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer;
@@ -14,15 +15,18 @@ public class KafkaGdprAwareProtobufSerializer<T extends Message> implements Seri
     private static final RecordHeaders EMPTY_HEADERS = new RecordHeaders();
 
     private final KafkaProtobufSerializer<T> inner;
-    private final EncryptionEngine<T> encryptionEngine = new EncryptionEngine<>();
+    private ProtobufEncryptionEngine<T> protobufEncryptionEngine;
 
     public KafkaGdprAwareProtobufSerializer() {
         this.inner = new KafkaProtobufSerializer<>();
+
     }
 
-    KafkaGdprAwareProtobufSerializer(SchemaRegistryClient schemaRegistry,
+    KafkaGdprAwareProtobufSerializer(Encryptor encryptor,
+                                     SchemaRegistryClient schemaRegistry,
                                      Map<String, ?> configs,
                                      Class<T> clazz) {
+        this.protobufEncryptionEngine = new ProtobufEncryptionEngine<>(encryptor);
         this.inner = new KafkaProtobufSerializer<>(schemaRegistry, configs);
     }
 
@@ -42,7 +46,7 @@ public class KafkaGdprAwareProtobufSerializer<T extends Message> implements Seri
             return null;
         }
 
-        T encrypted = encryptionEngine.encrypt(data);
+        T encrypted = protobufEncryptionEngine.encrypt(data);
 
         return inner.serialize(topic, headers, encrypted);
     }

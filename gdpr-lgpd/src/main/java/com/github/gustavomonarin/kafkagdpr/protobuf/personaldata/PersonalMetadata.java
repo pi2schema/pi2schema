@@ -17,7 +17,10 @@ public class PersonalMetadata {
         return !personalDataFields.isEmpty();
     }
 
-    public void encryptPersonalData(Message.Builder encryptingBuilder) {
-        personalDataFields.forEach(field -> field.swapToEncrypted(encryptingBuilder));
+    public void encryptPersonalData(ProtobufPersonalDataEncryptor encryptor, Message.Builder encryptingBuilder) {
+
+        personalDataFields.forEach(field ->
+                field.swapToEncrypted(encryptor, encryptingBuilder)
+        );
     }
 }

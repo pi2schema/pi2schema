@@ -1,7 +1,7 @@
 package com.github.gustavomonarin.kafkagdpr.core.personaldata;
 
-public interface PersonalDataFieldDefinition<B> {
+public interface PersonalDataFieldDefinition<T> extends PersonalDataValueProvider<T> {
 
-    void swapToEncrypted(B buildingInstance);
+    void swapToEncrypted(PersonalDataEncryptor encryptor, T buildingInstance);
 
 }

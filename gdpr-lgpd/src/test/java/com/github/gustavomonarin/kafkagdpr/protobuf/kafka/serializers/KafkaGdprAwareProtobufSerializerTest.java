@@ -5,6 +5,7 @@ import com.acme.FruitFixture;
 import com.acme.FruitOuterClass.Fruit;
 import com.acme.TimestampFixture;
 import com.github.gustavomonarin.gdpr.FarmerRegisteredEventOuterClass.FarmerRegisteredEvent;
+import com.github.gustavomonarin.kafkagdpr.core.kms.Encryptor;
 import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializerConfig;
@@ -22,9 +23,13 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 class KafkaGdprAwareProtobufSerializerTest {
 
+    private final Map<String, Object> configs;
+
     private final String topic = "test";
     private final MockSchemaRegistryClient schemaRegistry = new MockSchemaRegistryClient();
-    private final Map<String, Object> configs;
+
+    private final byte[] encrypted = "mockencryption".getBytes();
+    private final Encryptor encryptorMock = (subjectId, data) -> encrypted;
 
     public KafkaGdprAwareProtobufSerializerTest() {
         HashMap<String, Object> initial = new HashMap<>();
@@ -36,9 +41,9 @@ class KafkaGdprAwareProtobufSerializerTest {
     @Test
     public void shouldSupportNullRecordReturningNullData() {
         KafkaGdprAwareProtobufSerializer<Fruit> deserializer = new KafkaGdprAwareProtobufSerializer<>(
+                encryptorMock,
                 schemaRegistry,
-                configs,
-                Fruit.class);
+                configs, Fruit.class);
 
         assertNull(deserializer.serialize(topic, null));
         assertNull(deserializer.serialize(topic, new RecordHeaders(), null));
@@ -50,9 +55,9 @@ class KafkaGdprAwareProtobufSerializerTest {
         Fruit preferredMelon = FruitFixture.waterMelon().build();
 
         KafkaGdprAwareProtobufSerializer<Fruit> serializer = new KafkaGdprAwareProtobufSerializer<>(
+                encryptorMock,
                 schemaRegistry,
-                configs,
-                Fruit.class);
+                configs, Fruit.class);
         KafkaProtobufDeserializer<Fruit> deserializer = new KafkaProtobufDeserializer<>(
                 schemaRegistry,
                 configs,
@@ -74,6 +79,7 @@ class KafkaGdprAwareProtobufSerializerTest {
                 .build();
 
         KafkaGdprAwareProtobufSerializer<FarmerRegisteredEvent> serializer = new KafkaGdprAwareProtobufSerializer<>(
+                encryptorMock,
                 schemaRegistry,
                 configs,
                 FarmerRegisteredEvent.class);
@@ -82,6 +88,7 @@ class KafkaGdprAwareProtobufSerializerTest {
                 configs,
                 FarmerRegisteredEvent.class
         );
+
 
         //when
         byte[] data = serializer.serialize(topic, original);
@@ -96,5 +103,8 @@ class KafkaGdprAwareProtobufSerializerTest {
 
         assertThat(actual.getEncryptedPersonalData().getSubjectId())
                 .isEqualTo(uuid);
+
+        assertThat(actual.getEncryptedPersonalData().getData().toByteArray())
+                .isEqualTo(encrypted);
     }
 }

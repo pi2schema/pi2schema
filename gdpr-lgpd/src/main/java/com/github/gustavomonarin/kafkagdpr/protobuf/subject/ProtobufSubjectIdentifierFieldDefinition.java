@@ -14,7 +14,7 @@ public class ProtobufSubjectIdentifierFieldDefinition
     }
 
     @Override
-    public String actualValueFrom(Message.Builder buildingInstance) {
+    public String subjectFrom(Message.Builder buildingInstance) {
         return String.valueOf(buildingInstance.getField(fieldDescriptor));
     }
 }

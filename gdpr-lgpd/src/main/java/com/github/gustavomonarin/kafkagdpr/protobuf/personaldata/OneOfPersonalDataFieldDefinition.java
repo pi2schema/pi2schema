@@ -1,11 +1,8 @@
 package com.github.gustavomonarin.kafkagdpr.protobuf.personaldata;
 
 
-import com.github.gustavomonarin.gdpr.EncryptedPersonalDataOuterClass;
 import com.github.gustavomonarin.gdpr.EncryptedPersonalDataOuterClass.EncryptedPersonalData;
-import com.github.gustavomonarin.kafkagdpr.core.personaldata.EncryptionTargetFieldNotFoundException;
-import com.github.gustavomonarin.kafkagdpr.core.personaldata.PersonalDataFieldDefinition;
-import com.github.gustavomonarin.kafkagdpr.core.personaldata.TooManyEncryptionTargetFieldsException;
+import com.github.gustavomonarin.kafkagdpr.core.personaldata.*;
 import com.github.gustavomonarin.kafkagdpr.protobuf.subject.ProtobufSubjectIdentifierFieldDefinition;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.Descriptors.FieldDescriptor;
@@ -34,21 +31,33 @@ public class OneOfPersonalDataFieldDefinition
         this.targetFieldForEncryption = determineEncryptionField();
     }
 
+    @Override
+    public byte[] valueFrom(Message.Builder actualInstance) {
+        Descriptors.FieldDescriptor unencryptedField = actualInstance.getOneofFieldDescriptor(containerOneOfDescriptor);
+        Object value = actualInstance.getField(unencryptedField);
+
+        if(value instanceof Message){
+            return ((Message)value).toByteArray();
+        }
+
+        throw new UnsupportedPersonalDataFieldFormatException(unencryptedField.getFullName());
+    }
+
+    @Override
+    public void swapToEncrypted(PersonalDataEncryptor encryptor,
+                                Message.Builder buildingInstance) {
+
+        EncryptedPersonalData encrypt = encryptor.encrypt(subjectIdentifierFieldDefinition.subjectFrom(buildingInstance),
+                valueFrom(buildingInstance));
+
+        buildingInstance.clearOneof(containerOneOfDescriptor);
+        buildingInstance.setField(targetFieldForEncryption, encrypt);
+    }
+
     static boolean hasPersonalData(@NotNull OneofDescriptor descriptor) {
         return descriptor.getFields()
                 .stream()
                 .anyMatch(isEncryptedFieldType);
-    }
-
-    @Override
-    public void swapToEncrypted(Message.Builder buildingInstance) {
-        Descriptors.FieldDescriptor unencryptedField = buildingInstance.getOneofFieldDescriptor(containerOneOfDescriptor);
-
-        Message toBeEncrypted = (Message) buildingInstance.getField(unencryptedField);
-
-        buildingInstance.clearOneof(containerOneOfDescriptor);
-        buildingInstance.setField(targetFieldForEncryption, crypted(buildingInstance));
-
     }
 
     private FieldDescriptor determineEncryptionField() {
@@ -68,10 +77,5 @@ public class OneOfPersonalDataFieldDefinition
         return encryptionFields.get(0);
     }
 
-    @NotNull
-    private EncryptedPersonalDataOuterClass.EncryptedPersonalData crypted(Message.Builder encryptingBuilder) {
-        return EncryptedPersonalDataOuterClass.EncryptedPersonalData.newBuilder()
-                .setSubjectId(subjectIdentifierFieldDefinition.actualValueFrom(encryptingBuilder))
-                .build();
-    }
+
 }

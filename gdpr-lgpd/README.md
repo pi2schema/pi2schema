@@ -9,7 +9,7 @@ Further more provide an ?open? space to collaborate in a so complex subject and 
 
 ## Project Goals
 * Gdpr compliant / right to be forgotten
-* No non personal data / event loss / deletion
+* No deletion, event loss, data los of non personal data
 * Explicit data classification over implicit encryption (as part of the schema)
 * Composable with the current kafka clients / serializers
 * Composable with different key management systems
@@ -17,7 +17,19 @@ Further more provide an ?open? space to collaborate in a so complex subject and 
 * Yet, providing a simple implementation
 * Composability should enable different Acls/ways to access data from different consumers
 
-### Challenges
+
+## Background
+
+* Event driven architectures and its persistence is finally becoming known and becoming the new core.
+    - The new source of true
+    - Streaming platforms with long term durability rather than data in transit, specially with KIP-405
+    - Streaming platforms extending to provide database like operations instead of the opposite - lsm ;) 
+* Data governance at center with personal data laws (gdpr/lgpd)
+    - Maturity levels - Early, many times mixed with bureaucracy and spreadsheets
+    
+
+    
+## Challenges
 
 * Multiple areas of  knowledge:
     - Serializers (Avro, Protobuf, Json Schema, ...)
@@ -26,6 +38,9 @@ Further more provide an ?open? space to collaborate in a so complex subject and 
     - Multiple kms implementations (aws, gcp, ...)
 
 # See also
+
+## Alternative approaches
+
 
 ## kafka references
 
@@ -41,5 +56,6 @@ Further more provide an ?open? space to collaborate in a so complex subject and 
 
 ## General implementations (mainly non free) references
 * [Gdpr checklist](https://gdpr.eu/checklist/)
+* [Dynamo client encryption](https://github.com/aws/aws-dynamodb-encryption-java/)
 * [Akka support for gdpr](https://doc.akka.io/docs/akka-enhancements/current/gdpr/index.html)
 * [Axon support for gdpr](https://axoniq.io/product-overview/axon-data-protection)
