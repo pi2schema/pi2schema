@@ -106,5 +106,9 @@ class KafkaGdprAwareProtobufSerializerTest {
 
         assertThat(actual.getEncryptedPersonalData().getData().toByteArray())
                 .isEqualTo(encrypted);
+
+        assertThat(actual.getEncryptedPersonalData().getPersonalDataFieldNumber())
+                .isEqualTo(2);
+
     }
 }

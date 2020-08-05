@@ -6,4 +6,7 @@ message EncryptedPersonalData {
   string subject_id = 1;
   string kms_id = 2;
   bytes data = 3;
+
+  //(protobuf) metadata
+  int32 personal_data_field_number = 4;
 }

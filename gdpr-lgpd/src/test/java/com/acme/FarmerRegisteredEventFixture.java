@@ -1,5 +1,9 @@
 package com.acme;
 
+import com.github.gustavomonarin.kafkagdpr.protobuf.personaldata.OneOfPersonalDataFieldDefinition;
+import com.github.gustavomonarin.kafkagdpr.protobuf.subject.ProtobufSubjectIdentifierFieldDefinition;
+import com.google.protobuf.Descriptors;
+
 import static com.github.gustavomonarin.gdpr.FarmerRegisteredEventOuterClass.ContactInfo;
 import static com.github.gustavomonarin.gdpr.FarmerRegisteredEventOuterClass.FarmerRegisteredEvent;
 
@@ -12,5 +16,15 @@ public class FarmerRegisteredEventFixture {
                                 .setName("John Doe")
                                 .setEmail("john.doe@acme.com")
                 );
+    }
+
+    public static OneOfPersonalDataFieldDefinition personalDataFieldDefinition(){
+        FarmerRegisteredEvent.Builder event = FarmerRegisteredEvent.newBuilder();
+
+        Descriptors.OneofDescriptor personalData = event.getDescriptorForType().getOneofs().get(0);
+        Descriptors.FieldDescriptor uuidFieldDef = event.getDescriptorForType().getFields().get(0);
+        ProtobufSubjectIdentifierFieldDefinition subjectId = new ProtobufSubjectIdentifierFieldDefinition(uuidFieldDef);
+
+        return new OneOfPersonalDataFieldDefinition(personalData, subjectId);
     }
 }
