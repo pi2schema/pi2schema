@@ -1,6 +1,6 @@
 package com.github.gustavomonarin.kafkagdpr.core.personaldata;
 
-import com.github.gustavomonarin.gdpr.EncryptedPersonalDataOuterClass.EncryptedPersonalData;
+import com.github.gustavomonarin.gdpr.EncryptedPersonalDataV1.EncryptedPersonalData;
 
 public class EncryptionTargetFieldNotFoundException extends RuntimeException {
 

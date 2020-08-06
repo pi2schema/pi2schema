@@ -1,10 +1,10 @@
 package com.github.gustavomonarin.kafkagdpr.core.personaldata;
 
-import com.github.gustavomonarin.gdpr.EncryptedPersonalDataOuterClass;
+import static com.github.gustavomonarin.gdpr.EncryptedPersonalDataV1.EncryptedPersonalData;
 
 public class TooManyEncryptionTargetFieldsException extends RuntimeException {
 
-    private static final String TARGET_ENCRYPTION_FIELD_TYPE = EncryptedPersonalDataOuterClass.EncryptedPersonalData.getDescriptor().getFullName();
+    private static final String TARGET_ENCRYPTION_FIELD_TYPE = EncryptedPersonalData.getDescriptor().getFullName();
 
     private final String containerFieldName;
     private final int targetEncryptionFields;

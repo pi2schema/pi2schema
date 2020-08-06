@@ -1,7 +1,7 @@
 package com.github.gustavomonarin.kafkagdpr.protobuf.personaldata;
 
 
-import com.github.gustavomonarin.gdpr.EncryptedPersonalDataOuterClass.EncryptedPersonalData;
+import com.github.gustavomonarin.gdpr.EncryptedPersonalDataV1.EncryptedPersonalData;
 import com.github.gustavomonarin.kafkagdpr.core.encryption.Decryptor;
 import com.github.gustavomonarin.kafkagdpr.core.encryption.EncryptedData;
 import com.github.gustavomonarin.kafkagdpr.core.encryption.Encryptor;

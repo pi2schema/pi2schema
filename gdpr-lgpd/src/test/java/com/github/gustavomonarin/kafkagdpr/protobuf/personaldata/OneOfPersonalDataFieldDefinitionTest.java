@@ -2,7 +2,6 @@ package com.github.gustavomonarin.kafkagdpr.protobuf.personaldata;
 
 import com.acme.FarmerRegisteredEventFixture;
 import com.acme.InvalidOneOfPersonalData;
-import com.github.gustavomonarin.gdpr.EncryptedPersonalDataOuterClass;
 import com.github.gustavomonarin.gdpr.FarmerRegisteredEventOuterClass.FarmerRegisteredEvent;
 import com.github.gustavomonarin.kafkagdpr.core.encryption.Decryptor;
 import com.github.gustavomonarin.kafkagdpr.core.encryption.Encryptor;
@@ -20,6 +19,7 @@ import org.opentest4j.AssertionFailedError;
 import java.time.Instant;
 import java.util.UUID;
 
+import static com.github.gustavomonarin.gdpr.EncryptedPersonalDataV1.EncryptedPersonalData;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
@@ -118,7 +118,7 @@ class OneOfPersonalDataFieldDefinitionTest {
 
         FarmerRegisteredEvent.Builder encryptedEvent = FarmerRegisteredEvent.newBuilder()
                 .setUuid(uuid)
-                .setEncryptedPersonalData(EncryptedPersonalDataOuterClass.EncryptedPersonalData.newBuilder()
+                .setEncryptedPersonalData(EncryptedPersonalData.newBuilder()
                         .setSubjectId(uuid)
                         .setData(encrypted)
                         .setPersonalDataFieldNumber(2))
@@ -138,7 +138,7 @@ class OneOfPersonalDataFieldDefinitionTest {
                 .isEqualTo(uuid);
 
         assertThat(actual.getEncryptedPersonalData())
-            .isEqualTo(EncryptedPersonalDataOuterClass.EncryptedPersonalData.getDefaultInstance());
+                .isEqualTo(EncryptedPersonalData.getDefaultInstance());
 
         assertThat(actual.getContactInfo())
                 .isEqualTo(FarmerRegisteredEventFixture.johnDoe().getContactInfo());

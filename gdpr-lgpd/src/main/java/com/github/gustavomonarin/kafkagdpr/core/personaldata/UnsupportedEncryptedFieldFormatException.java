@@ -1,10 +1,10 @@
 package com.github.gustavomonarin.kafkagdpr.core.personaldata;
 
-import com.github.gustavomonarin.gdpr.EncryptedPersonalDataOuterClass;
+import com.github.gustavomonarin.gdpr.EncryptedPersonalDataV1.EncryptedPersonalData;
 
 public class UnsupportedEncryptedFieldFormatException extends RuntimeException {
 
-    private static final String TARGET_ENCRYPTION_FIELD_TYPE = EncryptedPersonalDataOuterClass.EncryptedPersonalData.class.getName();
+    private static final String TARGET_ENCRYPTION_FIELD_TYPE = EncryptedPersonalData.class.getName();
 
     private final String encryptionTargetField;
     private final Class<?> instanceClass;

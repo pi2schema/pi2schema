@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package com.github.gustavomonarin.gdpr;
 
+option java_outer_classname = "EncryptedPersonalDataV1";
+
 message EncryptedPersonalData {
   string subject_id = 1;
   string kms_id = 2;

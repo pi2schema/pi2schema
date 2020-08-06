@@ -3,7 +3,6 @@ package com.github.gustavomonarin.kafkagdpr.protobuf.kafka.serializers;
 import com.acme.FarmerRegisteredEventFixture;
 import com.acme.FruitFixture;
 import com.acme.FruitOuterClass.Fruit;
-import com.github.gustavomonarin.gdpr.EncryptedPersonalDataOuterClass;
 import com.github.gustavomonarin.gdpr.FarmerRegisteredEventOuterClass.FarmerRegisteredEvent;
 import com.github.gustavomonarin.kafkagdpr.core.encryption.Decryptor;
 import com.google.protobuf.ByteString;
@@ -20,6 +19,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.github.gustavomonarin.gdpr.EncryptedPersonalDataV1.EncryptedPersonalData;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -82,7 +82,7 @@ public class KafkaGdprAwareProtobufDeserializerTest {
 
         FarmerRegisteredEvent encryptedEvent = FarmerRegisteredEvent.newBuilder()
                 .setUuid(uuid)
-                .setEncryptedPersonalData(EncryptedPersonalDataOuterClass.EncryptedPersonalData.newBuilder()
+                .setEncryptedPersonalData(EncryptedPersonalData.newBuilder()
                         .setSubjectId(uuid)
                         .setData(encrypted)
                         .setPersonalDataFieldNumber(2))
