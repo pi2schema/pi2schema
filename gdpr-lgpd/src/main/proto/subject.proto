@@ -7,5 +7,7 @@ extend google.protobuf.FieldOptions {
 
   //TODO this should be registered in here:
   optional bool subject_identifier = 700001;
+  optional bool personal_data = 700002;
+
 
 }

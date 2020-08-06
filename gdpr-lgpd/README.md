@@ -1,5 +1,7 @@
 Complying with Gdpr simply, flexible and extensible
 
+Pii-Schema
+
 # Intro
 While testing out with the new schema support available in the ecosystem and its best practice, more specifically protobuf, was surprised to not find open references of implementing personal data protection. Please see kafka references and general information to the link of the solutions found.
 
@@ -36,6 +38,14 @@ Further more provide an ?open? space to collaborate in a so complex subject and 
     - Schema registries (Confluent, Apiario, ...)
     - Cryptography / shredding approach
     - Multiple kms implementations (aws, gcp, ...)
+
+
+## Next steps
+
+* DelegateSecretKey and cloud implementations/providers
+* Secret keys wrapping and Acls
+* Multi language support similar to librdkafka implemented in rust
+* Extending schema support/vocabulary
 
 # See also
 

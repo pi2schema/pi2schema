@@ -1,16 +1,15 @@
 package com.github.gustavomonarin.kafkagdpr.protobuf.kafka.serializers;
 
-import com.github.gustavomonarin.kafkagdpr.core.kms.Decryptor;
+import com.github.gustavomonarin.kafkagdpr.core.encryption.Decryptor;
 import com.google.protobuf.Message;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer;
 import org.apache.kafka.common.header.Headers;
 import org.apache.kafka.common.header.internals.RecordHeaders;
 import org.apache.kafka.common.serialization.Deserializer;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
-
-import static org.apache.kafka.common.record.Record.EMPTY_HEADERS;
 
 public class KafkaGdprAwareProtobufDeserializer<T extends Message> implements Deserializer<T> {
 
@@ -42,7 +41,11 @@ public class KafkaGdprAwareProtobufDeserializer<T extends Message> implements De
     }
 
     @Override
-    public T deserialize(String topic, Headers headers, byte[] data) {
+    public T deserialize(String topic, Headers headers, @Nullable byte[] data) {
+        if(data == null){
+            return null;
+        }
+
         T deserialized = this.inner.deserialize(topic, headers, data);
 
         return decryptionEngine.decrypt(deserialized);

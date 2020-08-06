@@ -5,7 +5,7 @@ import com.acme.FruitFixture;
 import com.acme.FruitOuterClass.Fruit;
 import com.github.gustavomonarin.gdpr.EncryptedPersonalDataOuterClass;
 import com.github.gustavomonarin.gdpr.FarmerRegisteredEventOuterClass.FarmerRegisteredEvent;
-import com.github.gustavomonarin.kafkagdpr.core.kms.Decryptor;
+import com.github.gustavomonarin.kafkagdpr.core.encryption.Decryptor;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Timestamp;
 import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient;
@@ -31,7 +31,7 @@ public class KafkaGdprAwareProtobufDeserializerTest {
     private final Map<String, Object> configs;
     private final KafkaProtobufSerializer serializer;
 
-    private final Decryptor noOpDecryptor = (subj, data) -> data;
+    private final Decryptor noOpDecryptor = (subj, encryptedData) -> encryptedData.data();
 
     public KafkaGdprAwareProtobufDeserializerTest() {
         HashMap<String, Object> initial = new HashMap<>();

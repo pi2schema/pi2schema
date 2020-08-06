@@ -1,10 +1,10 @@
 package com.github.gustavomonarin.kafkagdpr.protobuf.personaldata;
 
 
-import com.github.gustavomonarin.gdpr.EncryptedPersonalDataOuterClass;
 import com.github.gustavomonarin.gdpr.EncryptedPersonalDataOuterClass.EncryptedPersonalData;
-import com.github.gustavomonarin.kafkagdpr.core.kms.Decryptor;
-import com.github.gustavomonarin.kafkagdpr.core.kms.Encryptor;
+import com.github.gustavomonarin.kafkagdpr.core.encryption.Decryptor;
+import com.github.gustavomonarin.kafkagdpr.core.encryption.EncryptedData;
+import com.github.gustavomonarin.kafkagdpr.core.encryption.Encryptor;
 import com.github.gustavomonarin.kafkagdpr.core.personaldata.*;
 import com.github.gustavomonarin.kafkagdpr.protobuf.subject.ProtobufSubjectIdentifierFieldDefinition;
 import com.google.protobuf.ByteString;
@@ -17,6 +17,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.crypto.spec.IvParameterSpec;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -70,18 +71,19 @@ public class OneOfPersonalDataFieldDefinition
             return;
         }
 
-        String subjectId = subjectIdentifierFieldDefinition.subjectFrom(encryptingInstance);
-        byte[] encryptedBytes = encryptor.encrypt(subjectId, valueFrom(encryptingInstance));
         int sourceFieldNumber = encryptingInstance.getOneofFieldDescriptor(containerOneOfDescriptor).getNumber();
 
-        EncryptedPersonalData encrypt = EncryptedPersonalDataOuterClass.EncryptedPersonalData.newBuilder()
-                .setSubjectId(subjectId)
-                .setData(ByteString.copyFrom(encryptedBytes)) //TODO input/output stream
-                .setPersonalDataFieldNumber(sourceFieldNumber)
-                .build();
+        String subjectId = subjectIdentifierFieldDefinition.subjectFrom(encryptingInstance);
+        EncryptedData encryptedData = encryptor.encrypt(subjectId, valueFrom(encryptingInstance));
 
         encryptingInstance.clearOneof(containerOneOfDescriptor);
-        encryptingInstance.setField(targetFieldForEncryption, encrypt);
+        encryptingInstance.setField(targetFieldForEncryption, EncryptedPersonalData.newBuilder()
+                .setSubjectId(subjectId)
+                .setData(ByteString.copyFrom(encryptedData.data())) //TODO input/output stream
+                .setPersonalDataFieldNumber(sourceFieldNumber)
+                .setUsedTransformation(encryptedData.usedTransformation())
+                .setInitializationVector(ByteString.copyFrom(encryptedData.initializationVector().getIV()))
+                .build());
     }
 
     public void swapToDecrypted(Decryptor decryptor, Message.Builder decryptingInstance) {
@@ -95,7 +97,9 @@ public class OneOfPersonalDataFieldDefinition
         EncryptedPersonalData encryptedPersonalData = (EncryptedPersonalData) encryptedValue;
 
         byte[] decrypted = decryptor.decrypt(encryptedPersonalData.getSubjectId(),
-                encryptedPersonalData.getData().toByteArray());
+                new EncryptedData(encryptedPersonalData.getData().toByteArray(),
+                        encryptedPersonalData.getUsedTransformation(),
+                        new IvParameterSpec(encryptedPersonalData.getInitializationVector().toByteArray())));
 
         decryptingInstance.clearOneof(containerOneOfDescriptor);
 

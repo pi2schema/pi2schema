@@ -5,13 +5,15 @@ import com.acme.FruitFixture;
 import com.acme.FruitOuterClass.Fruit;
 import com.acme.TimestampFixture;
 import com.github.gustavomonarin.gdpr.FarmerRegisteredEventOuterClass.FarmerRegisteredEvent;
-import com.github.gustavomonarin.kafkagdpr.core.kms.Encryptor;
+import com.github.gustavomonarin.kafkagdpr.core.encryption.EncryptedData;
+import com.github.gustavomonarin.kafkagdpr.core.encryption.Encryptor;
 import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializerConfig;
 import org.apache.kafka.common.header.internals.RecordHeaders;
 import org.junit.jupiter.api.Test;
 
+import javax.crypto.spec.IvParameterSpec;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -28,8 +30,9 @@ class KafkaGdprAwareProtobufSerializerTest {
     private final String topic = "test";
     private final MockSchemaRegistryClient schemaRegistry = new MockSchemaRegistryClient();
 
-    private final byte[] encrypted = "mockencryption".getBytes();
-    private final Encryptor encryptorMock = (subjectId, data) -> encrypted;
+    private final byte[] encrypted = "mockEncryption".getBytes();
+    private final Encryptor encryptorMock = (subjectId, data) ->
+            new EncryptedData(encrypted, "AES/CBC/PKCS5Padding", new IvParameterSpec(new byte[0]));
 
     public KafkaGdprAwareProtobufSerializerTest() {
         HashMap<String, Object> initial = new HashMap<>();
@@ -88,7 +91,6 @@ class KafkaGdprAwareProtobufSerializerTest {
                 configs,
                 FarmerRegisteredEvent.class
         );
-
 
         //when
         byte[] data = serializer.serialize(topic, original);

@@ -1,6 +1,6 @@
 package com.github.gustavomonarin.kafkagdpr.protobuf.kafka.serializers;
 
-import com.github.gustavomonarin.kafkagdpr.core.kms.Decryptor;
+import com.github.gustavomonarin.kafkagdpr.core.encryption.Decryptor;
 import com.github.gustavomonarin.kafkagdpr.protobuf.personaldata.PersonalMetadata;
 import com.github.gustavomonarin.kafkagdpr.protobuf.personaldata.PersonalMetadataProvider;
 import com.google.protobuf.Message;

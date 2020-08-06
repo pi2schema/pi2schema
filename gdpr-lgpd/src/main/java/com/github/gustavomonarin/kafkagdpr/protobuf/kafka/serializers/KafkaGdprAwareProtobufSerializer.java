@@ -1,6 +1,6 @@
 package com.github.gustavomonarin.kafkagdpr.protobuf.kafka.serializers;
 
-import com.github.gustavomonarin.kafkagdpr.core.kms.Encryptor;
+import com.github.gustavomonarin.kafkagdpr.core.encryption.Encryptor;
 import com.google.protobuf.Message;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer;
