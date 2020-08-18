@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package com.github.gustavomonarin.gdpr;
+package piischema;
 
 option java_outer_classname = "EncryptedPersonalDataV1";
 

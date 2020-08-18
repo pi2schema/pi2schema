@@ -4,7 +4,7 @@ import com.acme.FarmerRegisteredEventFixture;
 import com.acme.FruitFixture;
 import com.acme.FruitOuterClass.Fruit;
 import com.acme.TimestampFixture;
-import com.github.gustavomonarin.gdpr.FarmerRegisteredEventOuterClass.FarmerRegisteredEvent;
+import com.acme.FarmerRegisteredEventOuterClass.FarmerRegisteredEvent;
 import com.github.gustavomonarin.kafkagdpr.core.encryption.EncryptedData;
 import com.github.gustavomonarin.kafkagdpr.core.encryption.Encryptor;
 import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient;

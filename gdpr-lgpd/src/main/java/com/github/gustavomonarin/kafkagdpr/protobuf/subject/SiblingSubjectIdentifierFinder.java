@@ -1,6 +1,6 @@
 package com.github.gustavomonarin.kafkagdpr.protobuf.subject;
 
-import com.github.gustavomonarin.gdpr.Subject;
+import piischema.Subject;
 import com.github.gustavomonarin.kafkagdpr.core.subject.SubjectIdentifierFinder;
 import com.github.gustavomonarin.kafkagdpr.core.subject.SubjectIdentifierNotFoundException;
 import com.github.gustavomonarin.kafkagdpr.core.subject.TooManySubjectIdentifiersException;

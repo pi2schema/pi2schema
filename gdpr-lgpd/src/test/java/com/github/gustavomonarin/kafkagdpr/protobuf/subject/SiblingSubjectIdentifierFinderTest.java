@@ -2,7 +2,7 @@ package com.github.gustavomonarin.kafkagdpr.protobuf.subject;
 
 import com.acme.FarmerRegisteredEventFixture;
 import com.acme.InvalidSubjectIdentifiers;
-import com.github.gustavomonarin.gdpr.FarmerRegisteredEventOuterClass.FarmerRegisteredEvent;
+import com.acme.FarmerRegisteredEventOuterClass.FarmerRegisteredEvent;
 import com.github.gustavomonarin.kafkagdpr.core.subject.SubjectIdentifierNotFoundException;
 import com.github.gustavomonarin.kafkagdpr.core.subject.TooManySubjectIdentifiersException;
 import com.google.protobuf.Descriptors;

@@ -3,7 +3,7 @@ package com.github.gustavomonarin.kafkagdpr.protobuf.kafka.serializers;
 import com.acme.FarmerRegisteredEventFixture;
 import com.acme.FruitFixture;
 import com.acme.FruitOuterClass.Fruit;
-import com.github.gustavomonarin.gdpr.FarmerRegisteredEventOuterClass.FarmerRegisteredEvent;
+import com.acme.FarmerRegisteredEventOuterClass.FarmerRegisteredEvent;
 import com.github.gustavomonarin.kafkagdpr.core.encryption.Decryptor;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Timestamp;
@@ -19,7 +19,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import static com.github.gustavomonarin.gdpr.EncryptedPersonalDataV1.EncryptedPersonalData;
+import static piischema.EncryptedPersonalDataV1.EncryptedPersonalData;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;

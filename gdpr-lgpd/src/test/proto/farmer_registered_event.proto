@@ -1,19 +1,19 @@
 syntax = "proto3";
 
-package com.github.gustavomonarin.gdpr;
+package com.acme;
 
 import 'google/protobuf/timestamp.proto';
 
-import 'encrypted_personal_data.proto';
-import 'subject.proto';
+import 'schema/encrypted_personal_data.proto';
+import 'schema/subject.proto';
 
 message FarmerRegisteredEvent {
 
-  string uuid = 1 [(.com.github.gustavomonarin.gdpr.subject_identifier) = true];
+  string uuid = 1 [(.piischema.subject_identifier) = true];
 
   oneof personal_data {
     ContactInfo contact_info = 2;
-    EncryptedPersonalData encryptedPersonalData = 3;
+    piischema.EncryptedPersonalData encryptedPersonalData = 3;
   }
 
   google.protobuf.Timestamp registeredAt = 4;

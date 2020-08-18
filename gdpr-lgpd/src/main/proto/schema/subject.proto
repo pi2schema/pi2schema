@@ -1,7 +1,6 @@
 import "google/protobuf/descriptor.proto";
 
-//TODO: move to a nice project
-package com.github.gustavomonarin.gdpr;
+package piischema;
 
 extend google.protobuf.FieldOptions {
 

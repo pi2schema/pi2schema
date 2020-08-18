@@ -1,6 +1,6 @@
 package com.github.gustavomonarin.kafkagdpr.core.personaldata;
 
-import com.github.gustavomonarin.gdpr.EncryptedPersonalDataV1.EncryptedPersonalData;
+import piischema.EncryptedPersonalDataV1.EncryptedPersonalData;
 
 public class UnsupportedEncryptedFieldFormatException extends RuntimeException {
 

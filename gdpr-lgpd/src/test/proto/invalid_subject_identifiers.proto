@@ -1,7 +1,7 @@
 syntax = "proto3";
 
-import 'encrypted_personal_data.proto';
-import 'subject.proto';
+import 'schema/encrypted_personal_data.proto';
+import 'schema/subject.proto';
 
 package com.acme;
 
@@ -12,7 +12,7 @@ message MissingSubjectIdentifierAnnotation {
   oneof personal_data {
 
     string email = 3;
-    com.github.gustavomonarin.gdpr.EncryptedPersonalData encryptedPersonalData = 4;
+    piischema.EncryptedPersonalData encryptedPersonalData = 4;
 
   }
 }
@@ -20,14 +20,14 @@ message MissingSubjectIdentifierAnnotation {
 
 message MultipleSiblingsSubjectIdentifiers {
 
-  string uuid1 = 1[(.com.github.gustavomonarin.gdpr.subject_identifier) = true];
+  string uuid1 = 1[(.piischema.subject_identifier) = true];
 
-  string uuid2 = 2[(.com.github.gustavomonarin.gdpr.subject_identifier) = true];
+  string uuid2 = 2[(.piischema.subject_identifier) = true];
 
   oneof personal_data {
 
     string email = 3;
-    com.github.gustavomonarin.gdpr.EncryptedPersonalData encryptedPersonalData = 4;
+    piischema.EncryptedPersonalData encryptedPersonalData = 4;
 
   }
 

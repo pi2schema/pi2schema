@@ -2,7 +2,7 @@ package com.github.gustavomonarin.kafkagdpr.protobuf.personaldata;
 
 import com.acme.FarmerRegisteredEventFixture;
 import com.acme.InvalidOneOfPersonalData;
-import com.github.gustavomonarin.gdpr.FarmerRegisteredEventOuterClass.FarmerRegisteredEvent;
+import com.acme.FarmerRegisteredEventOuterClass.FarmerRegisteredEvent;
 import com.github.gustavomonarin.kafkagdpr.core.encryption.Decryptor;
 import com.github.gustavomonarin.kafkagdpr.core.encryption.Encryptor;
 import com.github.gustavomonarin.kafkagdpr.core.personaldata.EncryptionTargetFieldNotFoundException;
@@ -19,7 +19,7 @@ import org.opentest4j.AssertionFailedError;
 import java.time.Instant;
 import java.util.UUID;
 
-import static com.github.gustavomonarin.gdpr.EncryptedPersonalDataV1.EncryptedPersonalData;
+import static piischema.EncryptedPersonalDataV1.EncryptedPersonalData;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
@@ -38,7 +38,7 @@ class OneOfPersonalDataFieldDefinitionTest {
                         new OneOfPersonalDataFieldDefinition(personalDataField, subjectField)
                 )
                 .withMessage("The personal data container com.acme.MissingEncryptedPersonalDataField.personal_data " +
-                        "does not encapsulate a com.github.gustavomonarin.gdpr.EncryptedPersonalData while exact one is required");
+                        "does not encapsulate a " + EncryptedPersonalData.getDescriptor().getFullName() + " while exact one is required");
 
     }
 
@@ -55,7 +55,7 @@ class OneOfPersonalDataFieldDefinitionTest {
                         new OneOfPersonalDataFieldDefinition(personalDataField, subjectField)
                 )
                 .withMessage("The personal data container com.acme.MultipleEncryptedPersonalDataField.personal_data " +
-                        "has 2 fields of type com.github.gustavomonarin.gdpr.EncryptedPersonalData while exact one is required");
+                        "has 2 fields of type " + EncryptedPersonalData.getDescriptor().getFullName() + " while exact one is required");
 
     }
 
@@ -66,7 +66,7 @@ class OneOfPersonalDataFieldDefinitionTest {
         Descriptors.FieldDescriptor encryptionTargetField = personalData.encryptionTargetField();
 
         assertThat(encryptionTargetField.getFullName())
-                .isEqualTo("com.github.gustavomonarin.gdpr.FarmerRegisteredEvent.encryptedPersonalData");
+                .isEqualTo("com.acme.FarmerRegisteredEvent.encryptedPersonalData");
 
         assertThat(encryptionTargetField.getNumber())
                 .isEqualTo(3);
@@ -79,7 +79,7 @@ class OneOfPersonalDataFieldDefinitionTest {
         Descriptors.FieldDescriptor peresonalDataTargetField = personalData.personalDataTargetField(2);
 
         assertThat(peresonalDataTargetField.getFullName())
-                .isEqualTo("com.github.gustavomonarin.gdpr.FarmerRegisteredEvent.contact_info");
+                .isEqualTo("com.acme.FarmerRegisteredEvent.contact_info");
     }
 
     @Test

@@ -4,8 +4,8 @@ import com.github.gustavomonarin.kafkagdpr.protobuf.personaldata.OneOfPersonalDa
 import com.github.gustavomonarin.kafkagdpr.protobuf.subject.ProtobufSubjectIdentifierFieldDefinition;
 import com.google.protobuf.Descriptors;
 
-import static com.github.gustavomonarin.gdpr.FarmerRegisteredEventOuterClass.ContactInfo;
-import static com.github.gustavomonarin.gdpr.FarmerRegisteredEventOuterClass.FarmerRegisteredEvent;
+import static com.acme.FarmerRegisteredEventOuterClass.ContactInfo;
+import static com.acme.FarmerRegisteredEventOuterClass.FarmerRegisteredEvent;
 
 public class FarmerRegisteredEventFixture {
 
@@ -18,7 +18,7 @@ public class FarmerRegisteredEventFixture {
                 );
     }
 
-    public static OneOfPersonalDataFieldDefinition personalDataFieldDefinition(){
+    public static OneOfPersonalDataFieldDefinition personalDataFieldDefinition() {
         FarmerRegisteredEvent.Builder event = FarmerRegisteredEvent.newBuilder();
 
         Descriptors.OneofDescriptor personalData = event.getDescriptorForType().getOneofs().get(0);

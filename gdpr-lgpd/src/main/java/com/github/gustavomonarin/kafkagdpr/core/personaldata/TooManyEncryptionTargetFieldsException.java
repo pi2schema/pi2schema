@@ -1,6 +1,6 @@
 package com.github.gustavomonarin.kafkagdpr.core.personaldata;
 
-import static com.github.gustavomonarin.gdpr.EncryptedPersonalDataV1.EncryptedPersonalData;
+import static piischema.EncryptedPersonalDataV1.EncryptedPersonalData;
 
 public class TooManyEncryptionTargetFieldsException extends RuntimeException {
 
