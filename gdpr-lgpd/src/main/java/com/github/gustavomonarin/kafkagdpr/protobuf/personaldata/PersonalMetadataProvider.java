@@ -1,6 +1,7 @@
 package com.github.gustavomonarin.kafkagdpr.protobuf.personaldata;
 
 import com.github.gustavomonarin.kafkagdpr.protobuf.subject.SiblingSubjectIdentifierFinder;
+import com.google.protobuf.Descriptors;
 import com.google.protobuf.Descriptors.Descriptor;
 import org.jetbrains.annotations.NotNull;
 
@@ -19,16 +20,14 @@ public class PersonalMetadataProvider {
         //protobuf oneOf strategy
         List<OneOfPersonalDataFieldDefinition> personalDataFieldDefinitions = descriptorForType.getOneofs()
                 .stream()
-
                 .filter(OneOfPersonalDataFieldDefinition::hasPersonalData)
-                .map(oneOfField ->
-                        new OneOfPersonalDataFieldDefinition(
-                                oneOfField,
-                                subjectIdentifierFinder.find(oneOfField))
-                )
+                .map(this::createFieldDefinition)
                 .collect(collectingAndThen(toList(), Collections::unmodifiableList));
 
         return new PersonalMetadata(personalDataFieldDefinitions);
     }
 
+    private OneOfPersonalDataFieldDefinition createFieldDefinition(Descriptors.OneofDescriptor descriptor) {
+        return new OneOfPersonalDataFieldDefinition(descriptor, subjectIdentifierFinder.find(descriptor));
+    }
 }
