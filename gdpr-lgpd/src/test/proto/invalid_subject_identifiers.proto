@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+import 'schema/encrypted_personal_data.proto';
+import 'schema/subject.proto';
+
+package com.acme;
+
+message MissingSubjectIdentifierAnnotation {
+
+  string uuid = 1;
+
+  oneof personal_data {
+
+    string email = 3;
+    piischema.EncryptedPersonalData encryptedPersonalData = 4;
+
+  }
+}
+
+
+message MultipleSiblingsSubjectIdentifiers {
+
+  string uuid1 = 1[(.piischema.subject_identifier) = true];
+
+  string uuid2 = 2[(.piischema.subject_identifier) = true];
+
+  oneof personal_data {
+
+    string email = 3;
+    piischema.EncryptedPersonalData encryptedPersonalData = 4;
+
+  }
+
+}

@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+//example of message with non personal data information only.
+
+package com.acme;
+
+import "fruit.proto";
+import "vegetable.proto";
+
+message Plantae {
+
+  oneof kind {
+    Fruit fruit = 1;
+    Vegetable vegetable = 2;
+  }
+
+}

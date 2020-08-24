@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+//example of message with non personal data information only.
+
+package com.acme;
+
+message Fruit {
+
+  string name = 1;
+  bool seedless = 2;
+  string family = 3;
+
+}

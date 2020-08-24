@@ -1,0 +1,63 @@
+buildscript {
+    dependencies {
+        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.12'
+    }
+}
+
+plugins {
+    id 'java'
+    id 'idea'
+    id "com.google.protobuf" version "0.8.12"
+}
+
+group 'com.github.gustavomonarin'
+version '0.1-SNAPSHOT'
+
+
+java {
+    sourceCompatibility(JavaVersion.VERSION_1_8)
+    targetCompatibility(JavaVersion.VERSION_1_8)
+}
+
+repositories {
+    mavenCentral()
+
+    //confluent jars are found on mavencentral but pom descriptors are missing causing gradle to fail
+    maven { url 'https://packages.confluent.io/maven/' }
+}
+
+
+dependencies {
+
+    compile 'org.apache.kafka:kafka-clients:2.5.0'
+
+    compile 'io.confluent:kafka-protobuf-serializer:5.5.0'
+    compile 'com.google.protobuf:protobuf-java:3.12.2'
+
+    compile 'ch.qos.logback:logback-classic:1.2.3'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.6.2'
+    testImplementation 'org.assertj:assertj-core:3.16.1'
+
+}
+
+protobuf {
+    protoc {
+        artifact = 'com.google.protobuf:protoc:3.12.3'
+    }
+}
+
+idea {
+    module {
+        // proto files and generated Java files are automatically added as source dirs.
+        // If you have additional sources, add them here:
+        sourceDirs += file("/generated/source/proto")
+    }
+}
+
+test {
+    useJUnitPlatform()
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
+}
