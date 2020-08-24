@@ -1,6 +1,6 @@
 package pi2schema.schema.personaldata;
 
-import piischema.EncryptedPersonalDataV1.EncryptedPersonalData;
+import pi2schema.EncryptedPersonalDataV1.EncryptedPersonalData;
 
 public class UnsupportedEncryptedFieldFormatException extends RuntimeException {
 

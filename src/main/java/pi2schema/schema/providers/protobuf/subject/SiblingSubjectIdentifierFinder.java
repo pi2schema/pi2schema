@@ -1,7 +1,7 @@
 package pi2schema.schema.providers.protobuf.subject;
 
 import pi2schema.schema.subject.SubjectIdentifierNotFoundException;
-import piischema.Subject;
+import pi2schema.Subject;
 import pi2schema.schema.subject.SubjectIdentifierFinder;
 import pi2schema.schema.subject.TooManySubjectIdentifiersException;
 import org.jetbrains.annotations.NotNull;

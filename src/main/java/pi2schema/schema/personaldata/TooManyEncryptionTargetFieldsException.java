@@ -1,6 +1,6 @@
 package pi2schema.schema.personaldata;
 
-import static piischema.EncryptedPersonalDataV1.EncryptedPersonalData;
+import static pi2schema.EncryptedPersonalDataV1.EncryptedPersonalData;
 
 public class TooManyEncryptionTargetFieldsException extends RuntimeException {
 

@@ -5,7 +5,7 @@ import pi2schema.crypto.EncryptedData;
 import pi2schema.crypto.Encryptor;
 import pi2schema.schema.personaldata.*;
 import pi2schema.schema.providers.protobuf.subject.ProtobufSubjectIdentifierFieldDefinition;
-import piischema.EncryptedPersonalDataV1.EncryptedPersonalData;
+import pi2schema.EncryptedPersonalDataV1.EncryptedPersonalData;
 import pi2schema.crypto.Decryptor;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors;

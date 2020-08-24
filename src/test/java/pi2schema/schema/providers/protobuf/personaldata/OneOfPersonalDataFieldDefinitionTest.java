@@ -19,7 +19,7 @@ import org.opentest4j.AssertionFailedError;
 import java.time.Instant;
 import java.util.UUID;
 
-import static piischema.EncryptedPersonalDataV1.EncryptedPersonalData;
+import static pi2schema.EncryptedPersonalDataV1.EncryptedPersonalData;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 

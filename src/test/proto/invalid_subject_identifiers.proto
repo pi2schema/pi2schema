@@ -1,7 +1,7 @@
 syntax = "proto3";
 
-import 'schema/encrypted_personal_data.proto';
-import 'schema/subject.proto';
+import 'pi2schema/encrypted_personal_data.proto';
+import 'pi2schema/subject.proto';
 
 package com.acme;
 
@@ -12,7 +12,7 @@ message MissingSubjectIdentifierAnnotation {
   oneof personal_data {
 
     string email = 3;
-    piischema.EncryptedPersonalData encryptedPersonalData = 4;
+    pi2schema.EncryptedPersonalData encryptedPersonalData = 4;
 
   }
 }
@@ -20,14 +20,14 @@ message MissingSubjectIdentifierAnnotation {
 
 message MultipleSiblingsSubjectIdentifiers {
 
-  string uuid1 = 1[(.piischema.subject_identifier) = true];
+  string uuid1 = 1[(.pi2schema.subject_identifier) = true];
 
-  string uuid2 = 2[(.piischema.subject_identifier) = true];
+  string uuid2 = 2[(.pi2schema.subject_identifier) = true];
 
   oneof personal_data {
 
     string email = 3;
-    piischema.EncryptedPersonalData encryptedPersonalData = 4;
+    pi2schema.EncryptedPersonalData encryptedPersonalData = 4;
 
   }
 
