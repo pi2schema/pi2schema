@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+import 'pi2schema/encrypted_personal_data.proto';
+import 'pi2schema/subject.proto';
+
+package com.acme;
+
+message MissingEncryptedPersonalDataField {
+
+  string uuid = 1 [(.pi2schema.subject_identifier) = true];
+
+  oneof personal_data {
+
+    Contact contact = 2;
+
+  }
+}
+
+
+message MultipleEncryptedPersonalDataField {
+
+  string uuid1 = 1 [(.pi2schema.subject_identifier) = true];
+
+  oneof personal_data {
+
+    Contact contact = 2;
+    pi2schema.EncryptedPersonalData encryptedPersonalData = 3;
+    pi2schema.EncryptedPersonalData anotherEncryptedPersonalData = 4;
+
+  }
+
+}
+
+message Contact {
+  string email = 1;
+}
