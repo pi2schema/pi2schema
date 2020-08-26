@@ -7,7 +7,8 @@ buildscript {
 plugins {
     id 'java'
     id 'idea'
-    id "com.google.protobuf" version "0.8.13"
+    id 'com.google.protobuf' version '0.8.13'
+    id 'jacoco'
 }
 
 group 'com.github.gustavomonarin'
@@ -61,3 +62,12 @@ test {
         events "passed", "skipped", "failed"
     }
 }
+
+jacocoTestReport {
+    reports {
+        xml.enabled true
+        html.enabled false
+    }
+}
+
+check.dependsOn jacocoTestReport
