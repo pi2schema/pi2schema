@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package piischema.kms;
+
+// Internal commands
+message Commands {
+  oneof command {
+    CreateCryptographicMaterials create = 1;
+    ForgetSubject forget = 2;
+  }
+}
+
+message CreateCryptographicMaterials {
+  Subject subject = 1;
+  // ...
+}
+
+message ForgetSubject {
+  Subject subject = 1;
+  // ...
+}
+
+
+
+message Events {
+  oneof event {
+    CryptographicMaterialsWasCreated created = 1;
+    CryptographicMaterialsWasAccessed accessed = 2;
+    CryptographicMaterialsWasForgotten forgotten = 3;
+  }
+}
+
+message CryptographicMaterialsWasCreated {/* ... */}
+message CryptographicMaterialsWasAccessed {/* ... */}
+message CryptographicMaterialsWasForgotten {/* ... */}
+
+
+// Types
+
+message Subject {
+  string id = 1;
+}
+
+
+message SubjectCryptographicMaterial {
+
+  Subject subject = 1;
+  int32 version = 2;
+  bytes symmetricKey = 3;
+  string algorithm = 4;
+
+  // topic / context?
+
+}
+
+message SubjectCryptographicMaterialAggregate {
+
+  repeated SubjectCryptographicMaterial materials = 1;
+
+}
+
