@@ -8,11 +8,10 @@ import org.apache.kafka.streams.StoreQueryParameters;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.Aggregator;
-import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KTable;
-import org.apache.kafka.streams.kstream.Materialized;
 import org.apache.kafka.streams.processor.AbstractProcessor;
-import org.apache.kafka.streams.state.*;
+import org.apache.kafka.streams.state.QueryableStoreTypes;
+import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import piischema.kms.KafkaProvider.*;
@@ -114,14 +113,6 @@ public class KafkaKeyStore {
 
         StreamsBuilder builder = new StreamsBuilder();
 
-        KeyValueBytesStoreSupplier localCryptoMaterials = Stores.persistentKeyValueStore(config.stores().LOCAL_STORE.name());
-        StoreBuilder<KeyValueStore<Subject, SubjectCryptographicMaterialAggregate>> allCryptoMaterials =
-                Stores.keyValueStoreBuilder(
-                        Stores.inMemoryKeyValueStore(config.stores().GLOBAL_AGGREGATE.name()),
-                        config.stores().LOCAL_STORE.keySerde(),
-                        config.stores().LOCAL_STORE.valueSerde()
-                );
-
         KTable<Subject, SubjectCryptographicMaterialAggregate> shardedSubjects = builder
                 .stream(
                         config.topics().COMMANDS.name(),
@@ -131,16 +122,14 @@ public class KafkaKeyStore {
                 .aggregate(
                         SubjectCryptographicMaterialAggregate::getDefaultInstance,
                         new KmsCommandHandler(),
-                        Materialized.<Subject, SubjectCryptographicMaterialAggregate>as(localCryptoMaterials)
-                                .withKeySerde(config.stores().LOCAL_STORE.keySerde())
-                                .withValueSerde(config.stores().LOCAL_STORE.valueSerde()));
+                        config.stores().LOCAL_STORE.materialization());
 
         //TODO redo this part. This broadcast changelog topic should not exist
         shardedSubjects.toStream().to("broadcast");
         builder.addGlobalStore(
-                allCryptoMaterials,
+                config.stores().GLOBAL_AGGREGATE.storeSupplier(),
                 "broadcast",
-                Consumed.with(config.stores().GLOBAL_AGGREGATE.keySerde(), config.stores().GLOBAL_AGGREGATE.valueSerde()),
+                config.stores().GLOBAL_AGGREGATE.consumed(),
                 () -> new AbstractProcessor<Subject, SubjectCryptographicMaterialAggregate>() {
                     @Override
                     public void process(Subject key, SubjectCryptographicMaterialAggregate value) {

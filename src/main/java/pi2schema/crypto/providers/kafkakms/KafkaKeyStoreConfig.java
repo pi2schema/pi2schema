@@ -6,8 +6,12 @@ import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serializer;
+import org.apache.kafka.common.utils.Bytes;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.Consumed;
+import org.apache.kafka.streams.kstream.Materialized;
+import org.apache.kafka.streams.state.KeyValueStore;
+import org.apache.kafka.streams.state.StoreBuilder;
 import piischema.kms.KafkaProvider.Commands;
 import piischema.kms.KafkaProvider.Subject;
 import piischema.kms.KafkaProvider.SubjectCryptographicMaterialAggregate;
@@ -64,17 +68,17 @@ public class KafkaKeyStoreConfig extends AbstractConfig {
         return values;
     }
 
-    public Topics topics() {
+    Topics topics() {
         return topics;
     }
 
-    public Stores stores() {
+    Stores stores() {
         return stores;
     }
 
 
     class Topics {
-        public final Topic<Subject, Commands> COMMANDS;
+        final Topic<Subject, Commands> COMMANDS;
 
         private Topics() {
             COMMANDS = new Topic<>(
@@ -86,8 +90,8 @@ public class KafkaKeyStoreConfig extends AbstractConfig {
     }
 
     class Stores {
-        public final Store<Subject, SubjectCryptographicMaterialAggregate> LOCAL_STORE;
-        public final Store<Subject, SubjectCryptographicMaterialAggregate> GLOBAL_AGGREGATE;
+        final Store<Subject, SubjectCryptographicMaterialAggregate> LOCAL_STORE;
+        final Store<Subject, SubjectCryptographicMaterialAggregate> GLOBAL_AGGREGATE;
 
         private Stores() {
             LOCAL_STORE = new Store<>("local",
@@ -115,63 +119,63 @@ public class KafkaKeyStoreConfig extends AbstractConfig {
 
     }
 
-    public static class Topic<K, V> {
+    static class Topic<K, V> extends AbstractKafkaPersistence<K, V> {
 
-        private final String name;
-        private final Serde<K> keySerde;
-        private final Serde<V> valueSerde;
-
-        Topic(final String name, final Serde<K> keySerde, final Serde<V> valueSerde) {
-            this.name = name;
-            this.keySerde = keySerde;
-            this.valueSerde = valueSerde;
+        Topic(String name, Serde<K> keySerde, Serde<V> valueSerde) {
+            super(name, keySerde, valueSerde);
         }
 
-        public Serializer<K> keySerializer() {
-            return keySerde.serializer();
+    }
+
+    static class Store<K, V> extends AbstractKafkaPersistence<K, V> {
+
+        Store(final String name, final Serde<K> keySerde, final Serde<V> valueSerde) {
+            super(name, keySerde, valueSerde);
         }
 
-        public Serializer<V> valueSerializer() {
-            return valueSerde.serializer();
+        Materialized<K, V, KeyValueStore<Bytes, byte[]>> materialization() {
+            return Materialized.<K, V>as(org.apache.kafka.streams.state.Stores.persistentKeyValueStore(name))
+                    .withKeySerde(keySerde)
+                    .withValueSerde(valueSerde);
         }
 
-        public String name() {
-            return name;
-        }
-
-        public String toString() {
-            return name;
-        }
-
-        public Consumed<K, V> consumed() {
-            return Consumed.with(
+        StoreBuilder<KeyValueStore<K, V>> storeSupplier() {
+            return org.apache.kafka.streams.state.Stores.keyValueStoreBuilder(
+                    org.apache.kafka.streams.state.Stores.persistentKeyValueStore(name),
                     keySerde,
                     valueSerde
             );
         }
     }
 
-    public static class Store<K, V> {
+    static abstract class AbstractKafkaPersistence<K, V> {
 
-        private final String name;
-        private final Serde<K> keySerde;
-        private final Serde<V> valueSerde;
+        protected final String name;
+        protected final Serde<K> keySerde;
+        protected final Serde<V> valueSerde;
 
-        Store(final String name, final Serde<K> keySerde, final Serde<V> valueSerde) {
+        AbstractKafkaPersistence(final String name, final Serde<K> keySerde, final Serde<V> valueSerde) {
             this.name = name;
             this.keySerde = keySerde;
             this.valueSerde = valueSerde;
         }
 
-        public Serde<K> keySerde() {
-            return keySerde;
+        Serializer<K> keySerializer() {
+            return keySerde.serializer();
         }
 
-        public Serde<V> valueSerde() {
-            return valueSerde;
+        Serializer<V> valueSerializer() {
+            return valueSerde.serializer();
         }
 
-        public String name() {
+        Consumed<K, V> consumed() {
+            return Consumed.with(
+                    keySerde,
+                    valueSerde
+            );
+        }
+
+        String name() {
             return name;
         }
 
@@ -179,6 +183,5 @@ public class KafkaKeyStoreConfig extends AbstractConfig {
             return name;
         }
     }
-
 
 }
