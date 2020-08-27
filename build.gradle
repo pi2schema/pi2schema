@@ -30,7 +30,7 @@ repositories {
 
 dependencies {
 
-    compile 'org.apache.kafka:kafka-clients:2.5.0'
+    compile 'org.apache.kafka:kafka-clients:2.6.0'
 
     compile 'io.confluent:kafka-protobuf-serializer:5.5.1'
     compile 'com.google.protobuf:protobuf-java:3.13.0'
