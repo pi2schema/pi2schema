@@ -1,6 +1,6 @@
-Complying with Gdpr simply, flexible and extensible
-
-Pii-Schema
+[![build](https://github.com/pi2schema/pi2schema/workflows/build/badge.svg)](https://github.com/pi2schema/pi2schema/actions)
+[![codecov](https://codecov.io/gh/pi2schema/pi2schema/branch/master/graph/badge.svg)](https://codecov.io/gh/pi2schema/pi2schema)
+![dependabot](https://badgen.net/github/dependabot/pi2schema/pi2schema?icon=dependabot)
 
 # Intro
 While testing out with the new schema support available in the ecosystem and its best practice, more specifically protobuf, was surprised to not find open references of implementing personal data protection. Please see kafka references and general information to the link of the solutions found.
