@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.*;
 
-public class KafkaKeyStore {
+public class KafkaKeyStore implements AutoCloseable {
 
     private static final Logger log = LoggerFactory.getLogger(KafkaKeyStore.class);
 
@@ -36,7 +36,6 @@ public class KafkaKeyStore {
 
     public KafkaKeyStore(Map<String, Object> configs) {
         this.config = new KafkaKeyStoreConfig(configs);
-        //todo stop me
         this.producer = new KafkaProducer<>(configs,
                 config.topics().COMMANDS.keySerializer(),
                 config.topics().COMMANDS.valueSerializer()
@@ -50,7 +49,6 @@ public class KafkaKeyStore {
     }
 
     public SubjectCryptographicMaterialAggregate cryptoMaterialsFor(String subjectId) {
-
 
         Subject subject = Subject.newBuilder().setId(subjectId).build();
         SubjectCryptographicMaterialAggregate existent = store.get(subject);
@@ -140,6 +138,14 @@ public class KafkaKeyStore {
         );
 
         return builder.build();
+    }
+
+    @Override
+    public void close() {
+        log.debug("Stopping kafka key store [producer, streams].");
+        this.producer.close();
+        this.streams.close();
+        log.info("Kafka secret key store stopped");
     }
 
     private static class KmsCommandHandler implements Aggregator<Subject, Commands, SubjectCryptographicMaterialAggregate> {
