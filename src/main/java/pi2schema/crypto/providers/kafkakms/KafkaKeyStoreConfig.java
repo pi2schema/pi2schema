@@ -119,7 +119,7 @@ public class KafkaKeyStoreConfig extends AbstractConfig {
 
     }
 
-    static class Topic<K, V> extends AbstractKafkaPersistence<K, V> {
+    class Topic<K, V> extends AbstractKafkaPersistence<K, V> {
 
         Topic(String name, Serde<K> keySerde, Serde<V> valueSerde) {
             super(name, keySerde, valueSerde);
@@ -127,7 +127,7 @@ public class KafkaKeyStoreConfig extends AbstractConfig {
 
     }
 
-    static class Store<K, V> extends AbstractKafkaPersistence<K, V> {
+    class Store<K, V> extends AbstractKafkaPersistence<K, V> {
 
         Store(final String name, final Serde<K> keySerde, final Serde<V> valueSerde) {
             super(name, keySerde, valueSerde);
@@ -141,10 +141,14 @@ public class KafkaKeyStoreConfig extends AbstractConfig {
 
         StoreBuilder<KeyValueStore<K, V>> storeSupplier() {
             return org.apache.kafka.streams.state.Stores.keyValueStoreBuilder(
-                    org.apache.kafka.streams.state.Stores.persistentKeyValueStore(name),
+                    org.apache.kafka.streams.state.Stores.inMemoryKeyValueStore(name),
                     keySerde,
                     valueSerde
             );
+        }
+
+        public String internalTopic() {
+            return String.format("%s-%s-changelog", getString(KMS_APPLICATION_ID_CONFIG), this.name);
         }
     }
 

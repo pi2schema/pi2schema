@@ -4,15 +4,15 @@ import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializerConfig;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.streams.StreamsConfig;
-import org.apache.kafka.streams.Topology;
-import org.apache.kafka.streams.TopologyDescription;
 import org.junit.Rule;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.KafkaContainer;
+import org.testcontainers.containers.Network;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import pi2schema.crypto.materials.EncryptingMaterial;
+import piischema.kms.KafkaProvider;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -27,10 +27,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 class MostRecentMaterialsProviderTest {
 
     @Rule
-    public KafkaContainer kafka = new KafkaContainer();
+    public KafkaContainer kafka = new KafkaContainer().withNetwork(Network.SHARED);
 
     public GenericContainer schemaRegistry;
     private Map<String, Object> configs;
+    private KafkaKeyStore store;
 
     @BeforeEach
     void setUp() {
@@ -38,7 +39,7 @@ class MostRecentMaterialsProviderTest {
         kafka.start();
 
         schemaRegistry = new GenericContainer("confluentinc/cp-schema-registry:5.5.1")
-                .withNetwork(kafka.getNetwork())
+                .withNetwork(Network.SHARED)
                 .withEnv("SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS", "PLAINTEXT://" + kafka.getNetworkAliases().get(0) + ":9092")
                 .withEnv("SCHEMA_REGISTRY_HOST_NAME", "schema-registry")
                 .withEnv("SCHEMA_REGISTRY_LISTENERS", "http://0.0.0.0:8081")
@@ -55,35 +56,29 @@ class MostRecentMaterialsProviderTest {
         configs.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers());
         configs.put(KafkaProtobufSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG, schemaRegistryUrl);
 
-        createTopics(configs, "piischema.kms.commands", "broadcast");
+        createTopics(configs, "piischema.kms.commands");
+
+        store = new KafkaKeyStore(configs);
     }
 
-    @Test
-    void topology() {
-
-        Topology topology = new KafkaKeyStore(configs).createKafkaKeyStoreTopology();
-
-        TopologyDescription describe = topology.describe();
-
-        System.out.println(describe);
-
+    @AfterEach
+    void tearDown() {
+        store.close();
+        schemaRegistry.close();
+        kafka.close();
     }
-
 
     @Test
     void find() {
 
-        MostRecentMaterialsProvider provider = new MostRecentMaterialsProvider(configs);
+        KafkaProvider.SubjectCryptographicMaterialAggregate materialForSubject1 = store.cryptoMaterialsFor("subject1");
+        KafkaProvider.SubjectCryptographicMaterialAggregate materialForSubject1SecondCall = store.cryptoMaterialsFor("subject1");
 
-        EncryptingMaterial materialForSubject1 = provider.encryptionKeysFor("subject1");
-        EncryptingMaterial materialForSubject1SecondCall = provider.encryptionKeysFor("subject1");
-
-        assertThat(materialForSubject1.getEncryptionKey()).isNotNull();
-        assertThat(materialForSubject1.getEncryptionKey().getAlgorithm())
+        assertThat(materialForSubject1.getMaterialsList()).hasSize(1);
+        assertThat(materialForSubject1.getMaterials(0).getAlgorithm())
                 .isEqualTo("AES");
-        assertThat(materialForSubject1.getEncryptionKey().getEncoded())
+        assertThat(materialForSubject1.getMaterials(0).getSymmetricKey())
                 .isNotEmpty();
-
 
         assertThat(materialForSubject1)
                 .isEqualTo(materialForSubject1SecondCall);

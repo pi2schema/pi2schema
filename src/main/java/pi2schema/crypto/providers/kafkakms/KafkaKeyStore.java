@@ -10,8 +10,11 @@ import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.Aggregator;
 import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.processor.AbstractProcessor;
+import org.apache.kafka.streams.processor.ProcessorContext;
+import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.QueryableStoreTypes;
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
+import org.apache.kafka.streams.state.ValueAndTimestamp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import piischema.kms.KafkaProvider.*;
@@ -23,13 +26,19 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.*;
 
+/**
+ * Kafka backed keystore, for development purposes without external dependencies (ie: vault or aws/gcp kms).
+ *
+ * publish events
+ * avoid global store / partitioning aware?
+ */
 public class KafkaKeyStore implements AutoCloseable {
 
     private static final Logger log = LoggerFactory.getLogger(KafkaKeyStore.class);
 
     private final KafkaKeyStoreConfig config;
     private final KafkaStreams streams;
-    private final ReadOnlyKeyValueStore<Subject, SubjectCryptographicMaterialAggregate> store;
+    private final ReadOnlyKeyValueStore<Subject, SubjectCryptographicMaterialAggregate> allKeys;
 
     private final KafkaProducer<Subject, Commands> producer;
     private final Map<Subject, CompletableFuture<SubjectCryptographicMaterialAggregate>> waitingCreation = new HashMap<>();
@@ -41,7 +50,7 @@ public class KafkaKeyStore implements AutoCloseable {
                 config.topics().COMMANDS.valueSerializer()
         );
         this.streams = startStreams(configs);
-        this.store = this.streams.store(
+        this.allKeys = this.streams.store(
                 StoreQueryParameters.fromNameAndType(
                         config.stores().GLOBAL_AGGREGATE.name(),
                         QueryableStoreTypes.keyValueStore())
@@ -51,7 +60,7 @@ public class KafkaKeyStore implements AutoCloseable {
     public SubjectCryptographicMaterialAggregate cryptoMaterialsFor(String subjectId) {
 
         Subject subject = Subject.newBuilder().setId(subjectId).build();
-        SubjectCryptographicMaterialAggregate existent = store.get(subject);
+        SubjectCryptographicMaterialAggregate existent = allKeys.get(subject);
 
         if (existent != null) {
             return existent;
@@ -84,6 +93,9 @@ public class KafkaKeyStore implements AutoCloseable {
 
         Topology topology = createKafkaKeyStoreTopology();
 
+        log.debug("Created topology {}", topology.describe());
+        log.debug("Starting topology with following configurations {}", properties);
+
         KafkaStreams streams = new KafkaStreams(topology, properties);
 
         final CountDownLatch startLatch = new CountDownLatch(1);
@@ -91,7 +103,6 @@ public class KafkaKeyStore implements AutoCloseable {
             if (newState == KafkaStreams.State.RUNNING && oldState != KafkaStreams.State.RUNNING) {
                 startLatch.countDown();
             }
-
         });
 
         streams.start();
@@ -122,15 +133,25 @@ public class KafkaKeyStore implements AutoCloseable {
                         new KmsCommandHandler(),
                         config.stores().LOCAL_STORE.materialization());
 
-        //TODO redo this part. This broadcast changelog topic should not exist
-        shardedSubjects.toStream().to("broadcast");
+        //TODO redo this part.
         builder.addGlobalStore(
                 config.stores().GLOBAL_AGGREGATE.storeSupplier(),
-                "broadcast",
+                config.stores().LOCAL_STORE.internalTopic(),
                 config.stores().GLOBAL_AGGREGATE.consumed(),
                 () -> new AbstractProcessor<Subject, SubjectCryptographicMaterialAggregate>() {
+
+                    private KeyValueStore<Subject, SubjectCryptographicMaterialAggregate> store;
+
+                    @Override
+                    @SuppressWarnings("unchecked")
+                    public void init(ProcessorContext context) {
+                        super.init(context);
+                        store = (KeyValueStore<Subject, SubjectCryptographicMaterialAggregate>) context.getStateStore(config.stores().GLOBAL_AGGREGATE.name);
+                    }
+
                     @Override
                     public void process(Subject key, SubjectCryptographicMaterialAggregate value) {
+                        store.put(key, value);
                         CompletableFuture<SubjectCryptographicMaterialAggregate> waiting = waitingCreation.remove(key);
                         waiting.complete(value);
                     }
