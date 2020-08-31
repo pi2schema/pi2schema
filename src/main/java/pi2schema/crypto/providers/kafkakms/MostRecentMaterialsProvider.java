@@ -16,8 +16,8 @@ public class MostRecentMaterialsProvider implements EncryptingMaterialsProvider 
 
     private final KafkaKeyStore kafkaKeyStore;
 
-    public MostRecentMaterialsProvider(Map<String, Object> configs) {
-        kafkaKeyStore = new KafkaKeyStore(configs);
+    public MostRecentMaterialsProvider(KafkaKeyStore kafkaKeyStore) {
+        this.kafkaKeyStore = kafkaKeyStore;
     }
 
     @Override
