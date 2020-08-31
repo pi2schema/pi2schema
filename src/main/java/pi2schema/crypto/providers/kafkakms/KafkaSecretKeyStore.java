@@ -14,7 +14,6 @@ import org.apache.kafka.streams.processor.ProcessorContext;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.QueryableStoreTypes;
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
-import org.apache.kafka.streams.state.ValueAndTimestamp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import piischema.kms.KafkaProvider.*;
@@ -32,19 +31,19 @@ import java.util.concurrent.*;
  * publish events
  * avoid global store / partitioning aware?
  */
-public class KafkaKeyStore implements AutoCloseable {
+public class KafkaSecretKeyStore implements AutoCloseable {
 
-    private static final Logger log = LoggerFactory.getLogger(KafkaKeyStore.class);
+    private static final Logger log = LoggerFactory.getLogger(KafkaSecretKeyStore.class);
 
-    private final KafkaKeyStoreConfig config;
+    private final KafkaSecretKeyStoreConfig config;
     private final KafkaStreams streams;
     private final ReadOnlyKeyValueStore<Subject, SubjectCryptographicMaterialAggregate> allKeys;
 
     private final KafkaProducer<Subject, Commands> producer;
     private final Map<Subject, CompletableFuture<SubjectCryptographicMaterialAggregate>> waitingCreation = new HashMap<>();
 
-    public KafkaKeyStore(Map<String, Object> configs) {
-        this.config = new KafkaKeyStoreConfig(configs);
+    public KafkaSecretKeyStore(Map<String, Object> configs) {
+        this.config = new KafkaSecretKeyStoreConfig(configs);
         this.producer = new KafkaProducer<>(configs,
                 config.topics().COMMANDS.keySerializer(),
                 config.topics().COMMANDS.valueSerializer()
@@ -72,7 +71,7 @@ public class KafkaKeyStore implements AutoCloseable {
                         .build())
                 .build();
         producer.send(new ProducerRecord<>(
-                config.getString(KafkaKeyStoreConfig.TOPIC_COMMANDS_CONFIG),
+                config.getString(KafkaSecretKeyStoreConfig.TOPIC_COMMANDS_CONFIG),
                 subject,
                 command));
 
@@ -219,7 +218,7 @@ public class KafkaKeyStore implements AutoCloseable {
         SecretKey generate();
     }
 
-    private static class JceKeyGenerator implements KafkaKeyStore.KeyGenerator {
+    private static class JceKeyGenerator implements KafkaSecretKeyStore.KeyGenerator {
 
         private final javax.crypto.KeyGenerator jceGenerator;
 

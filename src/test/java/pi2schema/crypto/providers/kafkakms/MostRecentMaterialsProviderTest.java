@@ -31,7 +31,7 @@ class MostRecentMaterialsProviderTest {
 
     public GenericContainer schemaRegistry;
     private Map<String, Object> configs;
-    private KafkaKeyStore store;
+    private KafkaSecretKeyStore store;
 
     @BeforeEach
     void setUp() {
@@ -58,7 +58,7 @@ class MostRecentMaterialsProviderTest {
 
         createTopics(configs, "piischema.kms.commands");
 
-        store = new KafkaKeyStore(configs);
+        store = new KafkaSecretKeyStore(configs);
     }
 
     @AfterEach

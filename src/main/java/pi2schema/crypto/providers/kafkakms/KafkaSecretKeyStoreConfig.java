@@ -19,7 +19,7 @@ import piischema.kms.KafkaProvider.SubjectCryptographicMaterialAggregate;
 import java.util.HashMap;
 import java.util.Map;
 
-public class KafkaKeyStoreConfig extends AbstractConfig {
+public class KafkaSecretKeyStoreConfig extends AbstractConfig {
 
     private static final ConfigDef CONFIG;
 
@@ -52,7 +52,7 @@ public class KafkaKeyStoreConfig extends AbstractConfig {
                 );
     }
 
-    KafkaKeyStoreConfig(Map<?, ?> provided) {
+    KafkaSecretKeyStoreConfig(Map<?, ?> provided) {
         super(CONFIG, provided, true);
 
         this.topics = new Topics();
@@ -82,7 +82,7 @@ public class KafkaKeyStoreConfig extends AbstractConfig {
 
         private Topics() {
             COMMANDS = new Topic<>(
-                    getString(KafkaKeyStoreConfig.TOPIC_COMMANDS_CONFIG),
+                    getString(KafkaSecretKeyStoreConfig.TOPIC_COMMANDS_CONFIG),
                     serdeFactory.serdeFor(Subject.class, true),
                     serdeFactory.serdeFor(Commands.class, false)
             );

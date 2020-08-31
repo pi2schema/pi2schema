@@ -11,7 +11,7 @@ import java.security.NoSuchAlgorithmException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class EncryptorImplTest {
+class LocalCryptoTest {
 
     @Test
     void encrypt() throws NoSuchAlgorithmException {
@@ -26,9 +26,8 @@ class EncryptorImplTest {
         EncryptingMaterialsProvider encProvider = (s) -> new SymmetricMaterial(secretKey);
         DecryptingMaterialsProvider decProvider = (s) -> new SymmetricMaterial(secretKey);
 
-        Encryptor encryptor = new EncryptorImpl(encProvider);
-        Decryptor decryptor = new DecryptorImpl(decProvider);
-
+        Encryptor encryptor = new LocalEncryptor(encProvider);
+        Decryptor decryptor = new LocalDecryptor(decProvider);
 
         //When
         EncryptedData encrypted = encryptor.encrypt("", toBeEncrypted);

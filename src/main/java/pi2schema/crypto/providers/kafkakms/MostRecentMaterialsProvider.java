@@ -1,28 +1,29 @@
 package pi2schema.crypto.providers.kafkakms;
 
 import org.jetbrains.annotations.NotNull;
+import pi2schema.crypto.materials.DecryptingMaterial;
 import pi2schema.crypto.materials.EncryptingMaterial;
 import pi2schema.crypto.materials.SymmetricMaterial;
+import pi2schema.crypto.providers.DecryptingMaterialsProvider;
 import pi2schema.crypto.providers.EncryptingMaterialsProvider;
 import piischema.kms.KafkaProvider.SubjectCryptographicMaterial;
 import piischema.kms.KafkaProvider.SubjectCryptographicMaterialAggregate;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-import java.util.Map;
 
 
-public class MostRecentMaterialsProvider implements EncryptingMaterialsProvider {
+public class MostRecentMaterialsProvider implements EncryptingMaterialsProvider, DecryptingMaterialsProvider {
 
-    private final KafkaKeyStore kafkaKeyStore;
+    private final KafkaSecretKeyStore kafkaSecretKeyStore;
 
-    public MostRecentMaterialsProvider(KafkaKeyStore kafkaKeyStore) {
-        this.kafkaKeyStore = kafkaKeyStore;
+    public MostRecentMaterialsProvider(KafkaSecretKeyStore kafkaSecretKeyStore) {
+        this.kafkaSecretKeyStore = kafkaSecretKeyStore;
     }
 
     @Override
     public EncryptingMaterial encryptionKeysFor(@NotNull String subjectId) {
-        SubjectCryptographicMaterialAggregate materials = kafkaKeyStore.cryptoMaterialsFor(subjectId);
+        SubjectCryptographicMaterialAggregate materials = kafkaSecretKeyStore.cryptoMaterialsFor(subjectId);
 
         int latestKeyIndex = materials.getMaterialsCount() - 1;
         SubjectCryptographicMaterial latestVersion = materials.getMaterialsList().get(latestKeyIndex);
@@ -33,5 +34,8 @@ public class MostRecentMaterialsProvider implements EncryptingMaterialsProvider 
         return new SymmetricMaterial(secretKeySpec);
     }
 
-
+    @Override
+    public DecryptingMaterial decryptionKeysFor(@NotNull String subjectId) {
+        return null;
+    }
 }
