@@ -6,6 +6,7 @@ import javax.crypto.SecretKey;
 
 
 public class SymmetricMaterial implements EncryptingMaterial, DecryptingMaterial {
+
     private final SecretKey cryptoKey;
 
     public SymmetricMaterial(@NotNull SecretKey encryptionKey) {
