@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package piischema.kms;
+package pi2schema.kms;
 
 // Internal commands
 message Commands {

@@ -14,9 +14,11 @@ import org.apache.kafka.streams.processor.ProcessorContext;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.QueryableStoreTypes;
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import piischema.kms.KafkaProvider.*;
+import pi2schema.kms.KafkaProvider.*;
 
 import javax.crypto.SecretKey;
 import java.security.NoSuchAlgorithmException;
@@ -27,7 +29,7 @@ import java.util.concurrent.*;
 
 /**
  * Kafka backed keystore, for development purposes without external dependencies (ie: vault or aws/gcp kms).
- *
+ * <p>
  * publish events
  * avoid global store / partitioning aware?
  */
@@ -56,10 +58,10 @@ public class KafkaSecretKeyStore implements AutoCloseable {
         );
     }
 
-    public SubjectCryptographicMaterialAggregate cryptoMaterialsFor(String subjectId) {
+    SubjectCryptographicMaterialAggregate getOrCreateCryptoMaterialsFor(@NotNull String subjectId) {
 
         Subject subject = Subject.newBuilder().setId(subjectId).build();
-        SubjectCryptographicMaterialAggregate existent = allKeys.get(subject);
+        SubjectCryptographicMaterialAggregate existent = existentMaterialsFor(subject);
 
         if (existent != null) {
             return existent;
@@ -83,6 +85,16 @@ public class KafkaSecretKeyStore implements AutoCloseable {
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             throw new RuntimeException(e); // type me
         }
+    }
+
+    @Nullable
+    SubjectCryptographicMaterialAggregate existentMaterialsFor(String subjectId) {
+        return existentMaterialsFor(Subject.newBuilder().setId(subjectId).build());
+    }
+
+    @Nullable
+    private SubjectCryptographicMaterialAggregate existentMaterialsFor(Subject subject) {
+        return allKeys.get(subject);
     }
 
     private KafkaStreams startStreams(Map<String, ?> providedConfigs) {
@@ -117,7 +129,7 @@ public class KafkaSecretKeyStore implements AutoCloseable {
         return streams;
     }
 
-    Topology createKafkaKeyStoreTopology() {
+    private Topology createKafkaKeyStoreTopology() {
 
         StreamsBuilder builder = new StreamsBuilder();
 
