@@ -3,7 +3,6 @@ package pi2schema.crypto.materials;
 import org.jetbrains.annotations.NotNull;
 
 import javax.crypto.SecretKey;
-import java.util.Objects;
 
 
 public class SymmetricMaterial implements EncryptingMaterial, DecryptingMaterial {
@@ -23,16 +22,4 @@ public class SymmetricMaterial implements EncryptingMaterial, DecryptingMaterial
         return cryptoKey;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        SymmetricMaterial that = (SymmetricMaterial) o;
-        return cryptoKey.equals(that.cryptoKey);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(cryptoKey);
-    }
 }

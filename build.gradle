@@ -45,6 +45,9 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter:5.6.2'
     testImplementation 'org.assertj:assertj-core:3.17.1'
 
+    testImplementation 'org.mockito:mockito-core:3.5.7'
+    testImplementation 'org.mockito:mockito-junit-jupiter:3.5.7'
+
     testCompile "org.testcontainers:testcontainers:1.14.3"
     testCompile "org.testcontainers:junit-jupiter:1.14.3"
     testCompile "org.testcontainers:kafka:1.14.3"
@@ -73,9 +76,16 @@ test {
 }
 
 jacocoTestReport {
+
+    // do not check test coverage for generated classes as protobuf : kafka kms
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: ['pi2schema/kms/**', '**/*V1*.class'])
+        }))
+    }
     reports {
         xml.enabled true
-        html.enabled false
+        html.enabled true
     }
 }
 

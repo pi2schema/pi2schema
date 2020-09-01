@@ -1,15 +1,14 @@
 package pi2schema.crypto.providers.kafkakms;
 
-import org.jetbrains.annotations.NotNull;
 import pi2schema.crypto.materials.DecryptingMaterial;
+import pi2schema.crypto.materials.DecryptingMaterialNotFoundException;
 import pi2schema.crypto.materials.EncryptingMaterial;
 import pi2schema.crypto.materials.SymmetricMaterial;
 import pi2schema.crypto.providers.DecryptingMaterialsProvider;
 import pi2schema.crypto.providers.EncryptingMaterialsProvider;
-import piischema.kms.KafkaProvider.SubjectCryptographicMaterial;
-import piischema.kms.KafkaProvider.SubjectCryptographicMaterialAggregate;
+import pi2schema.kms.KafkaProvider.SubjectCryptographicMaterial;
+import pi2schema.kms.KafkaProvider.SubjectCryptographicMaterialAggregate;
 
-import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 
@@ -22,20 +21,31 @@ public class MostRecentMaterialsProvider implements EncryptingMaterialsProvider,
     }
 
     @Override
-    public EncryptingMaterial encryptionKeysFor(@NotNull String subjectId) {
-        SubjectCryptographicMaterialAggregate materials = kafkaSecretKeyStore.cryptoMaterialsFor(subjectId);
+    public EncryptingMaterial encryptionKeysFor(String subjectId) {
+        SubjectCryptographicMaterialAggregate materials = kafkaSecretKeyStore.getOrCreateCryptoMaterialsFor(subjectId);
 
+        return latestSecretKey(materials);
+    }
+
+    @Override
+    public DecryptingMaterial decryptionKeysFor(String subjectId) { //todo add versioning for the decryption
+
+        SubjectCryptographicMaterialAggregate materials = kafkaSecretKeyStore.existentMaterialsFor(subjectId);
+
+        if (null == materials) {
+            throw new DecryptingMaterialNotFoundException(subjectId);
+        }
+
+        return latestSecretKey(materials);
+    }
+
+    //todo rethink the list structure / versioning
+    private SymmetricMaterial latestSecretKey(SubjectCryptographicMaterialAggregate materials) {
         int latestKeyIndex = materials.getMaterialsCount() - 1;
         SubjectCryptographicMaterial latestVersion = materials.getMaterialsList().get(latestKeyIndex);
 
         byte[] latestKey = latestVersion.getSymmetricKey().toByteArray();
-        SecretKey secretKeySpec = new SecretKeySpec(latestKey, latestVersion.getAlgorithm());
 
-        return new SymmetricMaterial(secretKeySpec);
-    }
-
-    @Override
-    public DecryptingMaterial decryptionKeysFor(@NotNull String subjectId) {
-        return null;
+        return new SymmetricMaterial(new SecretKeySpec(latestKey, latestVersion.getAlgorithm()));
     }
 }

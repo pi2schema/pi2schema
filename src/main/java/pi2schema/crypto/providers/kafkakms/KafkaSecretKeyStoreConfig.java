@@ -12,9 +12,9 @@ import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.Materialized;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.StoreBuilder;
-import piischema.kms.KafkaProvider.Commands;
-import piischema.kms.KafkaProvider.Subject;
-import piischema.kms.KafkaProvider.SubjectCryptographicMaterialAggregate;
+import pi2schema.kms.KafkaProvider.Commands;
+import pi2schema.kms.KafkaProvider.Subject;
+import pi2schema.kms.KafkaProvider.SubjectCryptographicMaterialAggregate;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -23,12 +23,12 @@ public class KafkaSecretKeyStoreConfig extends AbstractConfig {
 
     private static final ConfigDef CONFIG;
 
-    public static final String KMS_APPLICATION_ID_CONFIG = "piischema.kms.kafka.application.id";
-    public static final String KMS_APPLICATION_ID_DEFAULT = "piischema.kms";
+    public static final String KMS_APPLICATION_ID_CONFIG = "pi2schema.kms.kafka.application.id";
+    public static final String KMS_APPLICATION_ID_DEFAULT = "pi2schema.kms";
     public static final String KMS_APPLICATION_ID_DOC = "The kafka streams application id used by the kafka store";
 
-    public static final String TOPIC_COMMANDS_CONFIG = "piischema.kms.kafka.commands.topic";
-    public static final String TOPIC_COMMANDS_DEFAULT = "piischema.kms.commands";
+    public static final String TOPIC_COMMANDS_CONFIG = "pi2schema.kms.kafka.commands.topic";
+    public static final String TOPIC_COMMANDS_DEFAULT = "pi2schema.kms.commands";
     public static final String TOPIC_COMMANDS_DOC = "Topic used to store the commands";
 
     private final SerdeFactory serdeFactory = new SerdeFactory();
