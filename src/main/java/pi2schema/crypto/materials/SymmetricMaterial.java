@@ -21,4 +21,5 @@ public class SymmetricMaterial implements EncryptingMaterial, DecryptingMaterial
     public SecretKey getDecryptionKey() {
         return cryptoKey;
     }
+
 }

@@ -6,11 +6,11 @@ import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import java.security.GeneralSecurityException;
 
-public class DecryptorImpl implements Decryptor {
+public class LocalDecryptor implements Decryptor {
 
     private DecryptingMaterialsProvider provider;
 
-    public DecryptorImpl(DecryptingMaterialsProvider provider) {
+    public LocalDecryptor(DecryptingMaterialsProvider provider) {
         this.provider = provider;
     }
 

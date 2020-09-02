@@ -12,7 +12,7 @@ import java.security.NoSuchAlgorithmException;
  * <p>
  * Relies on {@link EncryptingMaterialsProvider} for the Secret retrieval and creation used for the cryptography.
  */
-public class EncryptorImpl implements Encryptor {
+public class LocalEncryptor implements Encryptor {
 
     // https://docs.oracle.com/javase/7/docs/technotes/guides/security/StandardNames.html#Cipher
     // Might consider extracting these values somewhere else or make it configurable
@@ -21,7 +21,7 @@ public class EncryptorImpl implements Encryptor {
 
     private final EncryptingMaterialsProvider provider;
 
-    public EncryptorImpl(EncryptingMaterialsProvider provider) {
+    public LocalEncryptor(EncryptingMaterialsProvider provider) {
         this.provider = provider;
     }
 
