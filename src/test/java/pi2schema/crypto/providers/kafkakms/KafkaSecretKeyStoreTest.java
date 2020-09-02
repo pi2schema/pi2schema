@@ -6,6 +6,7 @@ import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.streams.StreamsConfig;
 import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
@@ -14,10 +15,14 @@ import org.testcontainers.containers.Network;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import pi2schema.kms.KafkaProvider.SubjectCryptographicMaterialAggregate;
 
+import javax.crypto.KeyGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 
 @Testcontainers
@@ -31,7 +36,7 @@ class KafkaSecretKeyStoreTest {
     private KafkaSecretKeyStore store;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws NoSuchAlgorithmException {
 
         kafka.start();
 
@@ -53,7 +58,9 @@ class KafkaSecretKeyStoreTest {
 
         createTopics(configs, "pi2schema.kms.commands");
 
-        store = new KafkaSecretKeyStore(configs);
+        KeyGenerator keyGenerator = javax.crypto.KeyGenerator.getInstance("AES");
+        keyGenerator.init(256);
+        store = new KafkaSecretKeyStore(keyGenerator, configs);
     }
 
     @AfterEach
@@ -66,34 +73,37 @@ class KafkaSecretKeyStoreTest {
     @Test
     void getOrCreate() {
 
-        //create
-        SubjectCryptographicMaterialAggregate materialForSubject1 = store.getOrCreateCryptoMaterialsFor("subject1");
-        //get
-        SubjectCryptographicMaterialAggregate materialForSubject1SecondCall = store.getOrCreateCryptoMaterialsFor("subject1");
+        final String subject = UUID.randomUUID().toString();
 
-        assertThat(materialForSubject1.getMaterialsList()).hasSize(1);
-        assertThat(materialForSubject1.getMaterials(0).getAlgorithm())
+        // create
+        SubjectCryptographicMaterialAggregate firstMaterials = store.retrieveOrCreateCryptoMaterialsFor(subject);
+
+        assertThat(firstMaterials.getMaterialsList()).hasSize(1);
+        assertThat(firstMaterials.getMaterials(0).getAlgorithm())
                 .isEqualTo("AES");
-        assertThat(materialForSubject1.getMaterials(0).getSymmetricKey())
+        assertThat(firstMaterials.getMaterials(0).getSymmetricKey())
                 .isNotEmpty();
 
-        assertThat(materialForSubject1)
-                .isEqualTo(materialForSubject1SecondCall);
+        // retrieve
+        // the key propagation is asynchronous
+        await().atMost(Duration.ofSeconds(120)).untilAsserted(() -> {
 
-    }
+                    Optional<SubjectCryptographicMaterialAggregate> retrievedMaterials = store.existentMaterialsFor(subject);
 
-    @Test
-    void existentMaterials(){
+                    assertThat(retrievedMaterials).isPresent();
+                    assertThat(retrievedMaterials).hasValueSatisfying(present ->
+                            assertThat(present).isEqualTo(firstMaterials)
+                    );
 
-        String subject = UUID.randomUUID().toString();
+                }
+        );
 
-        SubjectCryptographicMaterialAggregate createdMaterials = store.getOrCreateCryptoMaterialsFor(subject);
+        // once the key is propagated, should reuse the previous key and not create new ones
+        SubjectCryptographicMaterialAggregate retrieveOrCreateSecond = store.retrieveOrCreateCryptoMaterialsFor(subject);
 
-        SubjectCryptographicMaterialAggregate retrievedMaterials = store.existentMaterialsFor(subject);
+        assertThat(firstMaterials)
+                .isEqualTo(retrieveOrCreateSecond);
 
-        assertThat(createdMaterials.getMaterialsList()).hasSize(1);
-        assertThat(createdMaterials)
-                .isEqualTo(retrievedMaterials);
     }
 
 

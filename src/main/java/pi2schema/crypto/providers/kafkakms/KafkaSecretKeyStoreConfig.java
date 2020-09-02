@@ -11,7 +11,6 @@ import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.Materialized;
 import org.apache.kafka.streams.state.KeyValueStore;
-import org.apache.kafka.streams.state.StoreBuilder;
 import pi2schema.kms.KafkaProvider.Commands;
 import pi2schema.kms.KafkaProvider.Subject;
 import pi2schema.kms.KafkaProvider.SubjectCryptographicMaterialAggregate;
@@ -139,14 +138,6 @@ public class KafkaSecretKeyStoreConfig extends AbstractConfig {
                     .withValueSerde(valueSerde);
         }
 
-        StoreBuilder<KeyValueStore<K, V>> storeSupplier() {
-            return org.apache.kafka.streams.state.Stores.keyValueStoreBuilder(
-                    org.apache.kafka.streams.state.Stores.inMemoryKeyValueStore(name),
-                    keySerde,
-                    valueSerde
-            );
-        }
-
         public String internalTopic() {
             return String.format("%s-%s-changelog", getString(KMS_APPLICATION_ID_CONFIG), this.name);
         }
@@ -180,10 +171,6 @@ public class KafkaSecretKeyStoreConfig extends AbstractConfig {
         }
 
         String name() {
-            return name;
-        }
-
-        public String toString() {
             return name;
         }
     }

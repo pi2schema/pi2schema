@@ -22,7 +22,7 @@ public class MostRecentMaterialsProvider implements EncryptingMaterialsProvider,
 
     @Override
     public EncryptingMaterial encryptionKeysFor(String subjectId) {
-        SubjectCryptographicMaterialAggregate materials = kafkaSecretKeyStore.getOrCreateCryptoMaterialsFor(subjectId);
+        SubjectCryptographicMaterialAggregate materials = kafkaSecretKeyStore.retrieveOrCreateCryptoMaterialsFor(subjectId);
 
         return latestSecretKey(materials);
     }
@@ -30,11 +30,8 @@ public class MostRecentMaterialsProvider implements EncryptingMaterialsProvider,
     @Override
     public DecryptingMaterial decryptionKeysFor(String subjectId) { //todo add versioning for the decryption
 
-        SubjectCryptographicMaterialAggregate materials = kafkaSecretKeyStore.existentMaterialsFor(subjectId);
-
-        if (null == materials) {
-            throw new DecryptingMaterialNotFoundException(subjectId);
-        }
+        SubjectCryptographicMaterialAggregate materials = kafkaSecretKeyStore.existentMaterialsFor(subjectId)
+                .orElseThrow(() -> new DecryptingMaterialNotFoundException(subjectId));
 
         return latestSecretKey(materials);
     }

@@ -8,45 +8,52 @@ import org.apache.kafka.streams.StoreQueryParameters;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.Aggregator;
-import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.processor.AbstractProcessor;
 import org.apache.kafka.streams.processor.ProcessorContext;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.QueryableStoreTypes;
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pi2schema.kms.KafkaProvider.*;
+import pi2schema.kms.KafkaProvider;
+import pi2schema.kms.KafkaProvider.Commands;
+import pi2schema.kms.KafkaProvider.Subject;
+import pi2schema.kms.KafkaProvider.SubjectCryptographicMaterial;
+import pi2schema.kms.KafkaProvider.SubjectCryptographicMaterialAggregate;
 
-import javax.crypto.SecretKey;
-import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
+import javax.crypto.KeyGenerator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
-import java.util.concurrent.*;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Kafka backed keystore, for development purposes without external dependencies (ie: vault or aws/gcp kms).
  * <p>
- * publish events
- * avoid global store / partitioning aware?
+ * TODO:
+ * - publish events
+ * - right to be forgotten
+ * - avoid global store / partitioning aware?
  */
 public class KafkaSecretKeyStore implements AutoCloseable {
 
     private static final Logger log = LoggerFactory.getLogger(KafkaSecretKeyStore.class);
 
+    private final KeyGenerator keyGenerator;
+
     private final KafkaSecretKeyStoreConfig config;
     private final KafkaStreams streams;
     private final ReadOnlyKeyValueStore<Subject, SubjectCryptographicMaterialAggregate> allKeys;
 
-    private final KafkaProducer<Subject, Commands> producer;
-    private final Map<Subject, CompletableFuture<SubjectCryptographicMaterialAggregate>> waitingCreation = new HashMap<>();
+    private final KafkaProducer<Subject, Commands> commandProducer;
 
-    public KafkaSecretKeyStore(Map<String, Object> configs) {
+    public KafkaSecretKeyStore(KeyGenerator keyGenerator, Map<String, Object> configs) {
+        this.keyGenerator = keyGenerator;
         this.config = new KafkaSecretKeyStoreConfig(configs);
-        this.producer = new KafkaProducer<>(configs,
+        this.commandProducer = new KafkaProducer<>(configs,
                 config.topics().COMMANDS.keySerializer(),
                 config.topics().COMMANDS.valueSerializer()
         );
@@ -58,43 +65,41 @@ public class KafkaSecretKeyStore implements AutoCloseable {
         );
     }
 
-    SubjectCryptographicMaterialAggregate getOrCreateCryptoMaterialsFor(@NotNull String subjectId) {
+    SubjectCryptographicMaterialAggregate retrieveOrCreateCryptoMaterialsFor(@NotNull String subjectId) {
 
         Subject subject = Subject.newBuilder().setId(subjectId).build();
-        SubjectCryptographicMaterialAggregate existent = existentMaterialsFor(subject);
 
-        if (existent != null) {
-            return existent;
-        }
+        return existentMaterialsFor(subject)
+                .orElseGet(() -> createMaterialsFor(subject));
+
+    }
+
+    private SubjectCryptographicMaterialAggregate createMaterialsFor(Subject subject) {
+
+        SubjectCryptographicMaterial cryptoMaterial = SubjectCryptographicMaterial.newBuilder()
+                .setId(UUID.randomUUID().toString())
+                .setSubject(subject)
+                .setAlgorithm(keyGenerator.getAlgorithm())
+                .setSymmetricKey(ByteString.copyFrom(keyGenerator.generateKey().getEncoded()))
+                .build();
 
         Commands command = Commands.newBuilder()
-                .setCreate(CreateCryptographicMaterials.newBuilder()
-                        .setSubject(subject)
-                        .build())
+                .setRegister(KafkaProvider.RegisterCryptographicMaterials.newBuilder().setMaterial(cryptoMaterial).build())
                 .build();
-        producer.send(new ProducerRecord<>(
+        commandProducer.send(new ProducerRecord<>(
                 config.getString(KafkaSecretKeyStoreConfig.TOPIC_COMMANDS_CONFIG),
                 subject,
                 command));
 
-        CompletableFuture<SubjectCryptographicMaterialAggregate> completable = new CompletableFuture<>();
-        this.waitingCreation.put(subject, completable);
-
-        try {
-            return completable.get(60, TimeUnit.SECONDS);
-        } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            throw new RuntimeException(e); // type me
-        }
+        return SubjectCryptographicMaterialAggregate.newBuilder().addMaterials(cryptoMaterial).build();
     }
 
-    @Nullable
-    SubjectCryptographicMaterialAggregate existentMaterialsFor(String subjectId) {
+    Optional<SubjectCryptographicMaterialAggregate> existentMaterialsFor(String subjectId) {
         return existentMaterialsFor(Subject.newBuilder().setId(subjectId).build());
     }
 
-    @Nullable
-    private SubjectCryptographicMaterialAggregate existentMaterialsFor(Subject subject) {
-        return allKeys.get(subject);
+    private Optional<SubjectCryptographicMaterialAggregate> existentMaterialsFor(Subject subject) {
+        return Optional.ofNullable(allKeys.get(subject));
     }
 
     private KafkaStreams startStreams(Map<String, ?> providedConfigs) {
@@ -133,7 +138,7 @@ public class KafkaSecretKeyStore implements AutoCloseable {
 
         StreamsBuilder builder = new StreamsBuilder();
 
-        KTable<Subject, SubjectCryptographicMaterialAggregate> shardedSubjects = builder
+        builder
                 .stream(
                         config.topics().COMMANDS.name(),
                         config.topics().COMMANDS.consumed()
@@ -145,29 +150,9 @@ public class KafkaSecretKeyStore implements AutoCloseable {
                         config.stores().LOCAL_STORE.materialization());
 
         //TODO redo this part.
-        builder.addGlobalStore(
-                config.stores().GLOBAL_AGGREGATE.storeSupplier(),
-                config.stores().LOCAL_STORE.internalTopic(),
+        builder.globalTable(config.stores().LOCAL_STORE.internalTopic(),
                 config.stores().GLOBAL_AGGREGATE.consumed(),
-                () -> new AbstractProcessor<Subject, SubjectCryptographicMaterialAggregate>() {
-
-                    private KeyValueStore<Subject, SubjectCryptographicMaterialAggregate> store;
-
-                    @Override
-                    @SuppressWarnings("unchecked")
-                    public void init(ProcessorContext context) {
-                        super.init(context);
-                        store = (KeyValueStore<Subject, SubjectCryptographicMaterialAggregate>) context.getStateStore(config.stores().GLOBAL_AGGREGATE.name);
-                    }
-
-                    @Override
-                    public void process(Subject key, SubjectCryptographicMaterialAggregate value) {
-                        store.put(key, value);
-                        CompletableFuture<SubjectCryptographicMaterialAggregate> waiting = waitingCreation.remove(key);
-                        waiting.complete(value);
-                    }
-                }
-        );
+                config.stores().GLOBAL_AGGREGATE.materialization());
 
         return builder.build();
     }
@@ -175,34 +160,23 @@ public class KafkaSecretKeyStore implements AutoCloseable {
     @Override
     public void close() {
         log.debug("Stopping kafka key store [producer, streams].");
-        this.producer.close();
+        this.commandProducer.close();
         this.streams.close();
         log.info("Kafka secret key store stopped");
     }
 
     private static class KmsCommandHandler implements Aggregator<Subject, Commands, SubjectCryptographicMaterialAggregate> {
 
-        private final KeyGenerator keyGenerator;
-
-        private KmsCommandHandler() {
-            keyGenerator = new JceKeyGenerator();
-        }
-
         @Override
         public SubjectCryptographicMaterialAggregate apply(final Subject key, final Commands command, final SubjectCryptographicMaterialAggregate current) {
 
             final SubjectCryptographicMaterialAggregate newState;
             switch (command.getCommandCase()) {
-                case CREATE:
+                case REGISTER:
                     if (current.getMaterialsList().isEmpty()) {
                         newState = current.toBuilder().addMaterials(
-                                SubjectCryptographicMaterial.newBuilder()
-                                        .setSubject(key)
-                                        .setAlgorithm("AES")
-                                        .setVersion(1)
-                                        .setSymmetricKey(ByteString.copyFrom(keyGenerator.generate().getEncoded()))
-                                        .build())
-                                .build();
+                                command.getRegister().getMaterial()
+                        ).build();
                     } else {
                         newState = current;
                         log.info("Secret key already present for subject {}, no key versioning implemented at the moment.", key);
@@ -224,29 +198,5 @@ public class KafkaSecretKeyStore implements AutoCloseable {
 
             return newState;
         }
-    }
-
-    private interface KeyGenerator {
-        SecretKey generate();
-    }
-
-    private static class JceKeyGenerator implements KafkaSecretKeyStore.KeyGenerator {
-
-        private final javax.crypto.KeyGenerator jceGenerator;
-
-        public JceKeyGenerator() {
-            try {
-                jceGenerator = javax.crypto.KeyGenerator.getInstance("AES");
-                jceGenerator.init(256);
-            } catch (NoSuchAlgorithmException e) {
-                throw new RuntimeException(e); //todo type me
-            }
-        }
-
-        @Override
-        public SecretKey generate() {
-            return jceGenerator.generateKey();
-        }
-
     }
 }

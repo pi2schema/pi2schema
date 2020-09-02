@@ -5,13 +5,13 @@ package pi2schema.kms;
 // Internal commands
 message Commands {
   oneof command {
-    CreateCryptographicMaterials create = 1;
+    RegisterCryptographicMaterials register = 1;
     ForgetSubject forget = 2;
   }
 }
 
-message CreateCryptographicMaterials {
-  Subject subject = 1;
+message RegisterCryptographicMaterials {
+  SubjectCryptographicMaterial material = 1;
   // ...
 }
 
@@ -24,13 +24,13 @@ message ForgetSubject {
 
 message Events {
   oneof event {
-    CryptographicMaterialsWasCreated created = 1;
+    CryptographicMaterialsWasRegistered registered = 1;
     CryptographicMaterialsWasAccessed accessed = 2;
     CryptographicMaterialsWasForgotten forgotten = 3;
   }
 }
 
-message CryptographicMaterialsWasCreated {/* ... */}
+message CryptographicMaterialsWasRegistered {/* ... */}
 message CryptographicMaterialsWasAccessed {/* ... */}
 message CryptographicMaterialsWasForgotten {/* ... */}
 
@@ -44,8 +44,8 @@ message Subject {
 
 message SubjectCryptographicMaterial {
 
-  Subject subject = 1;
-  int32 version = 2;
+  string id = 1;
+  Subject subject = 2;
   bytes symmetricKey = 3;
   string algorithm = 4;
 
