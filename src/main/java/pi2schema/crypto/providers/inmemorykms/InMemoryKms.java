@@ -6,6 +6,7 @@ import pi2schema.crypto.materials.EncryptingMaterial;
 import pi2schema.crypto.materials.SymmetricMaterial;
 import pi2schema.crypto.providers.DecryptingMaterialsProvider;
 import pi2schema.crypto.providers.EncryptingMaterialsProvider;
+import pi2schema.crypto.support.KeyGen;
 
 import javax.crypto.KeyGenerator;
 import java.security.NoSuchAlgorithmException;
@@ -23,8 +24,7 @@ public class InMemoryKms implements EncryptingMaterialsProvider, DecryptingMater
     private final Map<String, SymmetricMaterial> keyStore = new HashMap<>();
 
     public InMemoryKms() throws NoSuchAlgorithmException {
-        this(KeyGenerator.getInstance("AES"));
-        this.keyGenerator.init(256);
+        this(KeyGen.aes256());
     }
 
     public InMemoryKms(KeyGenerator keyGenerator) {

@@ -6,16 +6,15 @@ import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.streams.StreamsConfig;
 import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import pi2schema.crypto.support.KeyGen;
 import pi2schema.kms.KafkaProvider.SubjectCryptographicMaterialAggregate;
 
-import javax.crypto.KeyGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.*;
@@ -23,7 +22,6 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-
 
 @Testcontainers
 class KafkaSecretKeyStoreTest {
@@ -58,9 +56,7 @@ class KafkaSecretKeyStoreTest {
 
         createTopics(configs, "pi2schema.kms.commands");
 
-        KeyGenerator keyGenerator = javax.crypto.KeyGenerator.getInstance("AES");
-        keyGenerator.init(256);
-        store = new KafkaSecretKeyStore(keyGenerator, configs);
+        store = new KafkaSecretKeyStore(KeyGen.aes256(), configs);
     }
 
     @AfterEach
@@ -86,8 +82,8 @@ class KafkaSecretKeyStoreTest {
 
         // retrieve
         // the key propagation is asynchronous
-        await().atMost(Duration.ofSeconds(120)).untilAsserted(() -> {
-
+        await().atMost(Duration.ofSeconds(120)).untilAsserted(
+                () -> {
                     Optional<SubjectCryptographicMaterialAggregate> retrievedMaterials = store.existentMaterialsFor(subject);
 
                     assertThat(retrievedMaterials).isPresent();
@@ -101,9 +97,7 @@ class KafkaSecretKeyStoreTest {
         // once the key is propagated, should reuse the previous key and not create new ones
         SubjectCryptographicMaterialAggregate retrieveOrCreateSecond = store.retrieveOrCreateCryptoMaterialsFor(subject);
 
-        assertThat(firstMaterials)
-                .isEqualTo(retrieveOrCreateSecond);
-
+        assertThat(firstMaterials).isEqualTo(retrieveOrCreateSecond);
     }
 
 
@@ -117,5 +111,4 @@ class KafkaSecretKeyStoreTest {
             admin.createTopics(newTopics);
         }
     }
-
 }

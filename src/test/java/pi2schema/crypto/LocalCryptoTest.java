@@ -1,11 +1,11 @@
 package pi2schema.crypto;
 
+import org.junit.jupiter.api.Test;
 import pi2schema.crypto.materials.SymmetricMaterial;
 import pi2schema.crypto.providers.DecryptingMaterialsProvider;
 import pi2schema.crypto.providers.EncryptingMaterialsProvider;
-import org.junit.jupiter.api.Test;
+import pi2schema.crypto.support.KeyGen;
 
-import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import java.security.NoSuchAlgorithmException;
 
@@ -19,9 +19,7 @@ class LocalCryptoTest {
         //given
         byte[] toBeEncrypted = "toBeEncrypted".getBytes();
 
-        KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
-        keyGenerator.init(256);
-        SecretKey secretKey = keyGenerator.generateKey();
+        SecretKey secretKey = KeyGen.aes256().generateKey();
 
         EncryptingMaterialsProvider encProvider = (s) -> new SymmetricMaterial(secretKey);
         DecryptingMaterialsProvider decProvider = (s) -> new SymmetricMaterial(secretKey);
