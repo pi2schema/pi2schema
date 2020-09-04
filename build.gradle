@@ -48,7 +48,7 @@ dependencies {
     testImplementation 'org.awaitility:awaitility:4.0.3'
 
     testImplementation 'org.mockito:mockito-core:3.5.10'
-    testImplementation 'org.mockito:mockito-junit-jupiter:3.5.9'
+    testImplementation 'org.mockito:mockito-junit-jupiter:3.5.10'
 
     testCompile "org.testcontainers:testcontainers:1.14.3"
     testCompile "org.testcontainers:junit-jupiter:1.14.3"
