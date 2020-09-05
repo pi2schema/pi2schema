@@ -8,13 +8,15 @@ import pi2schema.crypto.support.KeyGen;
 
 import javax.crypto.SecretKey;
 import java.security.NoSuchAlgorithmException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class LocalCryptoTest {
 
     @Test
-    void encrypt() throws NoSuchAlgorithmException {
+    void encrypt() throws NoSuchAlgorithmException, ExecutionException, InterruptedException {
 
         //given
         byte[] toBeEncrypted = "toBeEncrypted".getBytes();
@@ -28,7 +30,7 @@ class LocalCryptoTest {
         Decryptor decryptor = new LocalDecryptor(decProvider);
 
         //When
-        EncryptedData encrypted = encryptor.encrypt("", toBeEncrypted);
+        EncryptedData encrypted = encryptor.encrypt("", toBeEncrypted).get();
         byte[] decrypted = decryptor.decrypt("", encrypted);
 
         //Then
