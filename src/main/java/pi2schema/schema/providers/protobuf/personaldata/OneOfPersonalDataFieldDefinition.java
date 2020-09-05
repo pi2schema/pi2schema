@@ -1,6 +1,5 @@
 package pi2schema.schema.providers.protobuf.personaldata;
 
-
 import pi2schema.crypto.EncryptedData;
 import pi2schema.crypto.Encryptor;
 import pi2schema.schema.personaldata.*;
@@ -74,16 +73,19 @@ public class OneOfPersonalDataFieldDefinition
         int sourceFieldNumber = encryptingInstance.getOneofFieldDescriptor(containerOneOfDescriptor).getNumber();
 
         String subjectId = subjectIdentifierFieldDefinition.subjectFrom(encryptingInstance);
-        EncryptedData encryptedData = encryptor.encrypt(subjectId, valueFrom(encryptingInstance));
 
-        encryptingInstance.clearOneof(containerOneOfDescriptor);
-        encryptingInstance.setField(targetFieldForEncryption, EncryptedPersonalData.newBuilder()
-                .setSubjectId(subjectId)
-                .setData(ByteString.copyFrom(encryptedData.data())) //TODO input/output stream
-                .setPersonalDataFieldNumber(sourceFieldNumber)
-                .setUsedTransformation(encryptedData.usedTransformation())
-                .setInitializationVector(ByteString.copyFrom(encryptedData.initializationVector().getIV()))
-                .build());
+        encryptor
+                .encrypt(subjectId, valueFrom(encryptingInstance))
+                .thenAccept(encrypted -> {
+                    encryptingInstance.clearOneof(containerOneOfDescriptor);
+                    encryptingInstance.setField(targetFieldForEncryption, EncryptedPersonalData.newBuilder()
+                            .setSubjectId(subjectId)
+                            .setData(ByteString.copyFrom(encrypted.data())) //TODO input/output stream
+                            .setPersonalDataFieldNumber(sourceFieldNumber)
+                            .setUsedTransformation(encrypted.usedTransformation())
+                            .setInitializationVector(ByteString.copyFrom(encrypted.initializationVector().getIV()))
+                            .build());
+                });
     }
 
     public void swapToDecrypted(Decryptor decryptor, Message.Builder decryptingInstance) {

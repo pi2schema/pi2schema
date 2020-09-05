@@ -18,6 +18,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,7 +33,9 @@ class KafkaGdprAwareProtobufSerializerTest {
 
     private final byte[] encrypted = "mockEncryption".getBytes();
     private final Encryptor encryptorMock = (subjectId, data) ->
-            new EncryptedData(encrypted, "AES/CBC/PKCS5Padding", new IvParameterSpec(new byte[0]));
+            CompletableFuture.completedFuture(
+                    new EncryptedData(encrypted, "AES/CBC/PKCS5Padding", new IvParameterSpec(new byte[0]))
+            );
 
     public KafkaGdprAwareProtobufSerializerTest() {
         HashMap<String, Object> initial = new HashMap<>();
