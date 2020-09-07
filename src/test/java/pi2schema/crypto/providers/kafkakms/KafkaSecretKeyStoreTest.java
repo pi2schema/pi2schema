@@ -15,7 +15,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import pi2schema.crypto.support.KeyGen;
 import pi2schema.kms.KafkaProvider.SubjectCryptographicMaterialAggregate;
 
-import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -34,7 +33,7 @@ class KafkaSecretKeyStoreTest {
     private KafkaSecretKeyStore store;
 
     @BeforeEach
-    void setUp() throws NoSuchAlgorithmException {
+    void setUp() {
 
         kafka.start();
 

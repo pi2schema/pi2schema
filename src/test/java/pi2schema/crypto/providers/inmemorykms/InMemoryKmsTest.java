@@ -5,8 +5,6 @@ import org.junit.jupiter.api.Test;
 import pi2schema.crypto.materials.DecryptingMaterial;
 import pi2schema.crypto.materials.EncryptingMaterial;
 
-import java.security.NoSuchAlgorithmException;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 class InMemoryKmsTest {
@@ -14,7 +12,7 @@ class InMemoryKmsTest {
     private InMemoryKms kms;
 
     @BeforeEach
-    void setUp() throws NoSuchAlgorithmException {
+    void setUp() {
         kms = new InMemoryKms();
     }
 
