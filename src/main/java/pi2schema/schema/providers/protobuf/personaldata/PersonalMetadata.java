@@ -6,6 +6,11 @@ import com.google.protobuf.Message;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toList;
 
 public class PersonalMetadata {
 
@@ -19,15 +24,13 @@ public class PersonalMetadata {
         return !personalDataFields.isEmpty();
     }
 
-    public void encryptPersonalData(Encryptor encryptor, Message.Builder encryptingBuilder) {
-
-        personalDataFields.forEach(field ->
-                field.swapToEncrypted(encryptor, encryptingBuilder)
-        );
+    public Stream<CompletableFuture<Void>> encryptPersonalData(
+            Encryptor encryptor, Message.Builder encryptingBuilder) {
+        return personalDataFields.stream()
+                .map(field -> field.swapToEncrypted(encryptor, encryptingBuilder));
     }
 
     public void decryptPersonalData(Decryptor decryptor, Message.Builder decryptingBuilder){
-
         personalDataFields.forEach(field ->
                 field.swapToDecrypted(decryptor, decryptingBuilder));
 
