@@ -1,8 +1,7 @@
 package pi2schema.crypto.providers.kafkakms;
 
 import com.google.protobuf.ByteString;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.*;
 import org.apache.kafka.streams.*;
 import org.apache.kafka.streams.kstream.Aggregator;
 import org.apache.kafka.streams.state.QueryableStoreTypes;
@@ -83,15 +82,22 @@ public class KafkaSecretKeyStore implements AutoCloseable {
                 .setRegister(KafkaProvider.RegisterCryptographicMaterials.newBuilder().setMaterial(cryptoMaterial).build())
                 .build();
 
+        CompletableFuture<SubjectCryptographicMaterialAggregate> future = new CompletableFuture<>();
         return CompletableFuture.supplyAsync(() ->
-                commandProducer.send(new ProducerRecord<>(
-                        config.getString(KafkaSecretKeyStoreConfig.TOPIC_COMMANDS_CONFIG),
-                        subject,
-                        command))
-        ).thenComposeAsync(__ ->
-                CompletableFuture.completedFuture(
-                        SubjectCryptographicMaterialAggregate.newBuilder().addMaterials(cryptoMaterial).build())
-        );
+                commandProducer.send(
+                        new ProducerRecord<>(
+                                config.getString(KafkaSecretKeyStoreConfig.TOPIC_COMMANDS_CONFIG),
+                                subject,
+                                command),
+                        (metadata, exception) -> {
+                            if (exception != null) {
+                                future.completeExceptionally(exception);
+                            } else {
+                                future.complete(SubjectCryptographicMaterialAggregate
+                                        .newBuilder().addMaterials(cryptoMaterial).build());
+                            }
+                        })
+        ).thenComposeAsync(__ -> future);
     }
 
     CompletableFuture<SubjectCryptographicMaterialAggregate> existentMaterialsFor(String subjectId) {
