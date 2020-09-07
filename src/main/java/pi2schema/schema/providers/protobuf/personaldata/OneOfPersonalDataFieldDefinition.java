@@ -1,20 +1,17 @@
 package pi2schema.schema.providers.protobuf.personaldata;
 
+import com.google.protobuf.*;
+import com.google.protobuf.Descriptors.FieldDescriptor;
+import com.google.protobuf.Descriptors.OneofDescriptor;
+import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import pi2schema.EncryptedPersonalDataV1.EncryptedPersonalData;
+import pi2schema.crypto.Decryptor;
 import pi2schema.crypto.EncryptedData;
 import pi2schema.crypto.Encryptor;
 import pi2schema.schema.personaldata.*;
 import pi2schema.schema.providers.protobuf.subject.ProtobufSubjectIdentifierFieldDefinition;
-import pi2schema.EncryptedPersonalDataV1.EncryptedPersonalData;
-import pi2schema.crypto.Decryptor;
-import com.google.protobuf.ByteString;
-import com.google.protobuf.Descriptors;
-import com.google.protobuf.Descriptors.FieldDescriptor;
-import com.google.protobuf.Descriptors.OneofDescriptor;
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.Message;
-import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.crypto.spec.IvParameterSpec;
 import java.util.List;
@@ -89,8 +86,7 @@ public class OneOfPersonalDataFieldDefinition
                 });
     }
 
-    public void swapToDecrypted(Decryptor decryptor, Message.Builder decryptingInstance) {
-
+    public CompletableFuture<Void> swapToDecrypted(Decryptor decryptor, Message.Builder decryptingInstance) {
         Object encryptedValue = decryptingInstance.getField(targetFieldForEncryption);
         if (!(encryptedValue instanceof EncryptedPersonalData)) {
             throw new UnsupportedEncryptedFieldFormatException(
@@ -99,22 +95,25 @@ public class OneOfPersonalDataFieldDefinition
         }
         EncryptedPersonalData encryptedPersonalData = (EncryptedPersonalData) encryptedValue;
 
-        byte[] decrypted = decryptor.decrypt(encryptedPersonalData.getSubjectId(),
-                new EncryptedData(encryptedPersonalData.getData().toByteArray(),
-                        encryptedPersonalData.getUsedTransformation(),
-                        new IvParameterSpec(encryptedPersonalData.getInitializationVector().toByteArray())));
+        EncryptedData encryptedData = new EncryptedData(
+                encryptedPersonalData.getData().toByteArray(),
+                encryptedPersonalData.getUsedTransformation(),
+                new IvParameterSpec(encryptedPersonalData.getInitializationVector().toByteArray()));
 
-        decryptingInstance.clearOneof(containerOneOfDescriptor);
-
-        FieldDescriptor personalDataUnencryptedField = containerOneOfDescriptor.getContainingType().findFieldByNumber(
-                encryptedPersonalData.getPersonalDataFieldNumber());
-
-        try {
-            decryptingInstance.getFieldBuilder(personalDataUnencryptedField)
-                    .mergeFrom(decrypted);
-        } catch (InvalidProtocolBufferException e) {
-            throw new InvalidEncryptedMessageException(e);
-        }
+        return decryptor
+                .decrypt(encryptedPersonalData.getSubjectId(), encryptedData)
+                .thenAccept(decrypted -> {
+                    decryptingInstance.clearOneof(containerOneOfDescriptor);
+                    FieldDescriptor personalDataUnencryptedField =
+                            containerOneOfDescriptor
+                                    .getContainingType()
+                                    .findFieldByNumber(encryptedPersonalData.getPersonalDataFieldNumber());
+                    try {
+                        decryptingInstance.getFieldBuilder(personalDataUnencryptedField).mergeFrom(decrypted);
+                    } catch (InvalidProtocolBufferException e) {
+                        throw new InvalidEncryptedMessageException(e);
+                    }
+                });
     }
 
     static boolean hasPersonalData(@NotNull OneofDescriptor descriptor) {
@@ -139,5 +138,4 @@ public class OneOfPersonalDataFieldDefinition
 
         return encryptionFields.get(0);
     }
-
 }

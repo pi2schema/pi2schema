@@ -31,7 +31,7 @@ class LocalCryptoTest {
 
         //When
         EncryptedData encrypted = encryptor.encrypt("", toBeEncrypted).get();
-        byte[] decrypted = decryptor.decrypt("", encrypted);
+        byte[] decrypted = decryptor.decrypt("", encrypted).get();
 
         //Then
         assertThat(toBeEncrypted).isNotEqualTo(encrypted.data());

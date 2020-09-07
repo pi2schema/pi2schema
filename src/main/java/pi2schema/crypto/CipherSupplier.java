@@ -9,7 +9,7 @@ import java.util.function.Supplier;
 
 class CipherSupplier implements Supplier<Cipher> {
     private final String transformation;
-    private ThrowingConsumer<Cipher, GeneralSecurityException> init;
+    private final ThrowingConsumer<Cipher, GeneralSecurityException> init;
 
     private CipherSupplier(String transformation, ThrowingConsumer<Cipher, GeneralSecurityException> init) {
         this.transformation = transformation;

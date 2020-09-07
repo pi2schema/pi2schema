@@ -6,6 +6,9 @@ import pi2schema.schema.providers.protobuf.personaldata.PersonalMetadataProvider
 import com.google.protobuf.Message;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Stream;
+
 public class ProtobufDecryptionEngine<T extends Message> {
 
     private final PersonalMetadataProvider personalMetadataProvider = new PersonalMetadataProvider();
@@ -18,11 +21,14 @@ public class ProtobufDecryptionEngine<T extends Message> {
     public T decrypt(@NotNull T data) {
         PersonalMetadata metadata = personalMetadataProvider.forDescriptor(data.getDescriptorForType());
 
-        Message.Builder encryptingBuilder = data.toBuilder();
+        Message.Builder decryptingBuilder = data.toBuilder();
 
-        metadata.decryptPersonalData(decryptor, encryptingBuilder);
+        Stream<CompletableFuture<Void>> decrypted =
+                metadata.decryptPersonalData(decryptor, decryptingBuilder);
 
-        //TODO check how schema registry solves this cast
-        return (T) encryptingBuilder.build();
+        return (T) CompletableFuture
+                .allOf(decrypted.toArray(CompletableFuture[]::new))
+                .thenApply(__ -> decryptingBuilder.build())
+                .join();
     }
 }

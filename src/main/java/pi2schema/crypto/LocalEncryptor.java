@@ -21,10 +21,6 @@ public class LocalEncryptor implements Encryptor {
 
     private final EncryptingMaterialsProvider provider;
 
-    public LocalEncryptor(EncryptingMaterialsProvider provider) {
-        this.provider = provider;
-    }
-
     private final BiFunction<Cipher, byte[], CompletableFuture<byte[]>> encrypt =
             (Cipher c, byte[] bytes) -> CompletableFuture.supplyAsync(() -> {
                 try {
@@ -34,6 +30,10 @@ public class LocalEncryptor implements Encryptor {
                     throw new RuntimeException(e);
                 }
             });
+
+    public LocalEncryptor(EncryptingMaterialsProvider provider) {
+        this.provider = provider;
+    }
 
     @Override
     public CompletableFuture<EncryptedData> encrypt(String subjectId, byte[] data) {

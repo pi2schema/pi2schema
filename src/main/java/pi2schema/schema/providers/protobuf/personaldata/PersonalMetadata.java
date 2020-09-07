@@ -1,16 +1,13 @@
 package pi2schema.schema.providers.protobuf.personaldata;
 
-import pi2schema.crypto.Decryptor;
-import pi2schema.crypto.Encryptor;
 import com.google.protobuf.Message;
 import org.jetbrains.annotations.NotNull;
+import pi2schema.crypto.Decryptor;
+import pi2schema.crypto.Encryptor;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static java.util.stream.Collectors.toList;
 
 public class PersonalMetadata {
 
@@ -26,13 +23,15 @@ public class PersonalMetadata {
 
     public Stream<CompletableFuture<Void>> encryptPersonalData(
             Encryptor encryptor, Message.Builder encryptingBuilder) {
-        return personalDataFields.stream()
+        return personalDataFields
+                .parallelStream()
                 .map(field -> field.swapToEncrypted(encryptor, encryptingBuilder));
     }
 
-    public void decryptPersonalData(Decryptor decryptor, Message.Builder decryptingBuilder){
-        personalDataFields.forEach(field ->
-                field.swapToDecrypted(decryptor, decryptingBuilder));
-
+    public Stream<CompletableFuture<Void>> decryptPersonalData(
+            Decryptor decryptor, Message.Builder decryptingBuilder) {
+        return personalDataFields
+                .parallelStream()
+                .map(field -> field.swapToDecrypted(decryptor, decryptingBuilder));
     }
 }
