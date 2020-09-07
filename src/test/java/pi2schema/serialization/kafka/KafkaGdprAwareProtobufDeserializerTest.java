@@ -18,6 +18,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static pi2schema.EncryptedPersonalDataV1.EncryptedPersonalData;
@@ -30,7 +31,8 @@ public class KafkaGdprAwareProtobufDeserializerTest {
     private final Map<String, Object> configs;
     private final KafkaProtobufSerializer serializer;
 
-    private final Decryptor noOpDecryptor = (subj, encryptedData) -> encryptedData.data();
+    private final Decryptor noOpDecryptor = (subj, encryptedData) ->
+            CompletableFuture.completedFuture(encryptedData.data());
 
     public KafkaGdprAwareProtobufDeserializerTest() {
         HashMap<String, Object> initial = new HashMap<>();
@@ -88,7 +90,8 @@ public class KafkaGdprAwareProtobufDeserializerTest {
                 .setRegisteredAt(Timestamp.newBuilder().setSeconds(Instant.now().getEpochSecond()))
                 .build();
 
-        Decryptor decryptor = (subj, data) -> decrypted.toByteArray();
+        Decryptor decryptor = (subj, data) ->
+                CompletableFuture.completedFuture(decrypted.toByteArray());
 
         KafkaGdprAwareProtobufDeserializer<FarmerRegisteredEvent> deserializer = new KafkaGdprAwareProtobufDeserializer<>(
                 decryptor,
@@ -110,9 +113,5 @@ public class KafkaGdprAwareProtobufDeserializerTest {
 
         assertThat(actual.getContactInfo())
                 .isEqualTo(FarmerRegisteredEventFixture.johnDoe().getContactInfo());
-
-
     }
-
-
 }

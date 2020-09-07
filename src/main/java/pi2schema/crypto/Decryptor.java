@@ -1,7 +1,8 @@
 package pi2schema.crypto;
 
+import java.util.concurrent.CompletableFuture;
+
 public interface Decryptor {
 
-    byte[] decrypt(String key, EncryptedData data);
-
+    CompletableFuture<byte[]> decrypt(String key, EncryptedData data);
 }

@@ -18,6 +18,7 @@ import org.opentest4j.AssertionFailedError;
 
 import java.time.Instant;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import static pi2schema.EncryptedPersonalDataV1.EncryptedPersonalData;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -126,7 +127,8 @@ class OneOfPersonalDataFieldDefinitionTest {
 
         OneOfPersonalDataFieldDefinition personalDataFieldDef = FarmerRegisteredEventFixture.personalDataFieldDefinition();
 
-        Decryptor decryptor = (key, data) -> decrypted.toByteArray();
+        Decryptor decryptor = (key, data) ->
+                CompletableFuture.completedFuture(decrypted.toByteArray());
 
         //when
         personalDataFieldDef.swapToDecrypted(decryptor, encryptedEvent);
