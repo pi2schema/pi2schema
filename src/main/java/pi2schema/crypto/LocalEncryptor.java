@@ -1,8 +1,11 @@
 package pi2schema.crypto;
 
+import pi2schema.crypto.materials.SymmetricMaterial;
 import pi2schema.crypto.providers.EncryptingMaterialsProvider;
 
-import javax.crypto.*;
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.spec.IvParameterSpec;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
@@ -37,19 +40,21 @@ public class LocalEncryptor implements Encryptor {
 
     @Override
     public CompletableFuture<EncryptedData> encrypt(String subjectId, byte[] data) {
-        final SecretKey encryptionKey = provider.encryptionKeysFor(subjectId).getEncryptionKey();
-        final String transformation = String.format("%s/%s/%s", encryptionKey.getAlgorithm(), MODE, PADDING);
-
-        return CompletableFuture
-                .supplyAsync(CipherSupplier.forEncryption(encryptionKey, transformation))
-                .thenComposeAsync(cipher ->
-                        encrypt.apply(cipher, data)
-                                .thenApplyAsync(encryptedData ->
-                                        new EncryptedData(
-                                                encryptedData,
-                                                transformation,
-                                                new IvParameterSpec(cipher.getIV())
-                                        )));
+        return provider
+                .encryptionKeysFor(subjectId)
+                .thenApply(SymmetricMaterial::getEncryptionKey)
+                .thenCompose(encryptionKey -> {
+                    String transformation = String.format("%s/%s/%s", encryptionKey.getAlgorithm(), MODE, PADDING);
+                    return CompletableFuture
+                            .supplyAsync(CipherSupplier.forEncryption(encryptionKey, transformation))
+                            .thenComposeAsync(cipher ->
+                                    encrypt.apply(cipher, data)
+                                            .thenApplyAsync(encryptedData ->
+                                                    new EncryptedData(
+                                                            encryptedData,
+                                                            transformation,
+                                                            new IvParameterSpec(cipher.getIV())
+                                                    )));
+                });
     }
-
 }

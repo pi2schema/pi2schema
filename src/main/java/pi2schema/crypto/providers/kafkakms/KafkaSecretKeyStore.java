@@ -3,30 +3,21 @@ package pi2schema.crypto.providers.kafkakms;
 import com.google.protobuf.ByteString;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.streams.KafkaStreams;
-import org.apache.kafka.streams.StoreQueryParameters;
-import org.apache.kafka.streams.StreamsBuilder;
-import org.apache.kafka.streams.Topology;
+import org.apache.kafka.streams.*;
 import org.apache.kafka.streams.kstream.Aggregator;
-import org.apache.kafka.streams.processor.AbstractProcessor;
-import org.apache.kafka.streams.processor.ProcessorContext;
-import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.QueryableStoreTypes;
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pi2schema.kms.KafkaProvider;
-import pi2schema.kms.KafkaProvider.Commands;
-import pi2schema.kms.KafkaProvider.Subject;
-import pi2schema.kms.KafkaProvider.SubjectCryptographicMaterial;
-import pi2schema.kms.KafkaProvider.SubjectCryptographicMaterialAggregate;
+import pi2schema.kms.KafkaProvider.*;
 
 import javax.crypto.KeyGenerator;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -65,16 +56,21 @@ public class KafkaSecretKeyStore implements AutoCloseable {
         );
     }
 
-    SubjectCryptographicMaterialAggregate retrieveOrCreateCryptoMaterialsFor(@NotNull String subjectId) {
-
+    CompletableFuture<SubjectCryptographicMaterialAggregate> retrieveOrCreateCryptoMaterialsFor(
+            @NotNull String subjectId) {
         Subject subject = Subject.newBuilder().setId(subjectId).build();
 
         return existentMaterialsFor(subject)
-                .orElseGet(() -> createMaterialsFor(subject));
-
+                .thenCompose(material -> {
+                    if (material != null) {
+                        return CompletableFuture.completedFuture(material);
+                    } else {
+                        return createMaterialsFor(subject);
+                    }
+                });
     }
 
-    private SubjectCryptographicMaterialAggregate createMaterialsFor(Subject subject) {
+    private CompletableFuture<SubjectCryptographicMaterialAggregate> createMaterialsFor(Subject subject) {
 
         SubjectCryptographicMaterial cryptoMaterial = SubjectCryptographicMaterial.newBuilder()
                 .setId(UUID.randomUUID().toString())
@@ -86,20 +82,25 @@ public class KafkaSecretKeyStore implements AutoCloseable {
         Commands command = Commands.newBuilder()
                 .setRegister(KafkaProvider.RegisterCryptographicMaterials.newBuilder().setMaterial(cryptoMaterial).build())
                 .build();
-        commandProducer.send(new ProducerRecord<>(
-                config.getString(KafkaSecretKeyStoreConfig.TOPIC_COMMANDS_CONFIG),
-                subject,
-                command));
 
-        return SubjectCryptographicMaterialAggregate.newBuilder().addMaterials(cryptoMaterial).build();
+        return CompletableFuture.supplyAsync(() ->
+                commandProducer.send(new ProducerRecord<>(
+                        config.getString(KafkaSecretKeyStoreConfig.TOPIC_COMMANDS_CONFIG),
+                        subject,
+                        command))
+        ).thenComposeAsync(__ ->
+                CompletableFuture.completedFuture(
+                        SubjectCryptographicMaterialAggregate.newBuilder().addMaterials(cryptoMaterial).build())
+        );
     }
 
-    Optional<SubjectCryptographicMaterialAggregate> existentMaterialsFor(String subjectId) {
+    CompletableFuture<SubjectCryptographicMaterialAggregate> existentMaterialsFor(String subjectId) {
         return existentMaterialsFor(Subject.newBuilder().setId(subjectId).build());
     }
 
-    private Optional<SubjectCryptographicMaterialAggregate> existentMaterialsFor(Subject subject) {
-        return Optional.ofNullable(allKeys.get(subject));
+    private CompletableFuture<SubjectCryptographicMaterialAggregate> existentMaterialsFor(
+            Subject subject) {
+        return CompletableFuture.supplyAsync(() -> allKeys.get(subject));
     }
 
     private KafkaStreams startStreams(Map<String, ?> providedConfigs) {

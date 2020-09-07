@@ -20,24 +20,20 @@ class InMemoryKmsTest {
 
     @Test
     void encryptionKeysFor() {
-
-        EncryptingMaterial aSubject = kms.encryptionKeysFor("aSubject");
+        EncryptingMaterial aSubject = kms.encryptionKeysFor("aSubject").join();
 
         assertThat(aSubject).isNotNull();
         assertThat(aSubject.getEncryptionKey()).isNotNull();
 
-        EncryptingMaterial sameEncryptingMaterial = kms.encryptionKeysFor("aSubject");
-        assertThat(sameEncryptingMaterial)
-                .isEqualTo(aSubject);
+        EncryptingMaterial sameEncryptingMaterial = kms.encryptionKeysFor("aSubject").join();
+        assertThat(sameEncryptingMaterial).isEqualTo(aSubject);
     }
 
     @Test
     void decryptionKeysFor() {
-        EncryptingMaterial aSubject = kms.encryptionKeysFor("aSubject");
-
-        DecryptingMaterial aSubjectRetrieved = kms.decryptionKeysFor("aSubject");
+        EncryptingMaterial aSubject = kms.encryptionKeysFor("aSubject").join();
+        DecryptingMaterial aSubjectRetrieved = kms.decryptionKeysFor("aSubject").join();
 
         assertThat(aSubject).isEqualTo(aSubjectRetrieved);
     }
-
 }
