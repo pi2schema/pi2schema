@@ -12,6 +12,7 @@ import pi2schema.kms.KafkaProvider;
 import pi2schema.kms.KafkaProvider.SubjectCryptographicMaterialAggregate;
 
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -47,9 +48,9 @@ class MostRecentMaterialsProviderTest {
                         .build())
                 .build();
         when(kafkaSecretKeyStore.existentMaterialsFor("existentSubject"))
-                .thenReturn(Optional.of(materials));
+                .thenReturn(CompletableFuture.completedFuture(materials));
 
-        DecryptingMaterial existentSubjectKeys = materialsProvider.decryptionKeysFor("existentSubject");
+        DecryptingMaterial existentSubjectKeys = materialsProvider.decryptionKeysFor("existentSubject").join();
 
         assertThat(existentSubjectKeys).isNotNull();
     }

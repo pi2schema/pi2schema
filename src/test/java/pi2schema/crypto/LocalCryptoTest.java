@@ -23,8 +23,10 @@ class LocalCryptoTest {
 
         SecretKey secretKey = KeyGen.aes256().generateKey();
 
-        EncryptingMaterialsProvider encProvider = (s) -> new SymmetricMaterial(secretKey);
-        DecryptingMaterialsProvider decProvider = (s) -> new SymmetricMaterial(secretKey);
+        EncryptingMaterialsProvider encProvider = (s) ->
+                CompletableFuture.completedFuture(new SymmetricMaterial(secretKey));
+        DecryptingMaterialsProvider decProvider = (s) ->
+                CompletableFuture.completedFuture(new SymmetricMaterial(secretKey));
 
         Encryptor encryptor = new LocalEncryptor(encProvider);
         Decryptor decryptor = new LocalDecryptor(decProvider);

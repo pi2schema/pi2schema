@@ -1,8 +1,6 @@
 package pi2schema.crypto.providers.inmemorykms;
 
 import org.jetbrains.annotations.NotNull;
-import pi2schema.crypto.materials.DecryptingMaterial;
-import pi2schema.crypto.materials.EncryptingMaterial;
 import pi2schema.crypto.materials.SymmetricMaterial;
 import pi2schema.crypto.providers.DecryptingMaterialsProvider;
 import pi2schema.crypto.providers.EncryptingMaterialsProvider;
@@ -12,6 +10,7 @@ import javax.crypto.KeyGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Development focused in memory key management.
@@ -32,13 +31,14 @@ public class InMemoryKms implements EncryptingMaterialsProvider, DecryptingMater
     }
 
     @Override
-    public EncryptingMaterial encryptionKeysFor(@NotNull String subjectId) {
-        return keyStore.computeIfAbsent(subjectId, missingKey ->
-                new SymmetricMaterial(keyGenerator.generateKey()));
+    public CompletableFuture<SymmetricMaterial> encryptionKeysFor(@NotNull String subjectId) {
+        return CompletableFuture.completedFuture(
+                keyStore.computeIfAbsent(subjectId, missingKey ->
+                        new SymmetricMaterial(keyGenerator.generateKey())));
     }
 
     @Override
-    public DecryptingMaterial decryptionKeysFor(@NotNull String subjectId) {
-        return keyStore.get(subjectId);
+    public CompletableFuture<SymmetricMaterial> decryptionKeysFor(@NotNull String subjectId) {
+        return CompletableFuture.completedFuture(keyStore.get(subjectId));
     }
 }

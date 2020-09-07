@@ -72,7 +72,8 @@ class KafkaSecretKeyStoreTest {
         final String subject = UUID.randomUUID().toString();
 
         // create
-        SubjectCryptographicMaterialAggregate firstMaterials = store.retrieveOrCreateCryptoMaterialsFor(subject);
+        SubjectCryptographicMaterialAggregate firstMaterials =
+                store.retrieveOrCreateCryptoMaterialsFor(subject).join();
 
         assertThat(firstMaterials.getMaterialsList()).hasSize(1);
         assertThat(firstMaterials.getMaterials(0).getAlgorithm())
@@ -84,18 +85,13 @@ class KafkaSecretKeyStoreTest {
         // the key propagation is asynchronous
         await().atMost(Duration.ofSeconds(120)).untilAsserted(
                 () -> {
-                    Optional<SubjectCryptographicMaterialAggregate> retrievedMaterials = store.existentMaterialsFor(subject);
-
-                    assertThat(retrievedMaterials).isPresent();
-                    assertThat(retrievedMaterials).hasValueSatisfying(present ->
-                            assertThat(present).isEqualTo(firstMaterials)
-                    );
-
+                    SubjectCryptographicMaterialAggregate retrievedMaterials = store.existentMaterialsFor(subject).join();
+                    assertThat(retrievedMaterials).isEqualTo(firstMaterials);
                 }
         );
 
         // once the key is propagated, should reuse the previous key and not create new ones
-        SubjectCryptographicMaterialAggregate retrieveOrCreateSecond = store.retrieveOrCreateCryptoMaterialsFor(subject);
+        SubjectCryptographicMaterialAggregate retrieveOrCreateSecond = store.retrieveOrCreateCryptoMaterialsFor(subject).join();
 
         assertThat(firstMaterials).isEqualTo(retrieveOrCreateSecond);
     }
