@@ -4,12 +4,8 @@ import pi2schema.crypto.providers.EncryptingMaterialsProvider;
 
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 /**
  * Default implementation performing the actual encryption / decryption using the standard Java building blocks for cryptography.
@@ -45,7 +41,7 @@ public class LocalEncryptor implements Encryptor {
         final String transformation = String.format("%s/%s/%s", encryptionKey.getAlgorithm(), MODE, PADDING);
 
         return CompletableFuture
-                .supplyAsync(new CipherSupplier(encryptionKey, transformation))
+                .supplyAsync(CipherSupplier.forEncryption(encryptionKey, transformation))
                 .thenComposeAsync(cipher ->
                         encrypt.apply(cipher, data)
                                 .thenApplyAsync(encryptedData ->
@@ -56,26 +52,4 @@ public class LocalEncryptor implements Encryptor {
                                         )));
     }
 
-    private class CipherSupplier implements Supplier<Cipher> {
-        final SecretKey encryptionKey;
-        final String transformation;
-
-        CipherSupplier(SecretKey encryptionKey, String transformation) {
-            this.encryptionKey = encryptionKey;
-            this.transformation = transformation;
-        }
-
-        @Override
-        public Cipher get() {
-            try {
-                Cipher cipher = Cipher.getInstance(transformation);
-                cipher.init(Cipher.ENCRYPT_MODE, encryptionKey);
-                return cipher;
-            } catch (NoSuchAlgorithmException
-                    | NoSuchPaddingException
-                    | InvalidKeyException e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
 }
