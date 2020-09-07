@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.crypto.spec.IvParameterSpec;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -62,19 +63,19 @@ public class OneOfPersonalDataFieldDefinition
     }
 
     @Override
-    public void swapToEncrypted(Encryptor encryptor, Message.Builder encryptingInstance) {
+    public CompletableFuture<Void> swapToEncrypted(Encryptor encryptor, Message.Builder encryptingInstance) {
 
         if (!encryptingInstance.hasOneof(containerOneOfDescriptor)) {
             log.info("The oneOf personal data container {} has no data set. Optional field?",
                     containerOneOfDescriptor.getFullName());
-            return;
+            return CompletableFuture.allOf();
         }
 
         int sourceFieldNumber = encryptingInstance.getOneofFieldDescriptor(containerOneOfDescriptor).getNumber();
 
         String subjectId = subjectIdentifierFieldDefinition.subjectFrom(encryptingInstance);
 
-        encryptor
+        return encryptor
                 .encrypt(subjectId, valueFrom(encryptingInstance))
                 .thenAccept(encrypted -> {
                     encryptingInstance.clearOneof(containerOneOfDescriptor);
