@@ -13,6 +13,7 @@ import pi2schema.kms.KafkaProvider;
 import pi2schema.kms.KafkaProvider.*;
 
 import javax.crypto.KeyGenerator;
+import java.io.Closeable;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
@@ -28,7 +29,7 @@ import java.util.concurrent.TimeUnit;
  * - right to be forgotten
  * - avoid global store / partitioning aware?
  */
-public class KafkaSecretKeyStore implements AutoCloseable {
+public class KafkaSecretKeyStore implements Closeable {
 
     private static final Logger log = LoggerFactory.getLogger(KafkaSecretKeyStore.class);
 
@@ -40,10 +41,12 @@ public class KafkaSecretKeyStore implements AutoCloseable {
 
     private final KafkaProducer<Subject, Commands> commandProducer;
 
-    public KafkaSecretKeyStore(KeyGenerator keyGenerator, Map<String, Object> configs) {
+    public KafkaSecretKeyStore(KeyGenerator keyGenerator, Map<String, ?> configs) {
         this.keyGenerator = keyGenerator;
         this.config = new KafkaSecretKeyStoreConfig(configs);
-        this.commandProducer = new KafkaProducer<>(configs,
+        Properties producerConfig = new Properties();
+        producerConfig.putAll(configs);
+        this.commandProducer = new KafkaProducer<>(producerConfig,
                 config.topics().COMMANDS.keySerializer(),
                 config.topics().COMMANDS.valueSerializer()
         );

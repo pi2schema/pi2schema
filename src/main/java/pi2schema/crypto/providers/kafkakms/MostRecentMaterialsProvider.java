@@ -49,4 +49,9 @@ public class MostRecentMaterialsProvider implements EncryptingMaterialsProvider,
 
         return new SymmetricMaterial(new SecretKeySpec(latestKey, latestVersion.getAlgorithm()));
     }
+
+    @Override
+    public void close() {
+        kafkaSecretKeyStore.close();
+    }
 }

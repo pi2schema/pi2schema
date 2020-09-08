@@ -40,4 +40,7 @@ public class InMemoryKms implements EncryptingMaterialsProvider, DecryptingMater
     public CompletableFuture<SymmetricMaterial> decryptionKeysFor(@NotNull String subjectId) {
         return CompletableFuture.completedFuture(keyStore.get(subjectId));
     }
+
+    @Override
+    public void close() { }
 }

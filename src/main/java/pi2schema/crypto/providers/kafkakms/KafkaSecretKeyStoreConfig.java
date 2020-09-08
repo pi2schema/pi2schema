@@ -15,6 +15,9 @@ import pi2schema.kms.KafkaProvider.Commands;
 import pi2schema.kms.KafkaProvider.Subject;
 import pi2schema.kms.KafkaProvider.SubjectCryptographicMaterialAggregate;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -61,8 +64,17 @@ public class KafkaSecretKeyStoreConfig extends AbstractConfig {
     Map<String, Object> toKafkaStreamsConfig() {
         Map<String, Object> values = new HashMap<>(this.values());
 
-        values.put(StreamsConfig.APPLICATION_ID_CONFIG, this.get(KMS_APPLICATION_ID_CONFIG));
+        String applicationId = this.getString(KMS_APPLICATION_ID_CONFIG);
         values.remove(KMS_APPLICATION_ID_CONFIG);
+        values.put(StreamsConfig.APPLICATION_ID_CONFIG, applicationId);
+
+        values.computeIfAbsent(StreamsConfig.STATE_DIR_CONFIG, __ -> {
+            try {
+                return Files.createTempDirectory(applicationId).toString();
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
 
         return values;
     }

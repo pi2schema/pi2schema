@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static pi2schema.crypto.providers.kafkakms.KafkaTestUtils.createTopics;
 
 @Testcontainers
 class KafkaSecretKeyStoreTest {
@@ -93,17 +94,5 @@ class KafkaSecretKeyStoreTest {
         SubjectCryptographicMaterialAggregate retrieveOrCreateSecond = store.retrieveOrCreateCryptoMaterialsFor(subject).join();
 
         assertThat(firstMaterials).isEqualTo(retrieveOrCreateSecond);
-    }
-
-
-    private static void createTopics(Map<String, Object> configs, String... topics) {
-        List<NewTopic> newTopics =
-                Arrays.stream(topics)
-                        .map(topic -> new NewTopic(topic, 1, (short) 1))
-                        .collect(Collectors.toList());
-
-        try (AdminClient admin = AdminClient.create(configs)) {
-            admin.createTopics(newTopics);
-        }
     }
 }

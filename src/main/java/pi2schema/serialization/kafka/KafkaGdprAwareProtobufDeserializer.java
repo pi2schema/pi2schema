@@ -1,6 +1,5 @@
 package pi2schema.serialization.kafka;
 
-import pi2schema.crypto.Decryptor;
 import com.google.protobuf.Message;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer;
@@ -8,6 +7,12 @@ import org.apache.kafka.common.header.Headers;
 import org.apache.kafka.common.header.internals.RecordHeaders;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.jetbrains.annotations.Nullable;
+import pi2schema.crypto.Decryptor;
+import pi2schema.crypto.LocalDecryptor;
+import pi2schema.crypto.providers.DecryptingMaterialsProvider;
+import pi2schema.crypto.providers.kafkakms.KafkaSecretKeyStore;
+import pi2schema.crypto.providers.kafkakms.MostRecentMaterialsProvider;
+import pi2schema.crypto.support.KeyGen;
 
 import java.util.Map;
 
@@ -15,11 +20,12 @@ public class KafkaGdprAwareProtobufDeserializer<T extends Message> implements De
 
     private static final RecordHeaders EMPTY_HEADERS = new RecordHeaders();
 
-    private final KafkaProtobufDeserializer<T> inner;
+    private Deserializer<T> inner;
     private ProtobufDecryptionEngine<T> decryptionEngine;
+    private DecryptingMaterialsProvider materialsProvider;
 
     public KafkaGdprAwareProtobufDeserializer() {
-        this.inner = new KafkaProtobufDeserializer<>();
+        this.inner = new UncofiguredDeserializer<>();
     }
 
     KafkaGdprAwareProtobufDeserializer(Decryptor decryptor,
@@ -32,7 +38,14 @@ public class KafkaGdprAwareProtobufDeserializer<T extends Message> implements De
 
     @Override
     public void configure(Map<String, ?> configs, boolean isKey) {
+        if (this.decryptionEngine != null || !(this.inner instanceof UncofiguredDeserializer)) {
+            throw new IllegalStateException("Configure method was called even though the deserializer was already configured");
+        }
+
+        this.inner = new KafkaProtobufDeserializer<>();
         this.inner.configure(configs, isKey);
+        this.materialsProvider = new MostRecentMaterialsProvider(new KafkaSecretKeyStore(KeyGen.aes256(), configs));
+        this.decryptionEngine = new ProtobufDecryptionEngine<>(new LocalDecryptor(materialsProvider));
     }
 
     @Override
@@ -42,7 +55,7 @@ public class KafkaGdprAwareProtobufDeserializer<T extends Message> implements De
 
     @Override
     public T deserialize(String topic, Headers headers, @Nullable byte[] data) {
-        if(data == null){
+        if (data == null) {
             return null;
         }
 
@@ -54,5 +67,13 @@ public class KafkaGdprAwareProtobufDeserializer<T extends Message> implements De
     @Override
     public void close() {
         this.inner.close();
+        this.materialsProvider.close();
+    }
+
+    private class UncofiguredDeserializer<T> implements Deserializer<T> {
+        @Override
+        public T deserialize(String topic, byte[] data) {
+            throw new UnconfiguredException();
+        }
     }
 }
