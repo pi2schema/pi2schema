@@ -1,6 +1,6 @@
 package pi2schema.crypto.providers.kafkakms;
 
-import pi2schema.crypto.materials.DecryptingMaterialNotFoundException;
+import pi2schema.crypto.materials.MissingCryptoMaterialsException;
 import pi2schema.crypto.materials.SymmetricMaterial;
 import pi2schema.crypto.providers.DecryptingMaterialsProvider;
 import pi2schema.crypto.providers.EncryptingMaterialsProvider;
@@ -28,17 +28,20 @@ public class MostRecentMaterialsProvider implements EncryptingMaterialsProvider,
     //TODO add versioning for the decryption
     @Override
     public CompletableFuture<SymmetricMaterial> decryptionKeysFor(String subjectId) {
-        try {
         return kafkaSecretKeyStore
                 .existentMaterialsFor(subjectId)
-                .thenApply(this::latestSecretKey);
-        } catch (NullPointerException e) {
-            throw new DecryptingMaterialNotFoundException(subjectId);
-        }
+                .thenApply(materials -> {
+                            if (materials == null)
+                                throw new MissingCryptoMaterialsException(subjectId);
+
+                            return latestSecretKey(materials);
+                        }
+                );
     }
 
     //todo rethink the list structure / versioning
     private SymmetricMaterial latestSecretKey(SubjectCryptographicMaterialAggregate materials) {
+
         int latestKeyIndex = materials.getMaterialsCount() - 1;
         SubjectCryptographicMaterial latestVersion = materials.getMaterialsList().get(latestKeyIndex);
 

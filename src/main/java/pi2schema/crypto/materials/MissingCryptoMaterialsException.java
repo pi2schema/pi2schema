@@ -1,10 +1,10 @@
 package pi2schema.crypto.materials;
 
-public class DecryptingMaterialNotFoundException extends RuntimeException {
+public class MissingCryptoMaterialsException extends RuntimeException {
 
     private final String missingSubject;
 
-    public DecryptingMaterialNotFoundException(String missingSubject) {
+    public MissingCryptoMaterialsException(String missingSubject) {
         this.missingSubject = missingSubject;
     }
 
