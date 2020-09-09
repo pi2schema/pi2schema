@@ -7,12 +7,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pi2schema.crypto.materials.DecryptingMaterial;
-import pi2schema.crypto.materials.DecryptingMaterialNotFoundException;
+import pi2schema.crypto.materials.MissingCryptoMaterialsException;
 import pi2schema.kms.KafkaProvider;
 import pi2schema.kms.KafkaProvider.SubjectCryptographicMaterialAggregate;
 
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -31,8 +31,14 @@ class MostRecentMaterialsProviderTest {
     @Test
     void decryptionKeysForSubjectNotFoundShouldThrowException() {
 
-        DecryptingMaterialNotFoundException expected = assertThrows(DecryptingMaterialNotFoundException.class, () ->
-                materialsProvider.decryptionKeysFor("subjectX"));
+        //simulate a missing key
+        when(kafkaSecretKeyStore.existentMaterialsFor("subjectX"))
+                .thenReturn(CompletableFuture.completedFuture(null));
+
+        CompletionException expected = assertThrows(CompletionException.class, () ->
+                materialsProvider.decryptionKeysFor("subjectX").join());
+
+        assertThat(expected.getCause()).isInstanceOf(MissingCryptoMaterialsException.class);
 
         assertThat(expected).hasMessageContaining("subjectX");
     }
