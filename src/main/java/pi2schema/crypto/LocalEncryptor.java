@@ -3,9 +3,7 @@ package pi2schema.crypto;
 import pi2schema.crypto.materials.SymmetricMaterial;
 import pi2schema.crypto.providers.EncryptingMaterialsProvider;
 
-import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.spec.IvParameterSpec;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
@@ -24,14 +22,7 @@ public class LocalEncryptor implements Encryptor {
 
     private final EncryptingMaterialsProvider provider;
 
-    private final BiFunction<Cipher, byte[], CompletableFuture<byte[]>> encrypt =
-            (Cipher c, byte[] bytes) -> CompletableFuture.supplyAsync(() -> {
-                try {
-                    return c.doFinal(bytes);
-                } catch (IllegalBlockSizeException | BadPaddingException e) {
-                    throw new RuntimeException(e);
-                }
-            });
+    private final BiFunction<Cipher, byte[], CompletableFuture<byte[]>> encrypt = CipherSupplier.EXECUTOR;
 
     public LocalEncryptor(EncryptingMaterialsProvider provider) {
         this.provider = provider;

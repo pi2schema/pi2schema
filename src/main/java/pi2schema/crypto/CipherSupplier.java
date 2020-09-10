@@ -5,6 +5,8 @@ import pi2schema.functional.ThrowingConsumer;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import java.security.GeneralSecurityException;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 class CipherSupplier implements Supplier<Cipher> {
@@ -38,4 +40,13 @@ class CipherSupplier implements Supplier<Cipher> {
                 cipher.init(Cipher.DECRYPT_MODE, secretKey, encryptedData.initializationVector())
         );
     }
+
+    static final BiFunction<Cipher, byte[], CompletableFuture<byte[]>> EXECUTOR =
+            (Cipher cipher, byte[] bytes) -> CompletableFuture.supplyAsync(() -> {
+                try {
+                    return cipher.doFinal(bytes);
+                } catch (GeneralSecurityException e) {
+                    throw new RuntimeException(e);
+                }
+            });
 }
