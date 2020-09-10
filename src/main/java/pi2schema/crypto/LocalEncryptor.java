@@ -27,8 +27,7 @@ public class LocalEncryptor implements Encryptor {
     private final BiFunction<Cipher, byte[], CompletableFuture<byte[]>> encrypt =
             (Cipher c, byte[] bytes) -> CompletableFuture.supplyAsync(() -> {
                 try {
-                    c.update(bytes);
-                    return c.doFinal();
+                    return c.doFinal(bytes);
                 } catch (IllegalBlockSizeException | BadPaddingException e) {
                     throw new RuntimeException(e);
                 }
