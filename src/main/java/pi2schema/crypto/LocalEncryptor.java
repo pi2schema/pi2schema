@@ -3,10 +3,8 @@ package pi2schema.crypto;
 import pi2schema.crypto.materials.SymmetricMaterial;
 import pi2schema.crypto.providers.EncryptingMaterialsProvider;
 
-import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.BiFunction;
 
 /**
  * Default implementation performing the actual encryption / decryption using the standard Java building blocks for cryptography.
@@ -22,8 +20,6 @@ public class LocalEncryptor implements Encryptor {
 
     private final EncryptingMaterialsProvider provider;
 
-    private final BiFunction<Cipher, byte[], CompletableFuture<byte[]>> encrypt = CipherSupplier.EXECUTOR;
-
     public LocalEncryptor(EncryptingMaterialsProvider provider) {
         this.provider = provider;
     }
@@ -36,9 +32,9 @@ public class LocalEncryptor implements Encryptor {
                 .thenCompose(encryptionKey -> {
                     String transformation = String.format("%s/%s/%s", encryptionKey.getAlgorithm(), MODE, PADDING);
                     return CompletableFuture
-                            .supplyAsync(CipherSupplier.forEncryption(encryptionKey, transformation))
+                            .supplyAsync(Ciphers.forEncryption(encryptionKey, transformation))
                             .thenComposeAsync(cipher ->
-                                    encrypt.apply(cipher, data)
+                                    Ciphers.apply(cipher, data)
                                             .thenApplyAsync(encryptedData ->
                                                     new EncryptedData(
                                                             encryptedData,
