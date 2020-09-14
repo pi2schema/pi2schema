@@ -3,15 +3,11 @@ package pi2schema.crypto;
 import pi2schema.crypto.materials.SymmetricMaterial;
 import pi2schema.crypto.providers.DecryptingMaterialsProvider;
 
-import javax.crypto.Cipher;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.BiFunction;
 
 public class LocalDecryptor implements Decryptor {
 
     private final DecryptingMaterialsProvider provider;
-
-    private final BiFunction<Cipher, byte[], CompletableFuture<byte[]>> decrypt = CipherSupplier.EXECUTOR;
 
     public LocalDecryptor(DecryptingMaterialsProvider provider) {
         this.provider = provider;
@@ -23,7 +19,7 @@ public class LocalDecryptor implements Decryptor {
                 .thenApply(SymmetricMaterial::getDecryptionKey)
                 .thenCompose(decryptionKey ->
                         CompletableFuture.supplyAsync(
-                                CipherSupplier.forDecryption(decryptionKey, encryptedData)))
-                .thenComposeAsync(cipher -> decrypt.apply(cipher, encryptedData.data()));
+                                Ciphers.forDecryption(decryptionKey, encryptedData)))
+                .thenComposeAsync(cipher -> Ciphers.apply(cipher, encryptedData.data()));
     }
 }
