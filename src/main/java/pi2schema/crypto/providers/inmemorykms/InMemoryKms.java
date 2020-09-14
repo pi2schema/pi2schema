@@ -7,7 +7,6 @@ import pi2schema.crypto.providers.EncryptingMaterialsProvider;
 import pi2schema.crypto.support.KeyGen;
 
 import javax.crypto.KeyGenerator;
-import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -22,7 +21,7 @@ public class InMemoryKms implements EncryptingMaterialsProvider, DecryptingMater
 
     private final Map<String, SymmetricMaterial> keyStore = new HashMap<>();
 
-    public InMemoryKms() throws NoSuchAlgorithmException {
+    public InMemoryKms() {
         this(KeyGen.aes256());
     }
 
@@ -41,4 +40,7 @@ public class InMemoryKms implements EncryptingMaterialsProvider, DecryptingMater
     public CompletableFuture<SymmetricMaterial> decryptionKeysFor(@NotNull String subjectId) {
         return CompletableFuture.completedFuture(keyStore.get(subjectId));
     }
+
+    @Override
+    public void close() { }
 }

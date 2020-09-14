@@ -15,13 +15,13 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import pi2schema.crypto.support.KeyGen;
 import pi2schema.kms.KafkaProvider.SubjectCryptographicMaterialAggregate;
 
-import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static pi2schema.crypto.providers.kafkakms.KafkaTestUtils.createTopics;
 
 @Testcontainers
 class KafkaSecretKeyStoreTest {
@@ -34,7 +34,7 @@ class KafkaSecretKeyStoreTest {
     private KafkaSecretKeyStore store;
 
     @BeforeEach
-    void setUp() throws NoSuchAlgorithmException {
+    void setUp() {
 
         kafka.start();
 
@@ -94,17 +94,5 @@ class KafkaSecretKeyStoreTest {
         SubjectCryptographicMaterialAggregate retrieveOrCreateSecond = store.retrieveOrCreateCryptoMaterialsFor(subject).join();
 
         assertThat(firstMaterials).isEqualTo(retrieveOrCreateSecond);
-    }
-
-
-    private static void createTopics(Map<String, Object> configs, String... topics) {
-        List<NewTopic> newTopics =
-                Arrays.stream(topics)
-                        .map(topic -> new NewTopic(topic, 1, (short) 1))
-                        .collect(Collectors.toList());
-
-        try (AdminClient admin = AdminClient.create(configs)) {
-            admin.createTopics(newTopics);
-        }
     }
 }

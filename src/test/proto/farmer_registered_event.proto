@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package com.acme;
+option java_outer_classname = "FarmerRegisteredEventOuterClass";
 
 import 'google/protobuf/timestamp.proto';
 
