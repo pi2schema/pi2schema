@@ -6,7 +6,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import pi2schema.crypto.materials.DecryptingMaterial;
 import pi2schema.crypto.materials.MissingCryptoMaterialsException;
 import pi2schema.kms.KafkaProvider;
 import pi2schema.kms.KafkaProvider.SubjectCryptographicMaterialAggregate;
@@ -30,12 +29,11 @@ class MostRecentMaterialsProviderTest {
 
     @Test
     void decryptionKeysForSubjectNotFoundShouldThrowException() {
-
         //simulate a missing key
         when(kafkaSecretKeyStore.existentMaterialsFor("subjectX"))
                 .thenReturn(CompletableFuture.completedFuture(null));
 
-        CompletionException expected = assertThrows(CompletionException.class, () ->
+        var expected = assertThrows(CompletionException.class, () ->
                 materialsProvider.decryptionKeysFor("subjectX").join());
 
         assertThat(expected.getCause()).isInstanceOf(MissingCryptoMaterialsException.class);
@@ -45,8 +43,7 @@ class MostRecentMaterialsProviderTest {
 
     @Test
     void decryptionKeys() {
-
-        SubjectCryptographicMaterialAggregate materials = SubjectCryptographicMaterialAggregate.newBuilder()
+        var materials = SubjectCryptographicMaterialAggregate.newBuilder()
                 .addMaterials(KafkaProvider.SubjectCryptographicMaterial.newBuilder()
                         .setAlgorithm("AES")
                         .setId("1")
@@ -56,7 +53,7 @@ class MostRecentMaterialsProviderTest {
         when(kafkaSecretKeyStore.existentMaterialsFor("existentSubject"))
                 .thenReturn(CompletableFuture.completedFuture(materials));
 
-        DecryptingMaterial existentSubjectKeys = materialsProvider.decryptionKeysFor("existentSubject").join();
+        var existentSubjectKeys = materialsProvider.decryptionKeysFor("existentSubject").join();
 
         assertThat(existentSubjectKeys).isNotNull();
     }

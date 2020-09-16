@@ -2,11 +2,9 @@ package pi2schema.schema.providers.protobuf.subject;
 
 import com.acme.FarmerRegisteredEventFixture;
 import com.acme.InvalidSubjectIdentifiers;
-import com.acme.FarmerRegisteredEventOuterClass.FarmerRegisteredEvent;
+import org.junit.jupiter.api.Test;
 import pi2schema.schema.subject.SubjectIdentifierNotFoundException;
 import pi2schema.schema.subject.TooManySubjectIdentifiersException;
-import com.google.protobuf.Descriptors;
-import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -17,13 +15,13 @@ class SiblingSubjectIdentifierFinderTest {
 
     @Test
     void shouldFindTheSubjectIdentifierInAValidEvent() {
-        FarmerRegisteredEvent.Builder johnDoeRegistration = FarmerRegisteredEventFixture.johnDoe();
-        Descriptors.OneofDescriptor oneOfDescriptor = johnDoeRegistration
+        var johnDoeRegistration = FarmerRegisteredEventFixture.johnDoe();
+        var oneOfDescriptor = johnDoeRegistration
                 .getDescriptorForType()
                 .getOneofs()
                 .get(0);
 
-        ProtobufSubjectIdentifierFieldDefinition subjectIdentifierFieldDefinition = finder.find(oneOfDescriptor);
+        var subjectIdentifierFieldDefinition = finder.find(oneOfDescriptor);
 
         assertThat(subjectIdentifierFieldDefinition).isNotNull();
         assertThat(subjectIdentifierFieldDefinition.subjectFrom(johnDoeRegistration))
@@ -32,7 +30,7 @@ class SiblingSubjectIdentifierFinderTest {
 
     @Test
     void shouldThrowSubjectIdentifierNotFound() {
-        Descriptors.OneofDescriptor personalDataField = InvalidSubjectIdentifiers.MissingSubjectIdentifierAnnotation
+        var personalDataField = InvalidSubjectIdentifiers.MissingSubjectIdentifierAnnotation
                 .getDescriptor()
                 .getOneofs().get(0);
 
@@ -47,7 +45,7 @@ class SiblingSubjectIdentifierFinderTest {
 
     @Test
     public void shouldThrowTooManySubjectIdentifiers() {
-        Descriptors.OneofDescriptor personalDataField = InvalidSubjectIdentifiers.MultipleSiblingsSubjectIdentifiers
+        var personalDataField = InvalidSubjectIdentifiers.MultipleSiblingsSubjectIdentifiers
                 .getDescriptor()
                 .getOneofs()
                 .get(0);

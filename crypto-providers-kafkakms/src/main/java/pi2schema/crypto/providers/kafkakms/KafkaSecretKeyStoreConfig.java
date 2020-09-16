@@ -62,9 +62,9 @@ public class KafkaSecretKeyStoreConfig extends AbstractConfig {
     }
 
     Map<String, Object> toKafkaStreamsConfig() {
-        Map<String, Object> values = new HashMap<>(this.values());
+        var values = new HashMap<String, Object>(this.values());
 
-        String applicationId = this.getString(KMS_APPLICATION_ID_CONFIG);
+        var applicationId = this.getString(KMS_APPLICATION_ID_CONFIG);
         values.remove(KMS_APPLICATION_ID_CONFIG);
         values.put(StreamsConfig.APPLICATION_ID_CONFIG, applicationId);
 
@@ -121,21 +121,17 @@ public class KafkaSecretKeyStoreConfig extends AbstractConfig {
      * Simple factory intended to hand always ready and configured serdes.
      */
     private class SerdeFactory {
-
         <T extends Message> Serde<T> serdeFor(Class<T> type, boolean isKey) {
-            KafkaProtobufSerde<T> serde = new KafkaProtobufSerde<>(type);
+            var serde = new KafkaProtobufSerde<T>(type);
             serde.configure(originals(), isKey);
             return serde;
         }
-
     }
 
     class Topic<K, V> extends AbstractKafkaPersistence<K, V> {
-
         Topic(String name, Serde<K> keySerde, Serde<V> valueSerde) {
             super(name, keySerde, valueSerde);
         }
-
     }
 
     class Store<K, V> extends AbstractKafkaPersistence<K, V> {
@@ -186,5 +182,4 @@ public class KafkaSecretKeyStoreConfig extends AbstractConfig {
             return name;
         }
     }
-
 }

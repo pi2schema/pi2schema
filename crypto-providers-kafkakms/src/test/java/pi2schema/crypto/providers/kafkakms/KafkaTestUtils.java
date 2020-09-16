@@ -4,15 +4,13 @@ import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 public class KafkaTestUtils {
 
-
     public static void createTopics(Map<String, Object> configs, String... topics) {
-        List<NewTopic> newTopics =
+        var newTopics =
                 Arrays.stream(topics)
                         .map(topic -> new NewTopic(topic, 1, (short) 1))
                         .collect(Collectors.toList());
@@ -21,6 +19,4 @@ public class KafkaTestUtils {
             admin.createTopics(newTopics);
         }
     }
-
-
 }

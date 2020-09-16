@@ -1,11 +1,10 @@
 package pi2schema.schema.providers.protobuf.personaldata;
 
-import pi2schema.schema.providers.protobuf.subject.SiblingSubjectIdentifierFinder;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.Descriptors.Descriptor;
+import pi2schema.schema.providers.protobuf.subject.SiblingSubjectIdentifierFinder;
 
 import java.util.Collections;
-import java.util.List;
 
 import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toList;
@@ -17,7 +16,7 @@ public class PersonalMetadataProvider {
     public PersonalMetadata forDescriptor(Descriptor descriptorForType) {
 
         //protobuf oneOf strategy
-        List<OneOfPersonalDataFieldDefinition> personalDataFieldDefinitions = descriptorForType.getOneofs()
+        var personalDataFieldDefinitions = descriptorForType.getOneofs()
                 .stream()
                 .filter(OneOfPersonalDataFieldDefinition::hasPersonalData)
                 .map(this::createFieldDefinition)

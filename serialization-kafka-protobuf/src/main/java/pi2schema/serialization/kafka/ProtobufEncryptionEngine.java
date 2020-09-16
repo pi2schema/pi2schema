@@ -3,11 +3,9 @@ package pi2schema.serialization.kafka;
 import com.google.protobuf.Message;
 import org.jetbrains.annotations.NotNull;
 import pi2schema.crypto.Encryptor;
-import pi2schema.schema.providers.protobuf.personaldata.PersonalMetadata;
 import pi2schema.schema.providers.protobuf.personaldata.PersonalMetadataProvider;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Stream;
 
 public class ProtobufEncryptionEngine<T extends Message> {
 
@@ -19,12 +17,9 @@ public class ProtobufEncryptionEngine<T extends Message> {
     }
 
     public T encrypt(@NotNull T data) {
-        PersonalMetadata metadata = personalMetadataProvider.forDescriptor(data.getDescriptorForType());
-
-        Message.Builder encryptingBuilder = data.toBuilder();
-
-        Stream<CompletableFuture<Void>> encrypted =
-                metadata.encryptPersonalData(encryptor, encryptingBuilder);
+        var metadata = personalMetadataProvider.forDescriptor(data.getDescriptorForType());
+        var encryptingBuilder = data.toBuilder();
+        var encrypted = metadata.encryptPersonalData(encryptor, encryptingBuilder);
 
         return (T) CompletableFuture
                 .allOf(encrypted.toArray(CompletableFuture[]::new))

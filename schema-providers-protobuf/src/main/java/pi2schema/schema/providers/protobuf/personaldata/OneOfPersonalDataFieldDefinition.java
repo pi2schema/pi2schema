@@ -1,7 +1,6 @@
 package pi2schema.schema.providers.protobuf.personaldata;
 
 import com.google.protobuf.ByteString;
-import com.google.protobuf.Descriptors;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.OneofDescriptor;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -16,7 +15,6 @@ import pi2schema.schema.personaldata.*;
 import pi2schema.schema.providers.protobuf.subject.ProtobufSubjectIdentifierFieldDefinition;
 
 import javax.crypto.spec.IvParameterSpec;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -50,9 +48,8 @@ public class OneOfPersonalDataFieldDefinition
 
     @Override
     public byte[] valueFrom(Message.Builder actualInstance) {
-        Descriptors.FieldDescriptor unencryptedField = actualInstance.getOneofFieldDescriptor(containerOneOfDescriptor);
-
-        Object value = actualInstance.getField(unencryptedField);
+        var unencryptedField = actualInstance.getOneofFieldDescriptor(containerOneOfDescriptor);
+        var value = actualInstance.getField(unencryptedField);
 
         if (value instanceof Message) {
             return ((Message) value).toByteArray();
@@ -63,7 +60,6 @@ public class OneOfPersonalDataFieldDefinition
 
     @Override
     public CompletableFuture<Void> swapToEncrypted(Encryptor encryptor, Message.Builder encryptingInstance) {
-
         if (!encryptingInstance.hasOneof(containerOneOfDescriptor)) {
             log.info("The oneOf personal data container {} has no data set. Optional field?",
                     containerOneOfDescriptor.getFullName());
@@ -72,7 +68,7 @@ public class OneOfPersonalDataFieldDefinition
 
         int sourceFieldNumber = encryptingInstance.getOneofFieldDescriptor(containerOneOfDescriptor).getNumber();
 
-        String subjectId = subjectIdentifierFieldDefinition.subjectFrom(encryptingInstance);
+        var subjectId = subjectIdentifierFieldDefinition.subjectFrom(encryptingInstance);
 
         return encryptor
                 .encrypt(subjectId, valueFrom(encryptingInstance))
@@ -89,15 +85,15 @@ public class OneOfPersonalDataFieldDefinition
     }
 
     public CompletableFuture<Void> swapToDecrypted(Decryptor decryptor, Message.Builder decryptingInstance) {
-        Object encryptedValue = decryptingInstance.getField(targetFieldForEncryption);
+        var encryptedValue = decryptingInstance.getField(targetFieldForEncryption);
         if (!(encryptedValue instanceof EncryptedPersonalData)) {
             throw new UnsupportedEncryptedFieldFormatException(
                     EncryptedPersonalData.class.getName(), targetFieldForEncryption.getFullName(),
                     encryptedValue.getClass());
         }
-        EncryptedPersonalData encryptedPersonalData = (EncryptedPersonalData) encryptedValue;
+        var encryptedPersonalData = (EncryptedPersonalData) encryptedValue;
 
-        EncryptedData encryptedData = new EncryptedData(
+        var encryptedData = new EncryptedData(
                 encryptedPersonalData.getData().toByteArray(),
                 encryptedPersonalData.getUsedTransformation(),
                 new IvParameterSpec(encryptedPersonalData.getInitializationVector().toByteArray()));
@@ -106,7 +102,7 @@ public class OneOfPersonalDataFieldDefinition
                 .decrypt(encryptedPersonalData.getSubjectId(), encryptedData)
                 .thenAccept(decrypted -> {
                     decryptingInstance.clearOneof(containerOneOfDescriptor);
-                    FieldDescriptor personalDataUnencryptedField =
+                    var personalDataUnencryptedField =
                             containerOneOfDescriptor
                                     .getContainingType()
                                     .findFieldByNumber(encryptedPersonalData.getPersonalDataFieldNumber());
@@ -125,7 +121,7 @@ public class OneOfPersonalDataFieldDefinition
     }
 
     private FieldDescriptor determineEncryptionField() {
-        List<FieldDescriptor> encryptionFields = containerOneOfDescriptor.getFields()
+        var encryptionFields = containerOneOfDescriptor.getFields()
                 .stream()
                 .filter(isEncryptedFieldType)
                 .collect(Collectors.toList());

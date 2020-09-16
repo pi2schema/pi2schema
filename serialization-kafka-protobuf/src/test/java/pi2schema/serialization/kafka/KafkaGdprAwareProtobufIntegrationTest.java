@@ -43,7 +43,6 @@ class KafkaGdprAwareProtobufIntegrationTest {
     private Fruit waterMelon = FruitFixture.waterMelon().build();
 
     KafkaGdprAwareProtobufIntegrationTest() {
-
         kafka.start();
 
         schemaRegistry = new GenericContainer("confluentinc/cp-schema-registry:5.5.1")
@@ -55,10 +54,10 @@ class KafkaGdprAwareProtobufIntegrationTest {
 
         schemaRegistry.start();
 
-        String schemaRegistryUrl = "http://" + schemaRegistry.getContainerIpAddress() +
+        var schemaRegistryUrl = "http://" + schemaRegistry.getContainerIpAddress() +
                 ":" + schemaRegistry.getMappedPort(8081);
 
-        HashMap<String, Object> configuring = new HashMap<>();
+        var configuring = new HashMap<String, Object>();
         configuring.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers());
         configuring.put(KafkaProtobufSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG, schemaRegistryUrl);
         configuring.put(KafkaProtobufSerializerConfig.AUTO_REGISTER_SCHEMAS, true);
@@ -74,8 +73,8 @@ class KafkaGdprAwareProtobufIntegrationTest {
 
         //Default constructor is required by kafka for scenarios of configuration like key.serializer which the kafka
         // client uses reflection to instantiate and Configurable to initiate.
-        KafkaGdprAwareProtobufSerializer<Fruit> serializer = new KafkaGdprAwareProtobufSerializer<>();
-        UnconfiguredException unconfiguredException = assertThrows(UnconfiguredException.class, () ->
+        var serializer = new KafkaGdprAwareProtobufSerializer<Fruit>();
+        var unconfiguredException = assertThrows(UnconfiguredException.class, () ->
                 serializer.serialize("", waterMelon));
 
         assertThat(unconfiguredException).hasMessageContaining("configure method");
@@ -83,9 +82,8 @@ class KafkaGdprAwareProtobufIntegrationTest {
 
     @Test
     void deserializeShouldFailWithIllegalStateExceptionCaseTheConfigureMethodIsNotCalled() {
-
-        KafkaGdprAwareProtobufDeserializer<Fruit> deserializer = new KafkaGdprAwareProtobufDeserializer<>();
-        UnconfiguredException unconfiguredException = assertThrows(UnconfiguredException.class, () ->
+        var deserializer = new KafkaGdprAwareProtobufDeserializer<Fruit>();
+        var unconfiguredException = assertThrows(UnconfiguredException.class, () ->
                 deserializer.deserialize("", new byte[0]));
 
         assertThat(unconfiguredException).hasMessageContaining("configure method");
@@ -93,18 +91,17 @@ class KafkaGdprAwareProtobufIntegrationTest {
 
     @Test
     void configuredUsingKafkaMaterialsProvider() {
-        FarmerRegisteredEvent eventWithPersonalData = FarmerRegisteredEventFixture.johnDoe().build();
+        var eventWithPersonalData = FarmerRegisteredEventFixture.johnDoe().build();
 
         // serialization with personal data to be encrypted
-        KafkaGdprAwareProtobufSerializer<FarmerRegisteredEvent> serializer = new KafkaGdprAwareProtobufSerializer<>();
+        var serializer = new KafkaGdprAwareProtobufSerializer<FarmerRegisteredEvent>();
         serializer.configure(configs, false);
-        byte[] serializedWithCryptoData = serializer.serialize("", eventWithPersonalData);
-
+        var serializedWithCryptoData = serializer.serialize("", eventWithPersonalData);
 
         // standard deserialization, should be compatible and provide a encrypted value
-        try (KafkaProtobufDeserializer<FarmerRegisteredEvent> standardDeserializer = new KafkaProtobufDeserializer<>()) {
+        try (var standardDeserializer = new KafkaProtobufDeserializer<FarmerRegisteredEvent>()) {
             standardDeserializer.configure(configs, false);
-            FarmerRegisteredEvent deserializedEncrypted = standardDeserializer.deserialize("", serializedWithCryptoData);
+            var deserializedEncrypted = standardDeserializer.deserialize("", serializedWithCryptoData);
 
             assertThat(deserializedEncrypted).isNotNull();
             assertThat(deserializedEncrypted.getPersonalDataCase()).isEqualByComparingTo(ENCRYPTEDPERSONALDATA);
@@ -112,13 +109,13 @@ class KafkaGdprAwareProtobufIntegrationTest {
             assertThat(eventWithPersonalData).isNotEqualTo(deserializedEncrypted);
         }
 
-        try (KafkaGdprAwareProtobufDeserializer<FarmerRegisteredEvent> deserializer = new KafkaGdprAwareProtobufDeserializer<>()) {
+        try (var deserializer = new KafkaGdprAwareProtobufDeserializer<FarmerRegisteredEvent>()) {
             deserializer.configure(configs, false);
 
             await().atMost(Duration.ofSeconds(600)).untilAsserted(
                     () -> {
                         try {
-                            FarmerRegisteredEvent decrypted = deserializer.deserialize("", serializedWithCryptoData);
+                            var decrypted = deserializer.deserialize("", serializedWithCryptoData);
                             assertThat(eventWithPersonalData).isEqualTo(decrypted);
                         } catch (CompletionException e) {
                             // failed exception in order to be retried by the awaitability.
@@ -137,14 +134,13 @@ class KafkaGdprAwareProtobufIntegrationTest {
     }
 
     private void createTopics(Map<String, Object> configs, String... topics) {
-        List<NewTopic> newTopics =
+        var newTopics =
                 Arrays.stream(topics)
                         .map(topic -> new NewTopic(topic, 1, (short) 1))
                         .collect(Collectors.toList());
 
-        try (AdminClient admin = AdminClient.create(configs)) {
+        try (var admin = AdminClient.create(configs)) {
             admin.createTopics(newTopics);
         }
     }
-
 }
