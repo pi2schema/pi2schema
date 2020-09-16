@@ -24,7 +24,7 @@ class LocalCryptoTest {
     static class RandomMultipleSizeStringArgumentsProvider implements ArgumentsProvider {
 
         @Override
-        public Stream<? extends Arguments> provideArguments(ExtensionContext context) throws Exception {
+        public Stream<? extends Arguments> provideArguments(ExtensionContext context) {
             return Stream.of(
                     Arguments.of(RandomStringUtils.random(8)),
                     Arguments.of(RandomStringUtils.random(24)),
@@ -35,7 +35,6 @@ class LocalCryptoTest {
                     Arguments.of(RandomStringUtils.random(50_000))
             );
         }
-
     }
 
     @ParameterizedTest
@@ -43,25 +42,24 @@ class LocalCryptoTest {
     void encrypt(String text) throws NoSuchAlgorithmException, ExecutionException, InterruptedException {
 
         //given
-        byte[] toBeEncrypted = text.getBytes();
+        var toBeEncrypted = text.getBytes();
 
-        SecretKey secretKey = KeyGen.aes256().generateKey();
+        var secretKey = KeyGen.aes256().generateKey();
 
-        EncryptingMaterialsProvider encProvider = (s) ->
+        EncryptingMaterialsProvider encProvider = s ->
                 CompletableFuture.completedFuture(new SymmetricMaterial(secretKey));
-        DecryptingMaterialsProvider decProvider = (s) ->
+        DecryptingMaterialsProvider decProvider = s ->
                 CompletableFuture.completedFuture(new SymmetricMaterial(secretKey));
 
-        Encryptor encryptor = new LocalEncryptor(encProvider);
-        Decryptor decryptor = new LocalDecryptor(decProvider);
+        var encryptor = new LocalEncryptor(encProvider);
+        var decryptor = new LocalDecryptor(decProvider);
 
         //When
-        EncryptedData encrypted = encryptor.encrypt("", toBeEncrypted).get();
-        byte[] decrypted = decryptor.decrypt("", encrypted).get();
+        var encrypted = encryptor.encrypt("", toBeEncrypted).get();
+        var decrypted = decryptor.decrypt("", encrypted).get();
 
         //Then
         assertThat(toBeEncrypted).isNotEqualTo(encrypted.data());
-
         assertThat(decrypted).isEqualTo(toBeEncrypted);
     }
 }
