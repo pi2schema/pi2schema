@@ -1,0 +1,34 @@
+buildscript {
+    dependencies {
+        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.13'
+    }
+}
+
+
+plugins {
+    id 'java'
+    id 'java-test-fixtures'
+    id 'com.google.protobuf' version '0.8.13'
+}
+
+protobuf {
+    protoc {
+        artifact = 'com.google.protobuf:protoc:3.13.0'
+    }
+}
+
+
+idea {
+    module {
+        // proto files and generated Java files are automatically added as source dirs.
+        // If you have additional sources, add them here:
+        sourceDirs += file("/generated/source/proto")
+    }
+}
+
+dependencies {
+
+    compile project(':schema-spi')
+    compile 'com.google.protobuf:protobuf-java:3.13.0'
+
+}

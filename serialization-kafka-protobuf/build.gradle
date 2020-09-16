@@ -1,0 +1,27 @@
+dependencies {
+
+    compile project(':schema-providers-protobuf')
+    compile project(':crypto-providers-kafkakms') //todo service locator / dynamic factory
+
+    compile 'org.apache.kafka:kafka-clients:2.6.0'
+    compile 'io.confluent:kafka-protobuf-serializer:5.5.1'
+
+
+    testCompile "org.testcontainers:testcontainers:1.14.3"
+    testCompile "org.testcontainers:junit-jupiter:1.14.3"
+    testCompile "org.testcontainers:kafka:1.14.3"
+
+
+    // TODO: Adopt test features in a way it inclues generated source code
+    // ref.: for futher reading
+    // https://docs.gradle.org/5.6/release-notes.html#test-fixtures-for-java-projects
+    // https://docs.gradle.org/current/userguide/java_testing.html#sec:java_test_fixtures
+    // https://stackoverflow.com/questions/58963413/is-the-java-test-fixtures-plugin-incompatible-with-the-build-and-run-using-intel
+    // https://github.com/gradle/gradle/blob/f8ea607a7dfe0f8715e3bf656df7414a415449b5/subprojects/plugins/src/main/java/org/gradle/api/plugins/JavaTestFixturesPlugin.java
+
+    // This is not working with generated cdoe. Have to deep understand how testFixtures work and its structure src dir.
+    testImplementation testFixtures(project(':schema-providers-protobuf'))
+
+    // TODO this has to be removed
+    testCompile project(':schema-providers-protobuf').sourceSets.test.output
+}

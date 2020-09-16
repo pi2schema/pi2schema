@@ -1,0 +1,50 @@
+buildscript {
+    dependencies {
+        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.13'
+    }
+}
+
+
+plugins {
+    id 'com.google.protobuf' version '0.8.13'
+}
+
+protobuf {
+    protoc {
+        artifact = 'com.google.protobuf:protoc:3.13.0'
+    }
+}
+
+
+sourceSets {
+    main {
+        proto {
+            // In addition to the default 'src/main/proto'
+            srcDir 'src/main/proto-kms'
+        }
+    }
+}
+
+
+idea {
+    module {
+        // proto files and generated Java files are automatically added as source dirs.
+        // If you have additional sources, add them here:
+        sourceDirs += file("/generated/source/proto-kms")
+    }
+}
+
+
+dependencies {
+
+    compile project(':crypto-spi')
+
+    compile 'org.apache.kafka:kafka-streams:2.6.0'
+    compile 'io.confluent:kafka-streams-protobuf-serde:5.5.1'
+
+    compile 'com.google.protobuf:protobuf-java:3.13.0'
+
+    testCompile "org.testcontainers:testcontainers:1.14.3"
+    testCompile "org.testcontainers:junit-jupiter:1.14.3"
+    testCompile "org.testcontainers:kafka:1.14.3"
+}

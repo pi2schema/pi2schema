@@ -1,115 +1,84 @@
-buildscript {
+allprojects {
+
+    apply plugin: 'java'
+    apply plugin: 'idea'
+    apply plugin: 'jacoco'
+    apply plugin: 'maven-publish'
+
+    group 'com.github.pi2schema'
+    version '0.2.0-SNAPSHOT'
+
+    repositories {
+        mavenCentral()
+
+        //confluent jars are found on mavencentral but pom descriptors are missing causing gradle to fail
+        maven { url 'https://packages.confluent.io/maven/' }
+    }
+}
+
+subprojects {
+
+    java {
+        sourceCompatibility(JavaVersion.VERSION_1_8)
+        targetCompatibility(JavaVersion.VERSION_1_8)
+    }
+
     dependencies {
-        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.13'
+
+        compile 'ch.qos.logback:logback-classic:1.2.3'
+
+        testImplementation 'org.junit.jupiter:junit-jupiter:5.7.0'
+        testImplementation 'org.junit.jupiter:junit-jupiter-params:5.7.0'
+        testImplementation 'org.assertj:assertj-core:3.17.2'
+        testImplementation 'org.apache.commons:commons-lang3:3.11'
+        testImplementation 'org.awaitility:awaitility:4.0.3'
+        testImplementation 'org.mockito:mockito-core:3.5.10'
+        testImplementation 'org.mockito:mockito-junit-jupiter:3.5.10'
+
     }
-}
 
-plugins {
-    id 'java'
-    id 'idea'
-    id 'com.google.protobuf' version '0.8.13'
-    id 'jacoco'
-    id 'maven-publish'
-}
-
-group 'com.github.pi2schema'
-version '0.1.0'
-
-java {
-    sourceCompatibility(JavaVersion.VERSION_1_8)
-    targetCompatibility(JavaVersion.VERSION_1_8)
-}
-
-repositories {
-    mavenCentral()
-
-    //confluent jars are found on mavencentral but pom descriptors are missing causing gradle to fail
-    maven { url 'https://packages.confluent.io/maven/' }
-}
-
-
-dependencies {
-
-    compile 'org.apache.kafka:kafka-clients:2.6.0'
-
-    compile 'io.confluent:kafka-protobuf-serializer:5.5.1'
-
-    compile 'com.google.protobuf:protobuf-java:3.13.0'
-
-    compile 'ch.qos.logback:logback-classic:1.2.3'
-
-    //kafka store only - should be removed when using sub modules.
-    compile 'org.apache.kafka:kafka-streams:2.6.0'
-    compile 'io.confluent:kafka-streams-protobuf-serde:5.5.1'
-
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.7.0'
-    testImplementation 'org.junit.jupiter:junit-jupiter-params:5.7.0'
-    testImplementation 'org.assertj:assertj-core:3.17.2'
-
-    testImplementation 'org.apache.commons:commons-lang3:3.11'
-
-    testImplementation 'org.awaitility:awaitility:4.0.3'
-
-    testImplementation 'org.mockito:mockito-core:3.5.10'
-    testImplementation 'org.mockito:mockito-junit-jupiter:3.5.10'
-
-    testCompile "org.testcontainers:testcontainers:1.14.3"
-    testCompile "org.testcontainers:junit-jupiter:1.14.3"
-    testCompile "org.testcontainers:kafka:1.14.3"
-
-}
-
-protobuf {
-    protoc {
-        artifact = 'com.google.protobuf:protoc:3.13.0'
+    test {
+        useJUnitPlatform()
+        testLogging {
+            events "passed", "skipped", "failed"
+        }
     }
+
+	publishing {
+		repositories {
+			maven {
+				name = "GitHubPackages"
+				url = uri("https://maven.pkg.github.com/pi2schema/pi2schema")
+				credentials {
+					username = System.getenv("GITHUB_ACTOR")
+					password = System.getenv("GITHUB_TOKEN")
+				}
+			}
+		}
+		publications {
+			gpr(MavenPublication) {
+				from(components.java)
+			}
+		}
+	}
 }
 
-idea {
-    module {
-        // proto files and generated Java files are automatically added as source dirs.
-        // If you have additional sources, add them here:
-        sourceDirs += file("/generated/source/proto")
-    }
-}
+task codeCoverageReport(type: JacocoReport) {
+    executionData fileTree(project.rootDir.absolutePath).include("**/build/jacoco/*.exec")
 
-test {
-    useJUnitPlatform()
-    testLogging {
-        events "passed", "skipped", "failed"
+    subprojects.each {
+        sourceSets it.sourceSets.main
     }
-}
 
-jacocoTestReport {
-
-    // do not check test coverage for generated classes as protobuf : kafka kms
-    afterEvaluate {
-        classDirectories.setFrom(files(classDirectories.files.collect {
-            fileTree(dir: it, exclude: ['pi2schema/kms/**', '**/*V1*.class'])
-        }))
-    }
     reports {
         xml.enabled true
-        html.enabled true
+        html.enabled false
+        csv.enabled false
     }
 }
 
-check.dependsOn jacocoTestReport
-
-publishing {
-    repositories {
-        maven {
-            name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/pi2schema/pi2schema")
-            credentials {
-                username = System.getenv("GITHUB_ACTOR")
-                password = System.getenv("GITHUB_TOKEN")
-            }
-        }
-    }
-    publications {
-        gpr(MavenPublication) {
-            from(components.java)
-        }
-    }
+codeCoverageReport.dependsOn {
+    subprojects*.test
 }
+
+check.dependsOn codeCoverageReport

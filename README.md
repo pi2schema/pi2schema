@@ -39,6 +39,21 @@ Further more provide an ?open? space to collaborate in a so complex subject and 
     - Cryptography / shredding approach
     - Multiple kms implementations (aws, gcp, ...)
 
+## Getting started
+
+### Project dependencies
+
+## Concepts
+
+## Schema
+
+## Crypto
+
+### Vault
+
+refs https://youtu.be/_czdzNUZGFs?t=1401
+refs https://medium.com/sydseter/gdpr-compliant-event-sourcing-with-hashicorp-vault-f27011cac318
+
 
 ## Next steps
 
@@ -46,6 +61,10 @@ Further more provide an ?open? space to collaborate in a so complex subject and 
 * Secret keys wrapping and Acls
 * Multi language support similar to librdkafka implemented in rust
 * Extending schema support/vocabulary
+
+##
+
+
 
 # See also
 
