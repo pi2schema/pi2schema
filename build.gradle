@@ -1,5 +1,10 @@
 allprojects {
 
+    apply plugin: 'java'
+    apply plugin: 'idea'
+    apply plugin: 'jacoco'
+    apply plugin: 'maven-publish'
+
     group 'com.github.pi2schema'
     version '0.2.0-SNAPSHOT'
 
@@ -12,11 +17,6 @@ allprojects {
 }
 
 subprojects {
-
-    apply plugin: 'java'
-    apply plugin: 'idea'
-    apply plugin: 'jacoco'
-    apply plugin: 'maven-publish'
 
     java {
         sourceCompatibility(JavaVersion.VERSION_1_8)
@@ -44,22 +44,6 @@ subprojects {
         }
     }
 
-    jacocoTestReport {
-
-        // do not check test coverage for generated classes as protobuf : kafka kms
-        afterEvaluate {
-            classDirectories.setFrom(files(classDirectories.files.collect {
-                fileTree(dir: it, exclude: ['pi2schema/kms/**', '**/*V1*.class'])
-            }))
-        }
-        reports {
-            xml.enabled true
-            html.enabled true
-        }
-    }
-
-	check.dependsOn jacocoTestReport
-
 	publishing {
 		repositories {
 			maven {
@@ -78,3 +62,23 @@ subprojects {
 		}
 	}
 }
+
+task codeCoverageReport(type: JacocoReport) {
+    executionData fileTree(project.rootDir.absolutePath).include("**/build/jacoco/*.exec")
+
+    subprojects.each {
+        sourceSets it.sourceSets.main
+    }
+
+    reports {
+        xml.enabled true
+        html.enabled false
+        csv.enabled false
+    }
+}
+
+codeCoverageReport.dependsOn {
+    subprojects*.test
+}
+
+check.dependsOn codeCoverageReport
