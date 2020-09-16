@@ -1,7 +1,8 @@
 package pi2schema.crypto.providers.kafkakms;
 
 import com.google.protobuf.ByteString;
-import org.apache.kafka.clients.producer.*;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.streams.*;
 import org.apache.kafka.streams.kstream.Aggregator;
 import org.apache.kafka.streams.state.QueryableStoreTypes;
@@ -44,7 +45,7 @@ public class KafkaSecretKeyStore implements Closeable {
     public KafkaSecretKeyStore(KeyGenerator keyGenerator, Map<String, ?> configs) {
         this.keyGenerator = keyGenerator;
         this.config = new KafkaSecretKeyStoreConfig(configs);
-        Properties producerConfig = new Properties();
+        var producerConfig = new Properties();
         producerConfig.putAll(configs);
         this.commandProducer = new KafkaProducer<>(producerConfig,
                 config.topics().COMMANDS.keySerializer(),
@@ -60,7 +61,7 @@ public class KafkaSecretKeyStore implements Closeable {
 
     CompletableFuture<SubjectCryptographicMaterialAggregate> retrieveOrCreateCryptoMaterialsFor(
             @NotNull String subjectId) {
-        Subject subject = Subject.newBuilder().setId(subjectId).build();
+        var subject = Subject.newBuilder().setId(subjectId).build();
 
         return existentMaterialsFor(subject)
                 .thenCompose(material -> {
@@ -74,18 +75,18 @@ public class KafkaSecretKeyStore implements Closeable {
 
     private CompletableFuture<SubjectCryptographicMaterialAggregate> createMaterialsFor(Subject subject) {
 
-        SubjectCryptographicMaterial cryptoMaterial = SubjectCryptographicMaterial.newBuilder()
+        var cryptoMaterial = SubjectCryptographicMaterial.newBuilder()
                 .setId(UUID.randomUUID().toString())
                 .setSubject(subject)
                 .setAlgorithm(keyGenerator.getAlgorithm())
                 .setSymmetricKey(ByteString.copyFrom(keyGenerator.generateKey().getEncoded()))
                 .build();
 
-        Commands command = Commands.newBuilder()
+        var command = Commands.newBuilder()
                 .setRegister(KafkaProvider.RegisterCryptographicMaterials.newBuilder().setMaterial(cryptoMaterial).build())
                 .build();
 
-        CompletableFuture<SubjectCryptographicMaterialAggregate> future = new CompletableFuture<>();
+        var future = new CompletableFuture<SubjectCryptographicMaterialAggregate>();
         return CompletableFuture.supplyAsync(() ->
                 commandProducer.send(
                         new ProducerRecord<>(
@@ -113,18 +114,18 @@ public class KafkaSecretKeyStore implements Closeable {
     }
 
     private KafkaStreams startStreams(Map<String, ?> providedConfigs) {
-        Properties properties = new Properties();
+        var properties = new Properties();
         properties.putAll(providedConfigs);
         properties.putAll(config.toKafkaStreamsConfig());
 
-        Topology topology = createKafkaKeyStoreTopology();
+        var topology = createKafkaKeyStoreTopology();
 
         log.debug("Created topology {}", topology.describe());
         log.debug("Starting topology with following configurations {}", properties);
 
-        KafkaStreams streams = new KafkaStreams(topology, properties);
+        var streams = new KafkaStreams(topology, properties);
 
-        final CountDownLatch startLatch = new CountDownLatch(1);
+        final var startLatch = new CountDownLatch(1);
         streams.setStateListener((newState, oldState) -> {
             if (newState == KafkaStreams.State.RUNNING && oldState != KafkaStreams.State.RUNNING) {
                 startLatch.countDown();
@@ -145,8 +146,7 @@ public class KafkaSecretKeyStore implements Closeable {
     }
 
     private Topology createKafkaKeyStoreTopology() {
-
-        StreamsBuilder builder = new StreamsBuilder();
+        var builder = new StreamsBuilder();
 
         builder
                 .stream(

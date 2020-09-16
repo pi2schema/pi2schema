@@ -12,6 +12,4 @@ public class TimestampFixture {
                         Instant.now().getEpochSecond()
                 );
     }
-
-
 }

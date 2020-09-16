@@ -3,12 +3,10 @@ package pi2schema.schema.providers.protobuf.personaldata;
 import com.acme.FarmerRegisteredEventFixture;
 import com.acme.FruitFixture;
 import com.acme.PlantaeOuterClass;
-import com.google.protobuf.Descriptors.Descriptor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.fail;
 
 class PersonalMetadataProviderTest {
 
@@ -22,9 +20,9 @@ class PersonalMetadataProviderTest {
     @Test
     void givenADescriptorWithoutOneOfThenOptionalEmpty() {
 
-        Descriptor descriptorWithoutOneOf = FruitFixture.waterMelon().build().getDescriptorForType();
+        var descriptorWithoutOneOf = FruitFixture.waterMelon().build().getDescriptorForType();
 
-        PersonalMetadata metadata = personalMetadataProvider.forDescriptor(descriptorWithoutOneOf);
+        var metadata = personalMetadataProvider.forDescriptor(descriptorWithoutOneOf);
 
         assertThat(metadata.requiresEncryption())
                 .isFalse();
@@ -33,12 +31,12 @@ class PersonalMetadataProviderTest {
     @Test
     void givenADescriptorWithOneOfWithoutPersonalDataSiblingThenOptionalEmpty() {
 
-        Descriptor descriptorWithOneOf = PlantaeOuterClass.Plantae.newBuilder()
+        var descriptorWithOneOf = PlantaeOuterClass.Plantae.newBuilder()
                 .setFruit(FruitFixture.waterMelon())
                 .build()
                 .getDescriptorForType();
 
-        PersonalMetadata metadata = personalMetadataProvider.forDescriptor(descriptorWithOneOf);
+        var metadata = personalMetadataProvider.forDescriptor(descriptorWithOneOf);
 
         assertThat(metadata.requiresEncryption())
                 .isFalse();
@@ -46,11 +44,11 @@ class PersonalMetadataProviderTest {
 
     @Test
     void givenADescriptorWithOneOfWithPersonalDataAsSiblingThenPersonalMetadata() {
-        Descriptor descriptor = FarmerRegisteredEventFixture.johnDoe()
+        var descriptor = FarmerRegisteredEventFixture.johnDoe()
                 .build()
                 .getDescriptorForType();
 
-        PersonalMetadata metadata = personalMetadataProvider.forDescriptor(descriptor);
+        var metadata = personalMetadataProvider.forDescriptor(descriptor);
 
         assertThat(metadata.requiresEncryption())
                 .isTrue();

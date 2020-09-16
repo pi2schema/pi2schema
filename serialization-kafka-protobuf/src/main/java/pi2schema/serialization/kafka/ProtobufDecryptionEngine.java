@@ -19,12 +19,9 @@ public class ProtobufDecryptionEngine<T extends Message> {
     }
 
     public T decrypt(@NotNull T data) {
-        PersonalMetadata metadata = personalMetadataProvider.forDescriptor(data.getDescriptorForType());
-
-        Message.Builder decryptingBuilder = data.toBuilder();
-
-        Stream<CompletableFuture<Void>> decrypted =
-                metadata.decryptPersonalData(decryptor, decryptingBuilder);
+        var metadata = personalMetadataProvider.forDescriptor(data.getDescriptorForType());
+        var decryptingBuilder = data.toBuilder();
+        var decrypted = metadata.decryptPersonalData(decryptor, decryptingBuilder);
 
         return (T) CompletableFuture
                 .allOf(decrypted.toArray(CompletableFuture[]::new))

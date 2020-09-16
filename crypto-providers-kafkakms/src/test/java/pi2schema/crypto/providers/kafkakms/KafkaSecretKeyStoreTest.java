@@ -1,8 +1,6 @@
 package pi2schema.crypto.providers.kafkakms;
 
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializerConfig;
-import org.apache.kafka.clients.admin.AdminClient;
-import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.streams.StreamsConfig;
 import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
@@ -16,8 +14,9 @@ import pi2schema.crypto.support.KeyGen;
 import pi2schema.kms.KafkaProvider.SubjectCryptographicMaterialAggregate;
 
 import java.time.Duration;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -35,7 +34,6 @@ class KafkaSecretKeyStoreTest {
 
     @BeforeEach
     void setUp() {
-
         kafka.start();
 
         schemaRegistry = new GenericContainer("confluentinc/cp-schema-registry:5.5.1")
@@ -68,12 +66,10 @@ class KafkaSecretKeyStoreTest {
 
     @Test
     void getOrCreate() {
-
-        final String subject = UUID.randomUUID().toString();
+        var subject = UUID.randomUUID().toString();
 
         // create
-        SubjectCryptographicMaterialAggregate firstMaterials =
-                store.retrieveOrCreateCryptoMaterialsFor(subject).join();
+        var firstMaterials = store.retrieveOrCreateCryptoMaterialsFor(subject).join();
 
         assertThat(firstMaterials.getMaterialsList()).hasSize(1);
         assertThat(firstMaterials.getMaterials(0).getAlgorithm())
@@ -91,7 +87,7 @@ class KafkaSecretKeyStoreTest {
         );
 
         // once the key is propagated, should reuse the previous key and not create new ones
-        SubjectCryptographicMaterialAggregate retrieveOrCreateSecond = store.retrieveOrCreateCryptoMaterialsFor(subject).join();
+        var retrieveOrCreateSecond = store.retrieveOrCreateCryptoMaterialsFor(subject).join();
 
         assertThat(firstMaterials).isEqualTo(retrieveOrCreateSecond);
     }

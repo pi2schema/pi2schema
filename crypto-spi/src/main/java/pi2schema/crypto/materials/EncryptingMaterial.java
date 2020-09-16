@@ -5,5 +5,4 @@ import javax.crypto.SecretKey;
 public interface EncryptingMaterial {
 
     SecretKey getEncryptionKey();
-
 }

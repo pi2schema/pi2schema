@@ -1,6 +1,5 @@
 package pi2schema.schema.personaldata;
 
-
 public class EncryptionTargetFieldNotFoundException extends RuntimeException {
 
     private final String targetEncryptionFieldType;

@@ -2,7 +2,7 @@ package pi2schema.schema.personaldata;
 
 public class TooManyEncryptionTargetFieldsException extends RuntimeException {
 
-    private  final String targetEncryptionFieldType;
+    private final String targetEncryptionFieldType;
     private final String containerFieldName;
     private final int targetEncryptionFields;
 

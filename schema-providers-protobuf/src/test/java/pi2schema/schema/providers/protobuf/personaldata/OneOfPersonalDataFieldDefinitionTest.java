@@ -1,38 +1,34 @@
 package pi2schema.schema.providers.protobuf.personaldata;
 
 import com.acme.FarmerRegisteredEventFixture;
-import com.acme.InvalidOneOfPersonalData;
 import com.acme.FarmerRegisteredEventOuterClass.FarmerRegisteredEvent;
+import com.acme.InvalidOneOfPersonalData;
+import com.google.protobuf.ByteString;
+import com.google.protobuf.Timestamp;
+import org.junit.jupiter.api.Test;
+import org.opentest4j.AssertionFailedError;
 import pi2schema.crypto.Decryptor;
 import pi2schema.crypto.Encryptor;
 import pi2schema.schema.personaldata.EncryptionTargetFieldNotFoundException;
 import pi2schema.schema.personaldata.TooManyEncryptionTargetFieldsException;
 import pi2schema.schema.providers.protobuf.subject.ProtobufSubjectIdentifierFieldDefinition;
-import com.google.protobuf.ByteString;
-import com.google.protobuf.Descriptors;
-import com.google.protobuf.Descriptors.Descriptor;
-import com.google.protobuf.Descriptors.OneofDescriptor;
-import com.google.protobuf.Timestamp;
-import org.junit.jupiter.api.Test;
-import org.opentest4j.AssertionFailedError;
 
 import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
-import static pi2schema.EncryptedPersonalDataV1.EncryptedPersonalData;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static pi2schema.EncryptedPersonalDataV1.EncryptedPersonalData;
 
 class OneOfPersonalDataFieldDefinitionTest {
 
     @Test
     void shouldThrowEncryptionTargetFieldNotFoundException() {
 
-        Descriptor descriptor = InvalidOneOfPersonalData.MissingEncryptedPersonalDataField.getDescriptor();
-        OneofDescriptor personalDataField = descriptor.getOneofs().get(0);
-        ProtobufSubjectIdentifierFieldDefinition subjectField = new ProtobufSubjectIdentifierFieldDefinition(descriptor.getFields().get(0));
-
+        var descriptor = InvalidOneOfPersonalData.MissingEncryptedPersonalDataField.getDescriptor();
+        var personalDataField = descriptor.getOneofs().get(0);
+        var subjectField = new ProtobufSubjectIdentifierFieldDefinition(descriptor.getFields().get(0));
 
         assertThatExceptionOfType(EncryptionTargetFieldNotFoundException.class)
                 .isThrownBy(() ->
@@ -46,10 +42,9 @@ class OneOfPersonalDataFieldDefinitionTest {
     @Test
     void shouldThrowTooManyEncryptionTargetFieldException() {
 
-        Descriptor descriptor = InvalidOneOfPersonalData.MultipleEncryptedPersonalDataField.getDescriptor();
-        OneofDescriptor personalDataField = descriptor.getOneofs().get(0);
-        ProtobufSubjectIdentifierFieldDefinition subjectField = new ProtobufSubjectIdentifierFieldDefinition(descriptor.getFields().get(0));
-
+        var descriptor = InvalidOneOfPersonalData.MultipleEncryptedPersonalDataField.getDescriptor();
+        var personalDataField = descriptor.getOneofs().get(0);
+        var subjectField = new ProtobufSubjectIdentifierFieldDefinition(descriptor.getFields().get(0));
 
         assertThatExceptionOfType(TooManyEncryptionTargetFieldsException.class)
                 .isThrownBy(() ->
@@ -57,14 +52,13 @@ class OneOfPersonalDataFieldDefinitionTest {
                 )
                 .withMessage("The personal data container com.acme.MultipleEncryptedPersonalDataField.personal_data " +
                         "has 2 fields of type " + EncryptedPersonalData.getDescriptor().getFullName() + " while exact one is required");
-
     }
 
     @Test
     void targetField() {
-        OneOfPersonalDataFieldDefinition personalData = FarmerRegisteredEventFixture.personalDataFieldDefinition();
+        var personalData = FarmerRegisteredEventFixture.personalDataFieldDefinition();
 
-        Descriptors.FieldDescriptor encryptionTargetField = personalData.encryptionTargetField();
+        var encryptionTargetField = personalData.encryptionTargetField();
 
         assertThat(encryptionTargetField.getFullName())
                 .isEqualTo("com.acme.FarmerRegisteredEvent.encryptedPersonalData");
@@ -75,9 +69,9 @@ class OneOfPersonalDataFieldDefinitionTest {
 
     @Test
     void personalDataField() {
-        OneOfPersonalDataFieldDefinition personalData = FarmerRegisteredEventFixture.personalDataFieldDefinition();
+        var personalData = FarmerRegisteredEventFixture.personalDataFieldDefinition();
 
-        Descriptors.FieldDescriptor peresonalDataTargetField = personalData.personalDataTargetField(2);
+        var peresonalDataTargetField = personalData.personalDataTargetField(2);
 
         assertThat(peresonalDataTargetField.getFullName())
                 .isEqualTo("com.acme.FarmerRegisteredEvent.contact_info");
@@ -87,16 +81,16 @@ class OneOfPersonalDataFieldDefinitionTest {
     void swapToEncryptedShouldIgnoreEncryptionWhenPersonalDataIsNotSet() {
 
         // given
-        String uuid = UUID.randomUUID().toString();
-        FarmerRegisteredEvent.Builder event = FarmerRegisteredEvent.newBuilder().setUuid(uuid);
+        var uuid = UUID.randomUUID().toString();
+        var event = FarmerRegisteredEvent.newBuilder().setUuid(uuid);
 
-        OneOfPersonalDataFieldDefinition personalDataFieldDef = FarmerRegisteredEventFixture.personalDataFieldDefinition();
+        var personalDataFieldDef = FarmerRegisteredEventFixture.personalDataFieldDefinition();
 
         Encryptor encryptor = (subject, data) -> {
             throw new AssertionFailedError("Should not encrypt anything, as there is no personal data set");
         };
 
-        FarmerRegisteredEvent.Builder expected = event.clone(); //expected with no changes
+        var expected = event.clone(); //expected with no changes
 
 //        when
         personalDataFieldDef.swapToEncrypted(encryptor, event);
@@ -113,11 +107,11 @@ class OneOfPersonalDataFieldDefinitionTest {
     @Test
     void swapToDecryted() {
         //given
-        String uuid = UUID.randomUUID().toString();
-        ByteString encrypted = ByteString.copyFrom("encryptedMocked".getBytes());
-        ByteString decrypted = FarmerRegisteredEventFixture.johnDoe().getContactInfo().toByteString();
+        var uuid = UUID.randomUUID().toString();
+        var encrypted = ByteString.copyFrom("encryptedMocked".getBytes());
+        var decrypted = FarmerRegisteredEventFixture.johnDoe().getContactInfo().toByteString();
 
-        FarmerRegisteredEvent.Builder encryptedEvent = FarmerRegisteredEvent.newBuilder()
+        var encryptedEvent = FarmerRegisteredEvent.newBuilder()
                 .setUuid(uuid)
                 .setEncryptedPersonalData(EncryptedPersonalData.newBuilder()
                         .setSubjectId(uuid)
@@ -125,7 +119,7 @@ class OneOfPersonalDataFieldDefinitionTest {
                         .setPersonalDataFieldNumber(2))
                 .setRegisteredAt(Timestamp.newBuilder().setSeconds(Instant.now().getEpochSecond()));
 
-        OneOfPersonalDataFieldDefinition personalDataFieldDef = FarmerRegisteredEventFixture.personalDataFieldDefinition();
+        var personalDataFieldDef = FarmerRegisteredEventFixture.personalDataFieldDefinition();
 
         Decryptor decryptor = (key, data) ->
                 CompletableFuture.completedFuture(decrypted.toByteArray());
@@ -134,7 +128,7 @@ class OneOfPersonalDataFieldDefinitionTest {
         personalDataFieldDef.swapToDecrypted(decryptor, encryptedEvent);
 
         //then
-        FarmerRegisteredEvent actual = encryptedEvent.build();
+        var actual = encryptedEvent.build();
 
         assertThat(actual.getUuid())
                 .isEqualTo(uuid);
@@ -145,6 +139,4 @@ class OneOfPersonalDataFieldDefinitionTest {
         assertThat(actual.getContactInfo())
                 .isEqualTo(FarmerRegisteredEventFixture.johnDoe().getContactInfo());
     }
-
-
 }

@@ -15,10 +15,7 @@ import pi2schema.crypto.EncryptedData;
 import pi2schema.crypto.Encryptor;
 
 import javax.crypto.spec.IvParameterSpec;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,7 +36,7 @@ class KafkaGdprAwareProtobufSerializerTest {
             );
 
     KafkaGdprAwareProtobufSerializerTest() {
-        HashMap<String, Object> initial = new HashMap<>();
+        var initial = new HashMap<String, Object>();
         initial.put(KafkaProtobufSerializerConfig.AUTO_REGISTER_SCHEMAS, true);
         initial.put(KafkaProtobufSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG, "bogus");
         this.configs = Collections.unmodifiableMap(initial);
@@ -47,7 +44,7 @@ class KafkaGdprAwareProtobufSerializerTest {
 
     @Test
     void shouldSupportNullRecordReturningNullData() {
-        KafkaGdprAwareProtobufSerializer<Fruit> deserializer = pi2schemaProtobufSerializerFor(Fruit.class);
+        var deserializer = pi2schemaProtobufSerializerFor(Fruit.class);
 
         assertNull(deserializer.serialize(topic, null));
         assertNull(deserializer.serialize(topic, new RecordHeaders(), null));
@@ -55,33 +52,31 @@ class KafkaGdprAwareProtobufSerializerTest {
 
     @Test
     void shouldBeCompatibleWithPlainProtobufDeserializer() {
+        var preferredMelon = FruitFixture.waterMelon().build();
+        var serializer = pi2schemaProtobufSerializerFor(Fruit.class);
 
-        Fruit preferredMelon = FruitFixture.waterMelon().build();
-
-        KafkaGdprAwareProtobufSerializer<Fruit> serializer = pi2schemaProtobufSerializerFor(Fruit.class);
-
-        KafkaProtobufDeserializer<Fruit> deserializer = new KafkaProtobufDeserializer<>(
+        var deserializer = new KafkaProtobufDeserializer<>(
                 schemaRegistry,
                 configs,
                 Fruit.class
         );
 
-        byte[] serialized = serializer.serialize(topic, preferredMelon);
+        var serialized = serializer.serialize(topic, preferredMelon);
         assertEquals(preferredMelon, deserializer.deserialize(topic, serialized));
     }
 
     @Test
     void shouldEncryptOneOfFieldsContainingEncryptedPersonalData() {
         //given
-        String uuid = UUID.randomUUID().toString();
+        var uuid = UUID.randomUUID().toString();
 
-        FarmerRegisteredEvent original = FarmerRegisteredEventFixture.johnDoe()
+        var original = FarmerRegisteredEventFixture.johnDoe()
                 .setUuid(uuid)
                 .setRegisteredAt(TimestampFixture.now())
                 .build();
 
-        KafkaGdprAwareProtobufSerializer<FarmerRegisteredEvent> serializer = pi2schemaProtobufSerializerFor(FarmerRegisteredEvent.class);
-        KafkaProtobufDeserializer<FarmerRegisteredEvent> deserializer = new KafkaProtobufDeserializer<>(
+        var serializer = pi2schemaProtobufSerializerFor(FarmerRegisteredEvent.class);
+        var deserializer = new KafkaProtobufDeserializer<>(
                 schemaRegistry,
                 configs,
                 FarmerRegisteredEvent.class

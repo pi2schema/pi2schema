@@ -1,10 +1,9 @@
 package pi2schema.serialization.kafka;
 
 import com.acme.FarmerRegisteredEventFixture;
+import com.acme.FarmerRegisteredEventOuterClass.FarmerRegisteredEvent;
 import com.acme.FruitFixture;
 import com.acme.FruitOuterClass.Fruit;
-import com.acme.FarmerRegisteredEventOuterClass.FarmerRegisteredEvent;
-import pi2schema.crypto.Decryptor;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Timestamp;
 import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient;
@@ -12,17 +11,16 @@ import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializerConfig;
 import org.apache.kafka.common.header.internals.RecordHeaders;
 import org.junit.jupiter.api.Test;
+import pi2schema.crypto.Decryptor;
 
 import java.time.Instant;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static pi2schema.EncryptedPersonalDataV1.EncryptedPersonalData;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static pi2schema.EncryptedPersonalDataV1.EncryptedPersonalData;
 
 public class KafkaGdprAwareProtobufDeserializerTest {
 
@@ -35,19 +33,16 @@ public class KafkaGdprAwareProtobufDeserializerTest {
             CompletableFuture.completedFuture(encryptedData.data());
 
     public KafkaGdprAwareProtobufDeserializerTest() {
-        HashMap<String, Object> initial = new HashMap<>();
+        var initial = new HashMap<String, Object>();
         initial.put(KafkaProtobufSerializerConfig.AUTO_REGISTER_SCHEMAS, true);
         initial.put(KafkaProtobufSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG, "bogus");
         this.configs = Collections.unmodifiableMap(initial);
-        this.serializer = new KafkaProtobufSerializer(
-                schemaRegistry,
-                configs
-        );
+        this.serializer = new KafkaProtobufSerializer(schemaRegistry, configs);
     }
 
     @Test
     public void shouldSupportNullRecordReturningNullData() {
-        KafkaGdprAwareProtobufDeserializer<Fruit> deserializer = new KafkaGdprAwareProtobufDeserializer<>(
+        var deserializer = new KafkaGdprAwareProtobufDeserializer<>(
                 noOpDecryptor,
                 schemaRegistry,
                 configs,
@@ -60,28 +55,26 @@ public class KafkaGdprAwareProtobufDeserializerTest {
 
     @Test
     public void shouldBeCompatibleWithPlainProtobufSerializer() {
+        var preferredMelon = FruitFixture.waterMelon().build();
 
-        Fruit preferredMelon = FruitFixture.waterMelon().build();
-
-        KafkaGdprAwareProtobufDeserializer<Fruit> deserializer = new KafkaGdprAwareProtobufDeserializer<>(
+        var deserializer = new KafkaGdprAwareProtobufDeserializer<>(
                 noOpDecryptor,
                 schemaRegistry,
                 configs,
                 Fruit.class
         );
 
-        byte[] serialized = serializer.serialize(topic, preferredMelon);
+        var serialized = serializer.serialize(topic, preferredMelon);
         assertEquals(preferredMelon, deserializer.deserialize(topic, serialized));
     }
 
     @Test
     public void shouldDecryptEncryptedPersonalData() {
+        var uuid = UUID.randomUUID().toString();
+        var encrypted = ByteString.copyFrom("encryptedMocked".getBytes());
+        var decrypted = FarmerRegisteredEventFixture.johnDoe().getContactInfo().toByteString();
 
-        String uuid = UUID.randomUUID().toString();
-        ByteString encrypted = ByteString.copyFrom("encryptedMocked".getBytes());
-        ByteString decrypted = FarmerRegisteredEventFixture.johnDoe().getContactInfo().toByteString();
-
-        FarmerRegisteredEvent encryptedEvent = FarmerRegisteredEvent.newBuilder()
+        var encryptedEvent = FarmerRegisteredEvent.newBuilder()
                 .setUuid(uuid)
                 .setEncryptedPersonalData(EncryptedPersonalData.newBuilder()
                         .setSubjectId(uuid)
@@ -93,7 +86,7 @@ public class KafkaGdprAwareProtobufDeserializerTest {
         Decryptor decryptor = (subj, data) ->
                 CompletableFuture.completedFuture(decrypted.toByteArray());
 
-        KafkaGdprAwareProtobufDeserializer<FarmerRegisteredEvent> deserializer = new KafkaGdprAwareProtobufDeserializer<>(
+        var deserializer = new KafkaGdprAwareProtobufDeserializer<>(
                 decryptor,
                 schemaRegistry,
                 configs,
@@ -101,8 +94,8 @@ public class KafkaGdprAwareProtobufDeserializerTest {
         );
 
         //when
-        byte[] serialized = serializer.serialize(topic, encryptedEvent);
-        FarmerRegisteredEvent actual = deserializer.deserialize(topic, serialized);
+        var serialized = serializer.serialize(topic, encryptedEvent);
+        var actual = deserializer.deserialize(topic, serialized);
 
         //then
         assertThat(actual.getUuid())
