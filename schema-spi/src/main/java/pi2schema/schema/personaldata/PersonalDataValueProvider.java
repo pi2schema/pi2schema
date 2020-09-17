@@ -1,6 +1,8 @@
 package pi2schema.schema.personaldata;
 
+import java.nio.ByteBuffer;
+
 public interface PersonalDataValueProvider<T> {
 
-    byte[] valueFrom(T instance);
+    ByteBuffer valueFrom(T instance);
 }

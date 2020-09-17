@@ -33,10 +33,9 @@ public class KafkaGdprAwareProtobufDeserializerTest {
             CompletableFuture.completedFuture(encryptedData.data());
 
     public KafkaGdprAwareProtobufDeserializerTest() {
-        var initial = new HashMap<String, Object>();
-        initial.put(KafkaProtobufSerializerConfig.AUTO_REGISTER_SCHEMAS, true);
-        initial.put(KafkaProtobufSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG, "bogus");
-        this.configs = Collections.unmodifiableMap(initial);
+        this.configs = Map.of(
+                KafkaProtobufSerializerConfig.AUTO_REGISTER_SCHEMAS, true,
+                KafkaProtobufSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG, "bogus");
         this.serializer = new KafkaProtobufSerializer(schemaRegistry, configs);
     }
 
@@ -84,7 +83,7 @@ public class KafkaGdprAwareProtobufDeserializerTest {
                 .build();
 
         Decryptor decryptor = (subj, data) ->
-                CompletableFuture.completedFuture(decrypted.toByteArray());
+                CompletableFuture.completedFuture(decrypted.asReadOnlyByteBuffer());
 
         var deserializer = new KafkaGdprAwareProtobufDeserializer<>(
                 decryptor,

@@ -4,6 +4,7 @@ import pi2schema.crypto.materials.SymmetricMaterial;
 import pi2schema.crypto.providers.EncryptingMaterialsProvider;
 
 import javax.crypto.spec.IvParameterSpec;
+import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -25,7 +26,7 @@ public class LocalEncryptor implements Encryptor {
     }
 
     @Override
-    public CompletableFuture<EncryptedData> encrypt(String subjectId, byte[] data) {
+    public CompletableFuture<EncryptedData> encrypt(String subjectId, ByteBuffer data) {
         return provider
                 .encryptionKeysFor(subjectId)
                 .thenApply(SymmetricMaterial::getEncryptionKey)

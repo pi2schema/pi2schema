@@ -15,6 +15,7 @@ import pi2schema.schema.personaldata.*;
 import pi2schema.schema.providers.protobuf.subject.ProtobufSubjectIdentifierFieldDefinition;
 
 import javax.crypto.spec.IvParameterSpec;
+import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -47,12 +48,12 @@ public class OneOfPersonalDataFieldDefinition
     }
 
     @Override
-    public byte[] valueFrom(Message.Builder actualInstance) {
+    public ByteBuffer valueFrom(Message.Builder actualInstance) {
         var unencryptedField = actualInstance.getOneofFieldDescriptor(containerOneOfDescriptor);
         var value = actualInstance.getField(unencryptedField);
 
         if (value instanceof Message) {
-            return ((Message) value).toByteArray();
+            return ((Message) value).toByteString().asReadOnlyByteBuffer();
         }
 
         throw new UnsupportedPersonalDataFieldFormatException(unencryptedField.getFullName());
@@ -94,7 +95,7 @@ public class OneOfPersonalDataFieldDefinition
         var encryptedPersonalData = (EncryptedPersonalData) encryptedValue;
 
         var encryptedData = new EncryptedData(
-                encryptedPersonalData.getData().toByteArray(),
+                encryptedPersonalData.getData().asReadOnlyByteBuffer(),
                 encryptedPersonalData.getUsedTransformation(),
                 new IvParameterSpec(encryptedPersonalData.getInitializationVector().toByteArray()));
 
@@ -107,7 +108,8 @@ public class OneOfPersonalDataFieldDefinition
                                     .getContainingType()
                                     .findFieldByNumber(encryptedPersonalData.getPersonalDataFieldNumber());
                     try {
-                        decryptingInstance.getFieldBuilder(personalDataUnencryptedField).mergeFrom(decrypted);
+                        decryptingInstance.getFieldBuilder(personalDataUnencryptedField)
+                                .mergeFrom(ByteString.copyFrom(decrypted));
                     } catch (InvalidProtocolBufferException e) {
                         throw new InvalidEncryptedMessageException(e);
                     }

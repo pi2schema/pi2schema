@@ -4,6 +4,7 @@ import pi2schema.functional.ThrowingConsumer;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
+import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
@@ -40,10 +41,20 @@ class Ciphers implements Supplier<Cipher> {
         );
     }
 
-    static CompletableFuture<byte[]> apply(Cipher cipher, byte[] bytes) {
+    static CompletableFuture<ByteBuffer> apply(Cipher cipher, ByteBuffer input) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                return cipher.doFinal(bytes);
+                input.rewind();
+
+                ByteBuffer output = ByteBuffer.allocate(
+                        cipher.getOutputSize(
+                                input.remaining()));
+
+                cipher.doFinal(input, output);
+
+                return output.limit(output.position()) //limit to the used bytes only
+                        .rewind()
+                        .asReadOnlyBuffer();
             } catch (GeneralSecurityException e) {
                 throw new RuntimeException(e);
             }
