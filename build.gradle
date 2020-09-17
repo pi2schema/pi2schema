@@ -1,8 +1,13 @@
+plugins {
+    id "com.github.spotbugs" version "4.5.0" apply false
+}
+
 allprojects {
 
     apply plugin: 'java'
     apply plugin: 'idea'
     apply plugin: 'jacoco'
+    apply plugin: 'com.github.spotbugs'
     apply plugin: 'maven-publish'
 
     group 'com.github.pi2schema'
@@ -41,6 +46,21 @@ subprojects {
         useJUnitPlatform()
         testLogging {
             events "passed", "skipped", "failed"
+        }
+    }
+
+    // do not run spot bugs on test for the time being
+    spotbugsTest {
+        enabled false
+    }
+
+    spotbugsMain {
+        reports {
+            html {
+                enabled = true
+                destination = file("$buildDir/reports/spotbugs/main/spotbugs.html")
+                stylesheet = 'fancy-hist.xsl'
+            }
         }
     }
 

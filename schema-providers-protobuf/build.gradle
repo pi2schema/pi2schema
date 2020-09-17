@@ -4,9 +4,7 @@ buildscript {
     }
 }
 
-
 plugins {
-    id 'java'
     id 'java-test-fixtures'
     id 'com.google.protobuf' version '0.8.13'
 }
@@ -17,13 +15,17 @@ protobuf {
     }
 }
 
-
 idea {
     module {
         // proto files and generated Java files are automatically added as source dirs.
         // If you have additional sources, add them here:
         sourceDirs += file("/generated/source/proto")
     }
+}
+
+// remove auto generated proto classes used for the serialization persistence.
+spotbugs {
+    onlyAnalyze = ['pi2schema.schema.providers.protobuf.*']
 }
 
 dependencies {
