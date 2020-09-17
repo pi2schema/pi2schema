@@ -10,7 +10,7 @@ allprojects {
     apply plugin: 'maven-publish'
 
     group 'com.github.pi2schema'
-    version '0.2.0-SNAPSHOT'
+    version project.version
 
     java {
         sourceCompatibility(JavaVersion.VERSION_11)
