@@ -31,7 +31,7 @@ jobs:
           ${{ runner.os }}-gradle-
 
     - name: Build with Gradle
-      run: ./gradlew build
+      run: ./gradlew --continue build
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
