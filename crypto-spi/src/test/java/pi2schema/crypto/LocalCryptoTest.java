@@ -11,13 +11,13 @@ import pi2schema.crypto.providers.DecryptingMaterialsProvider;
 import pi2schema.crypto.providers.EncryptingMaterialsProvider;
 import pi2schema.crypto.support.KeyGen;
 
-import javax.crypto.SecretKey;
-import java.security.NoSuchAlgorithmException;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class LocalCryptoTest {
 
@@ -25,24 +25,20 @@ class LocalCryptoTest {
 
         @Override
         public Stream<? extends Arguments> provideArguments(ExtensionContext context) {
-            return Stream.of(
-                    Arguments.of(RandomStringUtils.random(8)),
-                    Arguments.of(RandomStringUtils.random(24)),
-                    Arguments.of(RandomStringUtils.random(56)),
-                    Arguments.of(RandomStringUtils.random(120)),
-                    Arguments.of(RandomStringUtils.random(248)),
-                    Arguments.of(RandomStringUtils.random(1_116)),
-                    Arguments.of(RandomStringUtils.random(50_000))
-            );
+            return Stream.of(18, 24, 56, 120, 248, 1_116, 50_000)
+                    .map(stringSize ->
+                            Arguments.of(
+                                    RandomStringUtils.random(stringSize, true, true)));
         }
     }
 
     @ParameterizedTest
     @ArgumentsSource(RandomMultipleSizeStringArgumentsProvider.class)
-    void encrypt(String text) throws NoSuchAlgorithmException, ExecutionException, InterruptedException {
+    void encrypt(String text) throws ExecutionException, InterruptedException {
 
         //given
-        var toBeEncrypted = text.getBytes();
+        var toBeEncrypted = StandardCharsets.UTF_8.encode(text).asReadOnlyBuffer();
+
 
         var secretKey = KeyGen.aes256().generateKey();
 
@@ -59,7 +55,11 @@ class LocalCryptoTest {
         var decrypted = decryptor.decrypt("", encrypted).get();
 
         //Then
-        assertThat(toBeEncrypted).isNotEqualTo(encrypted.data());
-        assertThat(decrypted).isEqualTo(toBeEncrypted);
+        assertThat(toBeEncrypted.rewind()).isNotEqualTo(encrypted.data());
+        String decryptedText = StandardCharsets.UTF_8.decode(decrypted).toString();
+
+        assertEquals(text, decryptedText);
+
+        assertThat(text).isEqualTo(decryptedText);
     }
 }

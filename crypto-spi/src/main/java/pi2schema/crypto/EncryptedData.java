@@ -1,14 +1,15 @@
 package pi2schema.crypto;
 
 import javax.crypto.spec.IvParameterSpec;
+import java.nio.ByteBuffer;
 
 public final class EncryptedData {
 
-    private final byte[] data;
+    private final ByteBuffer data;
     private final String usedTransformation;
     private final IvParameterSpec initializationVector;
 
-    public EncryptedData(byte[] data, String usedTransformation, IvParameterSpec initializationVector) {
+    public EncryptedData(ByteBuffer data, String usedTransformation, IvParameterSpec initializationVector) {
         this.data = data;
         this.usedTransformation = usedTransformation;
         this.initializationVector = initializationVector;
@@ -17,7 +18,7 @@ public final class EncryptedData {
     /**
      * @return The encrypted/ciphered data
      */
-    public byte[] data() {
+    public ByteBuffer data() {
         return data;
     }
 

@@ -3,6 +3,7 @@ package pi2schema.crypto;
 import pi2schema.crypto.materials.SymmetricMaterial;
 import pi2schema.crypto.providers.DecryptingMaterialsProvider;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 
 public class LocalDecryptor implements Decryptor {
@@ -14,7 +15,7 @@ public class LocalDecryptor implements Decryptor {
     }
 
     @Override
-    public CompletableFuture<byte[]> decrypt(String key, EncryptedData encryptedData) {
+    public CompletableFuture<ByteBuffer> decrypt(String key, EncryptedData encryptedData) {
         return provider.decryptionKeysFor(key)
                 .thenApply(SymmetricMaterial::getDecryptionKey)
                 .thenCompose(decryptionKey ->

@@ -15,6 +15,7 @@ import pi2schema.crypto.EncryptedData;
 import pi2schema.crypto.Encryptor;
 
 import javax.crypto.spec.IvParameterSpec;
+import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
@@ -29,17 +30,16 @@ class KafkaGdprAwareProtobufSerializerTest {
     private final String topic = "test";
     private final MockSchemaRegistryClient schemaRegistry = new MockSchemaRegistryClient();
 
-    private final byte[] encrypted = "mockEncryption".getBytes();
+    private final ByteBuffer encrypted = ByteBuffer.wrap("mockEncryption".getBytes()).asReadOnlyBuffer();
     private final Encryptor encryptorMock = (subjectId, data) ->
             CompletableFuture.completedFuture(
                     new EncryptedData(encrypted, "AES/CBC/PKCS5Padding", new IvParameterSpec(new byte[0]))
             );
 
     KafkaGdprAwareProtobufSerializerTest() {
-        var initial = new HashMap<String, Object>();
-        initial.put(KafkaProtobufSerializerConfig.AUTO_REGISTER_SCHEMAS, true);
-        initial.put(KafkaProtobufSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG, "bogus");
-        this.configs = Collections.unmodifiableMap(initial);
+        this.configs = Map.of(
+                KafkaProtobufSerializerConfig.AUTO_REGISTER_SCHEMAS, true,
+                KafkaProtobufSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG, "bogus");
     }
 
     @Test
@@ -85,6 +85,7 @@ class KafkaGdprAwareProtobufSerializerTest {
         //when
         byte[] data = serializer.serialize(topic, original);
         FarmerRegisteredEvent actual = deserializer.deserialize(topic, data);
+        encrypted.rewind();
 
         //then
         assertThat(actual.getUuid())
@@ -96,7 +97,7 @@ class KafkaGdprAwareProtobufSerializerTest {
         assertThat(actual.getEncryptedPersonalData().getSubjectId())
                 .isEqualTo(uuid);
 
-        assertThat(actual.getEncryptedPersonalData().getData().toByteArray())
+        assertThat(actual.getEncryptedPersonalData().getData().asReadOnlyByteBuffer())
                 .isEqualTo(encrypted);
 
         assertThat(actual.getEncryptedPersonalData().getPersonalDataFieldNumber())
