@@ -4,7 +4,6 @@ buildscript {
     }
 }
 
-
 plugins {
     id 'com.google.protobuf' version '0.8.13'
 }
@@ -15,7 +14,6 @@ protobuf {
     }
 }
 
-
 sourceSets {
     main {
         proto {
@@ -25,7 +23,6 @@ sourceSets {
     }
 }
 
-
 idea {
     module {
         // proto files and generated Java files are automatically added as source dirs.
@@ -34,6 +31,10 @@ idea {
     }
 }
 
+// remove auto generated proto classes used for the serialization persistence.
+spotbugs {
+    onlyAnalyze = ['pi2schema.crypto.providers.kafkakms.*']
+}
 
 dependencies {
 
