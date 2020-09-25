@@ -3,7 +3,7 @@ dependencies {
     compile project(':schema-providers-protobuf')
     compile project(':crypto-providers-kafkakms') //todo service locator / dynamic factory
 
-    compile 'org.apache.kafka:kafka-clients:2.6.0'
+    compile 'org.apache.kafka:kafka-clients:6.0.0-ce'
     compile 'io.confluent:kafka-protobuf-serializer:5.5.1'
 
 
