@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package com.acme;
+option java_outer_classname = "FarmerRegisteredEventOuterClass";
+
+import 'google/protobuf/timestamp.proto';
+
+message FarmerRegisteredEvent {
+
+  string uuid = 1;
+
+  ContactInfo contactInfo = 2;
+
+  google.protobuf.Timestamp registeredAt = 4;
+  string referer = 5;
+
+}
+
+message ContactInfo {
+  string name = 1;
+  string phoneNumber = 2;
+  string email = 3;
+}

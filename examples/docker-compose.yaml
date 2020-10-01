@@ -3,7 +3,7 @@
 version: '2'
 services:
   zookeeper:
-    image: confluentinc/cp-zookeeper:6.0.0
+    image: confluentinc/cp-zookeeper:5.5.2-2-ubi8
     hostname: zookeeper
     ports:
       - '32181:32181'
@@ -14,7 +14,7 @@ services:
       - "moby:127.0.0.1"
 
   kafka:
-    image: confluentinc/cp-kafka:6.0.0
+    image: confluentinc/cp-kafka:5.5.2-2-ubi8
     hostname: kafka
     ports:
       - '9092:9092'
@@ -27,8 +27,7 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092,
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
     extra_hosts:
       - "moby:127.0.0.1"
 
