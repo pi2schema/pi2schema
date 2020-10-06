@@ -25,6 +25,7 @@ configurations.forEach {
 
 
 dependencies {
+	compile(project(":serialization-kafka-protobuf"))
 
 	compile("com.google.protobuf:protobuf-java:3.13.0")
 

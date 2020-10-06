@@ -28,4 +28,20 @@ class SampleApplication {
             "farmer",
             3,
             1)
+
+    @Bean
+    fun pi2schemaCommandsTopic(): NewTopic = NewTopic(
+            "pi2schema.kms.commands",
+            3,
+            1)
+
+    @Bean
+    fun pi2schemaLocalStateTopic(): NewTopic = NewTopic(
+            "pi2schema.kms-local-changelog",
+            3,
+            1)
+            .configs(
+                    mapOf(
+                            "cleanup.policy" to "compact"))
+
 }
