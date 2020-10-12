@@ -63,3 +63,7 @@ protobuf {
 		artifact = "com.google.protobuf:protoc:3.13.0"
 	}
 }
+
+spotbugs {
+	onlyAnalyze = ['com.acme.sample.*']
+}
