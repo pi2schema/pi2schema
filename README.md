@@ -29,8 +29,6 @@ Further more provide an ?open? space to collaborate in a so complex subject and 
 * Data governance at center with personal data laws (gdpr/lgpd)
     - Maturity levels - Early, many times mixed with bureaucracy and spreadsheets
     
-
-    
 ## Challenges
 
 * Multiple areas of  knowledge:
@@ -41,18 +39,39 @@ Further more provide an ?open? space to collaborate in a so complex subject and 
 
 ## Getting started
 
-### Project dependencies
+[Please see the kotlin-springboot code sample and video.](examples/springboot-protobuf-kafkakms)
 
 ## Concepts
 
-## Schema
+The pi2schema project relies basically on the 3 following modules/components which can be composed among them. They
+ are implemented for extensibility and to support multiple cloud providers, encryption mechanisms and security
+ level. 
 
-## Crypto
+### Schema
 
-### Vault
+The schema is the central part of the p2schema solution. All the metadata information is intended to be described
+ explicitly and naturally as part of the schema, even if the information itself comes from outside.
+ 
+The core metadata information to be described in the schema consists of:
+  
+  - **Subject Identifier**: Identifies which subject the personal data belongs to. It can be for instance the user uuid
+  , or the user email or any other identifier.
+  - **Personal Information**: The data which should be protected related to the subject identifier.
+  
+Although this project started as part of the confluent protobuf support exploration, the goal is to be
+ extensible for any schema / serialization format. While the intention is to have the definition / usage as close as
+  possible within the implementations, they will inevitably be different depending on the schema capabilities. Please
+   refer to the specific documentation for details:
+   
+ 
+[![protobuf](https://badgen.net/badge/protobuf/draft/yellow?icon=)](schema-providers-protobuf/README.md)
+[![protobuf](https://badgen.net/badge/avro/hep-nedded/orange?icon=)](https://github.com/pi2schema/pi2schema/issues/74)
+[![protobuf](https://badgen.net/badge/json/hep-nedded/orange?icon=)](https://github.com/pi2schema/pi2schema/issues/75)
 
-refs https://youtu.be/_czdzNUZGFs?t=1401
-refs https://medium.com/sydseter/gdpr-compliant-event-sourcing-with-hashicorp-vault-f27011cac318
+### Crypto
+
+
+### Application
 
 
 ## Next steps
