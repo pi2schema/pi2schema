@@ -31,6 +31,6 @@ spotbugs {
 dependencies {
 
     compile project(':schema-spi')
-    compile 'com.google.protobuf:protobuf-java:3.13.0'
+    compile 'com.google.protobuf:protobuf-java:3.14.0'
 
 }
