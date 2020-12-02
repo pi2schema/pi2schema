@@ -41,7 +41,7 @@ dependencies {
     compile project(':crypto-spi')
 
     compile 'org.apache.kafka:kafka-streams:2.6.0'
-    compile 'io.confluent:kafka-streams-protobuf-serde:6.0.0'
+    compile 'io.confluent:kafka-streams-protobuf-serde:6.0.1'
 
     compile 'com.google.protobuf:protobuf-java:3.14.0'
 
