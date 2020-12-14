@@ -48,7 +48,7 @@ dependencies {
 
 	testCompile("org.testcontainers:testcontainers:1.15.0")
 	testCompile("org.testcontainers:junit-jupiter:1.15.0")
-	testCompile("org.testcontainers:kafka:1.15.0")
+	testCompile("org.testcontainers:kafka:1.15.1")
 }
 
 compileKotlin {
