@@ -10,7 +10,7 @@ plugins {
 
 protobuf {
     protoc {
-        artifact = 'com.google.protobuf:protoc:3.13.0'
+        artifact = 'com.google.protobuf:protoc:3.15.0'
     }
 }
 
