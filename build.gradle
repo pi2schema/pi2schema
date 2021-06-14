@@ -38,7 +38,7 @@ subprojects {
         testImplementation 'org.assertj:assertj-core:3.18.1'
         testImplementation 'org.apache.commons:commons-lang3:3.11'
         testImplementation 'org.awaitility:awaitility:4.0.3'
-        testImplementation 'org.mockito:mockito-core:3.6.28'
+        testImplementation 'org.mockito:mockito-core:3.11.1'
         testImplementation 'org.mockito:mockito-junit-jupiter:3.6.28'
 
     }
