@@ -17,7 +17,7 @@
  The subject identification is made by adding to the protobuf field the annotation  **[(pi2schema.subject_identifier
  ) = true]**
  
-> :waring: Currently the subject identifier is saved as plain. This work fine with uuid or auto incremental data
+> :warning: Currently the subject identifier is saved as plain. This work fine with uuid or auto incremental data
 >, however should be reviewed case the identifier itself is a personal data, for instance the email. It should be
 > straight forward to improve this part. Please create an issue if this is important for you use case.
 
