@@ -7,7 +7,7 @@ dependencies {
     compile 'io.confluent:kafka-protobuf-serializer:6.0.1'
 
     testCompile "org.testcontainers:testcontainers:1.15.1"
-    testCompile "org.testcontainers:junit-jupiter:1.15.0"
+    testCompile "org.testcontainers:junit-jupiter:1.17.3"
     testCompile "org.testcontainers:kafka:1.15.1"
 
 
