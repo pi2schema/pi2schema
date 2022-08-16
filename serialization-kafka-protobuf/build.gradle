@@ -1,14 +1,15 @@
 dependencies {
 
-    compile project(':schema-providers-protobuf')
-    compile project(':crypto-providers-kafkakms') //todo service locator / dynamic factory
+    implementation project(':crypto-spi')
+    implementation project(':schema-providers-protobuf')
+    implementation project(':crypto-providers-kafkakms') //todo service locator / dynamic factory
 
-    compile 'org.apache.kafka:kafka-clients:2.6.0'
-    compile 'io.confluent:kafka-protobuf-serializer:6.0.1'
+    implementation 'org.apache.kafka:kafka-clients:2.6.0'
+    implementation 'io.confluent:kafka-protobuf-serializer:6.0.1'
 
-    testCompile "org.testcontainers:testcontainers:1.15.1"
-    testCompile "org.testcontainers:junit-jupiter:1.17.3"
-    testCompile "org.testcontainers:kafka:1.15.1"
+    testImplementation "org.testcontainers:testcontainers:1.15.1"
+    testImplementation "org.testcontainers:junit-jupiter:1.17.3"
+    testImplementation "org.testcontainers:kafka:1.15.1"
 
 
     // TODO: Adopt test features in a way it inclues generated source code
@@ -22,5 +23,5 @@ dependencies {
     testImplementation testFixtures(project(':schema-providers-protobuf'))
 
     // TODO this has to be removed
-    testCompile project(':schema-providers-protobuf').sourceSets.test.output
+    testImplementation project(':schema-providers-protobuf').sourceSets.test.output
 }

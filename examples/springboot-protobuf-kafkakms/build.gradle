@@ -25,9 +25,9 @@ configurations.forEach {
 
 
 dependencies {
-	compile(project(":serialization-kafka-protobuf"))
+	implementation(project(":serialization-kafka-protobuf"))
 
-	compile("com.google.protobuf:protobuf-java:3.14.0")
+	implementation("com.google.protobuf:protobuf-java:3.14.0")
 
 	implementation("io.confluent:kafka-protobuf-serializer:6.0.1")
 
