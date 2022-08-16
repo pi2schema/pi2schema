@@ -5,11 +5,11 @@ buildscript {
 }
 
 plugins {
-	id("org.springframework.boot") version "2.3.4.RELEASE"
-	id("io.spring.dependency-management") version "1.0.13.RELEASE"
+	id("org.springframework.boot") version "2.7.2"
+	id("io.spring.dependency-management") version "1.0.12.RELEASE"
+	kotlin("jvm") version "1.6.21"
+	kotlin("plugin.spring") version "1.6.21"
 	id("com.google.protobuf") version "0.8.13"
-	id("org.jetbrains.kotlin.jvm") version "1.7.10"
-	id("org.jetbrains.kotlin.plugin.spring") version "1.7.10"
 }
 
 group = "com.acme"
