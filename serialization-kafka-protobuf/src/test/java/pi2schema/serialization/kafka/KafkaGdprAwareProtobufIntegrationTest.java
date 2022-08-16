@@ -8,9 +8,9 @@ import com.acme.FruitOuterClass.Fruit;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializerConfig;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializerConfig;
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
-import org.apache.kafka.streams.StreamsConfig;
 import org.junit.Rule;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
@@ -58,7 +58,7 @@ class KafkaGdprAwareProtobufIntegrationTest {
                 ":" + schemaRegistry.getMappedPort(8081);
 
         var configuring = new HashMap<String, Object>();
-        configuring.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers());
+        configuring.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers());
         configuring.put(KafkaProtobufSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG, schemaRegistryUrl);
         configuring.put(KafkaProtobufSerializerConfig.AUTO_REGISTER_SCHEMAS, true);
         configuring.put(KafkaProtobufDeserializerConfig.DERIVE_TYPE_CONFIG, true);
