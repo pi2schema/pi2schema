@@ -66,8 +66,8 @@ Although this project started as part of the confluent protobuf support explorat
    
  
 [![protobuf](https://badgen.net/badge/protobuf/draft/yellow?icon=)](schema-providers-protobuf/README.md)
-[![protobuf](https://badgen.net/badge/avro/hep-nedded/orange?icon=)](https://github.com/pi2schema/pi2schema/issues/74)
-[![protobuf](https://badgen.net/badge/json/hep-nedded/orange?icon=)](https://github.com/pi2schema/pi2schema/issues/75)
+[![protobuf](https://badgen.net/badge/avro/help-nedded/orange?icon=)](https://github.com/pi2schema/pi2schema/issues/74)
+[![protobuf](https://badgen.net/badge/json/help-nedded/orange?icon=)](https://github.com/pi2schema/pi2schema/issues/75)
 
 ### Crypto
 
