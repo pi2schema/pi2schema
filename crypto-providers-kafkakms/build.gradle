@@ -43,7 +43,7 @@ dependencies {
     implementation 'org.apache.kafka:kafka-streams:2.6.0'
     implementation 'io.confluent:kafka-streams-protobuf-serde:6.0.1'
 
-    implementation 'com.google.protobuf:protobuf-java:3.14.0'
+    implementation 'com.google.protobuf:protobuf-java:3.21.5'
 
     testImplementation "org.testcontainers:testcontainers:1.15.1"
     testImplementation "org.testcontainers:junit-jupiter:1.17.3"
