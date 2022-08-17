@@ -45,7 +45,7 @@ class KafkaGdprAwareProtobufIntegrationTest {
     KafkaGdprAwareProtobufIntegrationTest() {
         kafka.start();
 
-        schemaRegistry = new GenericContainer("confluentinc/cp-schema-registry:5.5.1")
+        schemaRegistry = new GenericContainer("confluentinc/cp-schema-registry:7.2.1")
                 .withNetwork(Network.SHARED)
                 .withEnv("SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS", "PLAINTEXT://" + kafka.getNetworkAliases().get(0) + ":9092")
                 .withEnv("SCHEMA_REGISTRY_HOST_NAME", "schema-registry")
