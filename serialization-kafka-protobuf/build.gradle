@@ -9,7 +9,7 @@ dependencies {
 
     testImplementation "org.testcontainers:testcontainers:1.15.1"
     testImplementation "org.testcontainers:junit-jupiter:1.17.3"
-    testImplementation "org.testcontainers:kafka:1.15.1"
+    testImplementation "org.testcontainers:kafka:1.17.3"
 
 
     // TODO: Adopt test features in a way it inclues generated source code
