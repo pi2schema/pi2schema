@@ -38,7 +38,7 @@ class SiblingSubjectIdentifierFinderTest {
                 .isThrownBy(() ->
                         finder.find(personalDataField)
                 )
-                .withMessage("The strategy SiblingSubjectIdentifierFinder has not found any possible identifiers for the field" +
+                .withMessage("The strategy pi2schema.schema.providers.protobuf.subject.SiblingSubjectIdentifierFinder has not found any possible identifiers for the field" +
                         " com.acme.MissingSubjectIdentifierAnnotation.personal_data while exact one is required");
 
     }

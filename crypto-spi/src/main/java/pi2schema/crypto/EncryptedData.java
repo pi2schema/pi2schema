@@ -10,7 +10,7 @@ public final class EncryptedData {
     private final IvParameterSpec initializationVector;
 
     public EncryptedData(ByteBuffer data, String usedTransformation, IvParameterSpec initializationVector) {
-        this.data = data;
+        this.data = data.asReadOnlyBuffer();
         this.usedTransformation = usedTransformation;
         this.initializationVector = initializationVector;
     }
@@ -19,13 +19,12 @@ public final class EncryptedData {
      * @return The encrypted/ciphered data
      */
     public ByteBuffer data() {
-        return data;
+        return data.asReadOnlyBuffer();
     }
 
     /**
      * Transformation following the structure: {algo}/{mode}/{padding}
      * For more details:
-     *
      * <a href=https://docs.oracle.com/javase/7/docs/technotes/guides/security/StandardNames.html#Cipher>possible values</a>
      *
      * @return The used transformation
