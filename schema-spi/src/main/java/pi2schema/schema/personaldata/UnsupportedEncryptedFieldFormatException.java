@@ -4,7 +4,7 @@ public class UnsupportedEncryptedFieldFormatException extends RuntimeException {
 
     private final String expectedEncryptionFieldType;
     private final String encryptionTargetField;
-    private final Class<?> instanceClass;
+    private final String instanceClassName;
 
     public UnsupportedEncryptedFieldFormatException(
             String expectedEncryptionFieldType,
@@ -12,7 +12,7 @@ public class UnsupportedEncryptedFieldFormatException extends RuntimeException {
             Class<?> instanceClass) {
         this.expectedEncryptionFieldType = expectedEncryptionFieldType;
         this.encryptionTargetField = encryptionTargetField;
-        this.instanceClass = instanceClass;
+        this.instanceClassName = instanceClass.getName();
     }
 
     @Override
@@ -21,7 +21,7 @@ public class UnsupportedEncryptedFieldFormatException extends RuntimeException {
                 "The field %s was supposed to be encrypted containing the wrapper class %s, however the class %s was found",
                 encryptionTargetField,
                 expectedEncryptionFieldType,
-                instanceClass
+                instanceClassName
         );
     }
 }
