@@ -1,6 +1,6 @@
 plugins {
     id 'net.researchgate.release' version '3.0.0'
-    id "com.github.spotbugs" version "5.0.9" apply false
+    id "com.github.spotbugs" version "5.0.10" apply false
 }
 
 allprojects {
