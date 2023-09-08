@@ -31,5 +31,5 @@ spotbugs {
 dependencies {
     implementation project(':crypto-spi')
     implementation project(':schema-spi')
-    implementation 'com.google.protobuf:protobuf-java:3.21.5'
+    implementation 'com.google.protobuf:protobuf-java:3.24.3'
 }
