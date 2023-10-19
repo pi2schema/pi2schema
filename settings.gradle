@@ -6,6 +6,7 @@ include 'crypto-providers-vault'
 
 include 'schema-spi'
 include 'schema-providers-protobuf'
+include 'schema-providers-avro'
 
 include 'serialization-kafka-protobuf'
 
