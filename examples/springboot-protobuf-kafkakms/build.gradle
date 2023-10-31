@@ -7,9 +7,9 @@ buildscript {
 plugins {
 	id("org.springframework.boot") version "2.7.2"
 	id("io.spring.dependency-management") version "1.0.12.RELEASE"
-	kotlin("jvm") version "1.6.21"
-	kotlin("plugin.spring") version "1.6.21"
-	id("com.google.protobuf") version "0.8.13"
+	id("org.jetbrains.kotlin.jvm") version '1.8.22'
+	id("org.jetbrains.kotlin.plugin.spring") version '1.8.22'
+	id("com.google.protobuf") version "0.8.19"
 }
 
 group = "com.acme"
@@ -27,7 +27,7 @@ configurations.forEach {
 dependencies {
 	implementation(project(":serialization-kafka-protobuf"))
 
-	implementation("com.google.protobuf:protobuf-java:3.14.0")
+	implementation("com.google.protobuf:protobuf-java:3.21.7")
 
 	implementation("io.confluent:kafka-protobuf-serializer:7.2.1")
 
