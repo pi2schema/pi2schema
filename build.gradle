@@ -88,7 +88,7 @@ task codeCoverageReport(type: JacocoReport) {
 }
 
 tasks.codeCoverageReport {
-    dependsOn(tasks.test)
+    dependsOn(tasks.test, tasks.compileTestJava)
 }
 
 check.dependsOn codeCoverageReport
