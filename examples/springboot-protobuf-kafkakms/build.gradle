@@ -7,8 +7,8 @@ buildscript {
 plugins {
 	id("org.springframework.boot") version "2.7.2"
 	id("io.spring.dependency-management") version "1.0.12.RELEASE"
-	kotlin("jvm") version "1.6.21"
-	kotlin("plugin.spring") version "1.6.21"
+	id("org.jetbrains.kotlin.jvm") version '1.8.22'
+	id("org.jetbrains.kotlin.plugin.spring") version '1.8.22'
 	id("com.google.protobuf") version "0.8.13"
 }
 
@@ -46,9 +46,9 @@ dependencies {
 	testImplementation("io.projectreactor:reactor-test")
 	testImplementation("org.springframework.kafka:spring-kafka-test")
 
-	testCompile("org.testcontainers:testcontainers:1.15.1")
-	testCompile("org.testcontainers:junit-jupiter:1.17.3")
-	testCompile("org.testcontainers:kafka:1.15.1")
+	testImplementation("org.testcontainers:testcontainers:1.15.1")
+	testImplementation("org.testcontainers:junit-jupiter:1.17.3")
+	testImplementation("org.testcontainers:kafka:1.15.1")
 }
 
 compileKotlin {
