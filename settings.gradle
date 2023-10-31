@@ -9,4 +9,4 @@ include 'schema-providers-protobuf'
 
 include 'serialization-kafka-protobuf'
 
-//include 'examples:springboot-protobuf-kafkakms'
+include 'examples:springboot-protobuf-kafkakms'
