@@ -50,7 +50,7 @@ subprojects {
         }
     }
 
-    // do not run spot bugs on test for the time being
+// do not run spot bugs on test for the time being
     spotbugsTest {
         enabled false
     }
