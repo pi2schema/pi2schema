@@ -1,0 +1,30 @@
+{
+  "namespace": "com.acme",
+  "type": "record",
+  "name": "InvalidUserWithMultipleSubjectIdentifiers",
+  "fields": [
+    {
+      "name": "uuid",
+      "type": "string",
+      "pi2schema-subject-identifier": true
+    },
+    {
+      "name": "name",
+      "type": ["string", "pi2schema.EncryptedPersonalData"]
+    },
+    {
+      "name": "favorite_number",
+      "type": [
+        "int",
+        "null"
+      ]
+    },
+    {
+      "name": "favorite_color",
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  ]
+}
