@@ -13,10 +13,9 @@ import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.junit.Rule;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.KafkaContainer;
-import org.testcontainers.containers.Network;
+import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.redpanda.RedpandaContainer;
 import pi2schema.crypto.materials.MissingCryptoMaterialsException;
 
 import java.time.Duration;
@@ -33,29 +32,14 @@ import static org.junit.jupiter.api.Assertions.fail;
 @Testcontainers
 class KafkaGdprAwareProtobufIntegrationTest {
 
-    @Rule
-    public KafkaContainer kafka = new KafkaContainer().withNetwork(Network.SHARED);
-
-    private GenericContainer schemaRegistry;
+    @Container
+    public RedpandaContainer redpandaContainer = new RedpandaContainer("docker.redpanda.com/redpandadata/redpanda:v23.2.14");
 
     private final Map<String, Object> configs;
 
     private Fruit waterMelon = FruitFixture.waterMelon().build();
 
     KafkaGdprAwareProtobufIntegrationTest() {
-        kafka.start();
-
-        schemaRegistry = new GenericContainer("confluentinc/cp-schema-registry:7.5.1")
-                .withNetwork(Network.SHARED)
-                .withEnv("SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS", "PLAINTEXT://" + kafka.getNetworkAliases().get(0) + ":9092")
-                .withEnv("SCHEMA_REGISTRY_HOST_NAME", "schema-registry")
-                .withEnv("SCHEMA_REGISTRY_LISTENERS", "http://0.0.0.0:8081")
-                .withExposedPorts(8081);
-
-        schemaRegistry.start();
-
-        var schemaRegistryUrl = "http://" + schemaRegistry.getContainerIpAddress() +
-                ":" + schemaRegistry.getMappedPort(8081);
 
         var configuring = new HashMap<String, Object>();
         configuring.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers());
