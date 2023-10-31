@@ -11,7 +11,7 @@ import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializerConfig;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
-import org.junit.Rule;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -35,15 +35,17 @@ class KafkaGdprAwareProtobufIntegrationTest {
     @Container
     public RedpandaContainer redpandaContainer = new RedpandaContainer("docker.redpanda.com/redpandadata/redpanda:v23.2.14");
 
-    private final Map<String, Object> configs;
+    private Map<String, Object> configs;
 
     private Fruit waterMelon = FruitFixture.waterMelon().build();
 
-    KafkaGdprAwareProtobufIntegrationTest() {
+
+    @BeforeEach
+    void beforeEach() {
 
         var configuring = new HashMap<String, Object>();
-        configuring.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers());
-        configuring.put(KafkaProtobufSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG, schemaRegistryUrl);
+        configuring.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, redpandaContainer.getBootstrapServers());
+        configuring.put(KafkaProtobufSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG, redpandaContainer.getSchemaRegistryAddress());
         configuring.put(KafkaProtobufSerializerConfig.AUTO_REGISTER_SCHEMAS, true);
         configuring.put(KafkaProtobufDeserializerConfig.DERIVE_TYPE_CONFIG, true);
 
@@ -82,7 +84,7 @@ class KafkaGdprAwareProtobufIntegrationTest {
         serializer.configure(configs, false);
         var serializedWithCryptoData = serializer.serialize("", eventWithPersonalData);
 
-        // standard deserialization, should be compatible and provide a encrypted value
+        // standard deserialization, should be compatible and provide an encrypted value
         try (var standardDeserializer = new KafkaProtobufDeserializer<FarmerRegisteredEvent>()) {
             standardDeserializer.configure(configs, false);
             var deserializedEncrypted = standardDeserializer.deserialize("", serializedWithCryptoData);
