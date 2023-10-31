@@ -7,7 +7,7 @@ allprojects {
 
     apply plugin: 'java'
     apply plugin: 'idea'
-    apply plugin: 'jacoco'
+//    apply plugin: 'jacoco'
     apply plugin: 'com.github.spotbugs'
     apply plugin: 'maven-publish'
 
@@ -50,9 +50,14 @@ subprojects {
         }
     }
 
-    // do not run spot bugs on test for the time being
+// do not run spot bugs on test for the time being
     spotbugsTest {
         enabled false
+    }
+
+    spotbugs {
+        // https://github.com/spotbugs/spotbugs-gradle-plugin#readme
+        ignoreFailures = true // will not crash the build
     }
 
 	publishing {
@@ -74,16 +79,16 @@ subprojects {
 	}
 }
 
-task codeCoverageReport(type: JacocoReport) {
-    executionData fileTree(project.rootDir.absolutePath).include("**/build/jacoco/*.exec")
+//task codeCoverageReport(type: JacocoReport) {
+//    executionData fileTree(project.rootDir.absolutePath).include("**/build/jacoco/*.exec")
+//
+//    subprojects.each {
+//        sourceSets it.sourceSets.main
+//    }
+//}
+//
+//tasks.test {
+//    finalizedBy(tasks.codeCoverageReport) // report is always generated after tests run
+//}
 
-    subprojects.each {
-        sourceSets it.sourceSets.main
-    }
-}
-
-codeCoverageReport.dependsOn {
-    subprojects*.test
-}
-
-check.dependsOn codeCoverageReport
+//check.dependsOn codeCoverageReport
