@@ -33,6 +33,7 @@ dependencies {
 
 	implementation("io.confluent:kafka-protobuf-serializer:7.2.1")
 
+	implementation('org.springframework.boot:spring-boot-starter-log4j2')
 	implementation("org.springframework.boot:spring-boot-starter-webflux")
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 	implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
@@ -52,6 +53,16 @@ dependencies {
 	testImplementation("org.testcontainers:junit-jupiter:1.17.3")
 	testImplementation("org.testcontainers:kafka:1.15.1")
 }
+
+configurations {
+	all {
+		exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
+		exclude group: 'ch.qos.logback', module: 'logback-classic'
+		exclude group: 'org.apache.logging.log4j', module: 'log4j-to-slf4j'
+	}
+}
+
+
 
 compileKotlin {
 	kotlinOptions.freeCompilerArgs = ["-Xjsr305=strict"]
