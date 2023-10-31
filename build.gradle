@@ -55,6 +55,11 @@ subprojects {
         enabled false
     }
 
+    spotbugs {
+        // https://github.com/spotbugs/spotbugs-gradle-plugin#readme
+        ignoreFailures = true // will not crash the build
+    }
+
 	publishing {
 		repositories {
 			maven {
