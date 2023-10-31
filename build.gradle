@@ -87,8 +87,8 @@ task codeCoverageReport(type: JacocoReport) {
     }
 }
 
-tasks.codeCoverageReport {
-    dependsOn(tasks.test, tasks.compileTestJava)
+tasks.test {
+    finalizedBy(tasks.codeCoverageReport) // report is always generated after tests run
 }
 
 check.dependsOn codeCoverageReport
