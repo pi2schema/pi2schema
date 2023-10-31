@@ -58,7 +58,7 @@ class FarmerRegistrationHandler(
                 }
                 .flatMap { event ->
                     Mono.fromFuture(
-                            kafkaTemplate.send(farmerTopic.name(), event.uuid, event).completable()
+                            kafkaTemplate.send(farmerTopic.name(), event.uuid, event)
                     )
                 }
                 .flatMap {
