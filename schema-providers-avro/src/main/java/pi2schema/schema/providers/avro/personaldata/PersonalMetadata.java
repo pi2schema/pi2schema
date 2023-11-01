@@ -1,6 +1,5 @@
 package pi2schema.schema.providers.avro.personaldata;
 
-import com.google.protobuf.Message;
 import org.apache.avro.specific.SpecificRecordBase;
 import pi2schema.crypto.Decryptor;
 import pi2schema.crypto.Encryptor;

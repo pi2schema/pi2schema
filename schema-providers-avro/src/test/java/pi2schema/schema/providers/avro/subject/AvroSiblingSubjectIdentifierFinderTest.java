@@ -9,10 +9,9 @@ import com.acme.UserValid;
 
 import java.util.UUID;
 
-import com.acme.UserValidWithoutIdentifier;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import pi2schema.schema.providers.avro.personaldata.AvroPersonalDataFieldDefinition;
+import pi2schema.schema.providers.avro.personaldata.AvroUnionPersonalDataFieldDefinition;
 import pi2schema.schema.subject.SubjectIdentifierNotFoundException;
 import pi2schema.schema.subject.TooManySubjectIdentifiersException;
 
@@ -33,7 +32,7 @@ public class AvroSiblingSubjectIdentifierFinderTest {
         var emailField = validUser.getSchema().getField("email");
 
 
-        var definition = finder.find(new AvroPersonalDataFieldDefinition(emailField, validUser.getSchema()));
+        var definition = finder.find(new AvroUnionPersonalDataFieldDefinition(emailField, validUser.getSchema()));
 
         var actualSubjectIdentifier = definition.subjectFrom(validUser);
 
@@ -48,7 +47,7 @@ public class AvroSiblingSubjectIdentifierFinderTest {
                 .setFavoriteNumber(7).build();
         var emailField = validUser.getSchema().getField("email");
 
-        assertThrowsExactly(SubjectIdentifierNotFoundException.class, () -> finder.find(new AvroPersonalDataFieldDefinition(emailField, validUser.getSchema())));
+        assertThrowsExactly(SubjectIdentifierNotFoundException.class, () -> finder.find(new AvroUnionPersonalDataFieldDefinition(emailField, validUser.getSchema())));
     }
 
 
@@ -60,7 +59,7 @@ public class AvroSiblingSubjectIdentifierFinderTest {
                 .setFavoriteNumber(7).build();
         var emailField = validUser.getSchema().getField("email");
 
-        assertThrowsExactly(TooManySubjectIdentifiersException.class, () -> finder.find(new AvroPersonalDataFieldDefinition(emailField, validUser.getSchema())));
+        assertThrowsExactly(TooManySubjectIdentifiersException.class, () -> finder.find(new AvroUnionPersonalDataFieldDefinition(emailField, validUser.getSchema())));
     }
 
     @Test
