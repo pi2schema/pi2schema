@@ -11,12 +11,11 @@ import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializerConfig;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
-import org.junit.Rule;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.KafkaContainer;
-import org.testcontainers.containers.Network;
+import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.redpanda.RedpandaContainer;
 import pi2schema.crypto.materials.MissingCryptoMaterialsException;
 
 import java.time.Duration;
@@ -33,33 +32,20 @@ import static org.junit.jupiter.api.Assertions.fail;
 @Testcontainers
 class KafkaGdprAwareProtobufIntegrationTest {
 
-    @Rule
-    public KafkaContainer kafka = new KafkaContainer().withNetwork(Network.SHARED);
+    @Container
+    public RedpandaContainer redpandaContainer = new RedpandaContainer("docker.redpanda.com/redpandadata/redpanda:v23.2.14");
 
-    private GenericContainer schemaRegistry;
-
-    private final Map<String, Object> configs;
+    private Map<String, Object> configs;
 
     private Fruit waterMelon = FruitFixture.waterMelon().build();
 
-    KafkaGdprAwareProtobufIntegrationTest() {
-        kafka.start();
 
-        schemaRegistry = new GenericContainer("confluentinc/cp-schema-registry:7.5.1")
-                .withNetwork(Network.SHARED)
-                .withEnv("SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS", "PLAINTEXT://" + kafka.getNetworkAliases().get(0) + ":9092")
-                .withEnv("SCHEMA_REGISTRY_HOST_NAME", "schema-registry")
-                .withEnv("SCHEMA_REGISTRY_LISTENERS", "http://0.0.0.0:8081")
-                .withExposedPorts(8081);
-
-        schemaRegistry.start();
-
-        var schemaRegistryUrl = "http://" + schemaRegistry.getContainerIpAddress() +
-                ":" + schemaRegistry.getMappedPort(8081);
+    @BeforeEach
+    void beforeEach() {
 
         var configuring = new HashMap<String, Object>();
-        configuring.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers());
-        configuring.put(KafkaProtobufSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG, schemaRegistryUrl);
+        configuring.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, redpandaContainer.getBootstrapServers());
+        configuring.put(KafkaProtobufSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG, redpandaContainer.getSchemaRegistryAddress());
         configuring.put(KafkaProtobufSerializerConfig.AUTO_REGISTER_SCHEMAS, true);
         configuring.put(KafkaProtobufDeserializerConfig.DERIVE_TYPE_CONFIG, true);
 
@@ -98,7 +84,7 @@ class KafkaGdprAwareProtobufIntegrationTest {
         serializer.configure(configs, false);
         var serializedWithCryptoData = serializer.serialize("", eventWithPersonalData);
 
-        // standard deserialization, should be compatible and provide a encrypted value
+        // standard deserialization, should be compatible and provide an encrypted value
         try (var standardDeserializer = new KafkaProtobufDeserializer<FarmerRegisteredEvent>()) {
             standardDeserializer.configure(configs, false);
             var deserializedEncrypted = standardDeserializer.deserialize("", serializedWithCryptoData);
