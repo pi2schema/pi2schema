@@ -1,20 +1,20 @@
 {
   "namespace": "com.acme",
   "type": "record",
-  "name": "User",
+  "name": "UserValid",
   "fields": [
     {
       "name": "uuid",
       "type": "string",
       "pi2schema-subject-identifier": true
     },
-//    {
-//      "name": "name",
-//      "type": [
-//        "string",
-//        "pi2schema.EncryptedPersonalData"
-//      ]
-//    },
+    //    {
+    //      "name": "name",
+    //      "type": [
+    //        "string",
+    //        "pi2schema.EncryptedPersonalData"
+    //      ]
+    //    },
     {
       "name": "favorite_number",
       "type": [
@@ -23,11 +23,8 @@
       ]
     },
     {
-      "name": "favorite_color",
-      "type": [
-        "null",
-        "string"
-      ]
+      "name": "email",
+      "type": "string"
     }
   ]
 }
