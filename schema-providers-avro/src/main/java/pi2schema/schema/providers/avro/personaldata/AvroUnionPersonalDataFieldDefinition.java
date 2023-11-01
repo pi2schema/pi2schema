@@ -9,6 +9,7 @@ import pi2schema.crypto.EncryptedData;
 import pi2schema.crypto.Encryptor;
 import pi2schema.schema.personaldata.PersonalDataFieldDefinition;
 import pi2schema.schema.personaldata.UnsupportedEncryptedFieldFormatException;
+import pi2schema.schema.providers.avro.subject.AvroSiblingSubjectIdentifierFinder;
 
 import javax.crypto.spec.IvParameterSpec;
 import java.nio.ByteBuffer;
@@ -18,10 +19,12 @@ public class AvroUnionPersonalDataFieldDefinition implements PersonalDataFieldDe
 
     private final Field personalField;
     private final Schema parentSchema;
+    private final AvroSiblingSubjectIdentifierFinder subjectIdentifierFinder;
 
     public AvroUnionPersonalDataFieldDefinition(Field personalField, Schema parentSchema) {
         this.personalField = personalField;
         this.parentSchema = parentSchema;
+        this.subjectIdentifierFinder = new AvroSiblingSubjectIdentifierFinder();
     }
 
     public Field getPersonalField() {
@@ -32,10 +35,23 @@ public class AvroUnionPersonalDataFieldDefinition implements PersonalDataFieldDe
         return parentSchema;
     }
 
-
     @Override
-    public CompletableFuture<Void> swapToEncrypted(Encryptor encryptor, SpecificRecordBase buildingInstance) {
-        return null;
+    public CompletableFuture<Void> swapToEncrypted(Encryptor encryptor, SpecificRecordBase encryptingInstance) {
+        var decryptedValue = (String) encryptingInstance.get(personalField.name());
+        var subjectIdentifier = subjectIdentifierFinder.find(this).subjectFrom(encryptingInstance);
+
+        return encryptor
+                .encrypt(subjectIdentifier, ByteBuffer.wrap(decryptedValue.getBytes()))
+                .thenAccept(encrypted -> {
+                    encryptingInstance.put(personalField.name(), EncryptedPersonalData.newBuilder()
+                            .setSubjectId(subjectIdentifier)
+                            .setData(cloneByteBuffer(encrypted.data())) //TODO input/output stream
+                            .setPersonalDataFieldNumber(0)
+                            .setUsedTransformation(encrypted.usedTransformation())
+                            .setInitializationVector(ByteBuffer.wrap(encrypted.initializationVector().getIV()))
+                            .setKmsId("unused-kafkaKms") //TODO
+                            .build());
+                });
     }
 
     @Override
@@ -56,9 +72,11 @@ public class AvroUnionPersonalDataFieldDefinition implements PersonalDataFieldDe
                 encryptedPersonalData.getUsedTransformation(),
                 new IvParameterSpec(encryptedPersonalData.getInitializationVector().array()));
 
-        return decryptor.decrypt(subjectIdentifier, encryptedData).thenAccept((decryptedData) -> {
-            decryptingInstance.put(personalField.name(), new String(decryptedData.array()));
-                });
+        return decryptor
+                .decrypt(subjectIdentifier, encryptedData)
+                .thenAccept((decryptedData) ->
+                    decryptingInstance.put(personalField.name(), new String(decryptedData.array()))
+                );
 
     }
 
@@ -68,9 +86,24 @@ public class AvroUnionPersonalDataFieldDefinition implements PersonalDataFieldDe
     }
 
     public static boolean hasPersonalData(Field field) {
-        return field.schema().isUnion() &&
-                field.schema().getTypes()
-                        .stream()
-                        .anyMatch(type -> "pi2schema.EncryptedPersonalData".equals(type.getFullName()));
+        return isUnion(field) &&
+                hasType(field, "pi2schema.EncryptedPersonalData") &&
+                hasType(field, "string");
+    }
+
+    private static boolean hasType(Field field, String expectedType) {
+        return field.schema().getTypes()
+                .stream()
+                .anyMatch(type -> expectedType.equals(type.getFullName()));
+    }
+
+    private static boolean isUnion(Field field) {
+        return field.schema().isUnion();
+    }
+
+    private static ByteBuffer cloneByteBuffer(ByteBuffer byteBuffer) {
+        byte[] dataBytes = new byte[byteBuffer.remaining()];
+        byteBuffer.get(dataBytes);
+        return ByteBuffer.wrap(dataBytes);
     }
 }

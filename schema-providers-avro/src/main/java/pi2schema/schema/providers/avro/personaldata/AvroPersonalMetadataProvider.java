@@ -9,8 +9,6 @@ import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toList;
 
 public class AvroPersonalMetadataProvider {
-    private final AvroSiblingSubjectIdentifierFinder subjectIdentifierFinder = new AvroSiblingSubjectIdentifierFinder();
-
     public AvroPersonalMetadata forDescriptor(Schema schema) {
 
         //avro union strategy
