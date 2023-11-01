@@ -1,14 +1,20 @@
 package pi2schema.schema.providers.avro.subject;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
+import com.acme.InvalidUserWithMultipleSubjectIdentifiers;
+import com.acme.InvalidUserWithoutSubjectIdentifier;
 import com.acme.UserValid;
 
 import java.util.UUID;
 
+import com.acme.UserValidWithoutIdentifier;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import pi2schema.schema.providers.avro.personaldata.AvroPersonalDataFieldDefinition;
+import pi2schema.schema.subject.SubjectIdentifierNotFoundException;
+import pi2schema.schema.subject.TooManySubjectIdentifiersException;
 
 
 public class AvroSiblingSubjectIdentifierFinderTest {
@@ -36,13 +42,30 @@ public class AvroSiblingSubjectIdentifierFinderTest {
 
     @Test
     void shouldThrowSubjectIdentifierNotFound() {
-        fail();
+        String subjectIdentifier = UUID.randomUUID().toString();
+        InvalidUserWithoutSubjectIdentifier validUser = InvalidUserWithoutSubjectIdentifier.newBuilder().setUuid(subjectIdentifier)
+                .setEmail("john@doe.com")
+                .setFavoriteNumber(7).build();
+        var emailField = validUser.getSchema().getField("email");
+
+        assertThrowsExactly(SubjectIdentifierNotFoundException.class, () -> finder.find(new AvroPersonalDataFieldDefinition(emailField, validUser.getSchema())));
     }
 
 
     @Test
     public void shouldThrowTooManySubjectIdentifiers() {
-        fail();
+        String subjectIdentifier = UUID.randomUUID().toString();
+        InvalidUserWithMultipleSubjectIdentifiers validUser = InvalidUserWithMultipleSubjectIdentifiers.newBuilder().setUuid(subjectIdentifier)
+                .setEmail("john@doe.com")
+                .setFavoriteNumber(7).build();
+        var emailField = validUser.getSchema().getField("email");
+
+        assertThrowsExactly(TooManySubjectIdentifiersException.class, () -> finder.find(new AvroPersonalDataFieldDefinition(emailField, validUser.getSchema())));
+    }
+
+    @Test
+    @Disabled
+    public void shouldThrowNotStringTypeSubjectIdentifiers() {
     }
 
 }

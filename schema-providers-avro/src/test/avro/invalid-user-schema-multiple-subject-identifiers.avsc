@@ -8,23 +8,21 @@
       "type": "string",
       "pi2schema-subject-identifier": true
     },
-    {
-      "name": "name",
-      "type": ["string", "pi2schema.EncryptedPersonalData"]
-    },
+//    {
+//      "name": "name",
+//      "type": ["string", "pi2schema.EncryptedPersonalData"]
+//    },
     {
       "name": "favorite_number",
       "type": [
         "int",
         "null"
-      ]
+      ],
+      "pi2schema-subject-identifier": true
     },
     {
-      "name": "favorite_color",
-      "type": [
-        "string",
-        "null"
-      ]
+      "name": "email",
+      "type": "string"
     }
   ]
 }
