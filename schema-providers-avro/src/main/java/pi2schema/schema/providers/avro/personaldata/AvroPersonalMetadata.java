@@ -8,11 +8,11 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
-public class PersonalMetadata {
+public class AvroPersonalMetadata {
 
     private final List<AvroUnionPersonalDataFieldDefinition> personalDataFields;
 
-    public PersonalMetadata(List<AvroUnionPersonalDataFieldDefinition> personalDataFields) {
+    public AvroPersonalMetadata(List<AvroUnionPersonalDataFieldDefinition> personalDataFields) {
         this.personalDataFields = personalDataFields;
     }
 

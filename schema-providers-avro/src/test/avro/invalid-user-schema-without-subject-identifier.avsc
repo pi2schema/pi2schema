@@ -7,13 +7,6 @@
       "name": "uuid",
       "type": "string"
     },
-    //    {
-    //      "name": "name",
-    //      "type": [
-    //        "string",
-    //        "pi2schema.EncryptedPersonalData"
-    //      ]
-    //    },
     {
       "name": "favorite_number",
       "type": [

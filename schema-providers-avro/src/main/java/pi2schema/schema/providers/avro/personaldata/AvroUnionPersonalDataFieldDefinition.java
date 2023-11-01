@@ -3,7 +3,6 @@ package pi2schema.schema.providers.avro.personaldata;
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Field;
 import org.apache.avro.specific.SpecificRecordBase;
-import org.apache.avro.specific.SpecificRecordBuilderBase;
 import pi2schema.crypto.Decryptor;
 import pi2schema.crypto.Encryptor;
 import pi2schema.schema.personaldata.PersonalDataFieldDefinition;
@@ -43,5 +42,12 @@ public class AvroUnionPersonalDataFieldDefinition implements PersonalDataFieldDe
     @Override
     public ByteBuffer valueFrom(SpecificRecordBase instance) {
         return null;
+    }
+
+    public static boolean hasPersonalData(Field field) {
+        return field.schema().isUnion() &&
+                field.schema().getTypes()
+                        .stream()
+                        .anyMatch(type -> "pi2schema.EncryptedPersonalData".equals(type.getFullName()));
     }
 }
