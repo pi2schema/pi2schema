@@ -2,7 +2,7 @@ package pi2schema.schema.providers.avro.subject;
 
 import org.apache.avro.Schema;
 import org.apache.avro.specific.SpecificRecordBase;
-import pi2schema.schema.providers.avro.personaldata.AvroPersonalDataFieldDefinition;
+import pi2schema.schema.providers.avro.personaldata.AvroUnionPersonalDataFieldDefinition;
 import pi2schema.schema.subject.SubjectIdentifierFieldDefinition;
 import pi2schema.schema.subject.SubjectIdentifierFinder;
 import pi2schema.schema.subject.SubjectIdentifierNotFoundException;
@@ -13,10 +13,10 @@ import java.util.Optional;
 import static java.util.stream.Collectors.toList;
 import static pi2schema.schema.providers.avro.subject.AvroSubjectIdentifierFieldDefinition.SUBJECT_IDENTIFIER_PROPERTY_NAME;
 
-public class AvroSiblingSubjectIdentifierFinder implements SubjectIdentifierFinder<AvroPersonalDataFieldDefinition> {
+public class AvroSiblingSubjectIdentifierFinder implements SubjectIdentifierFinder<AvroUnionPersonalDataFieldDefinition> {
 
     @Override
-    public SubjectIdentifierFieldDefinition<SpecificRecordBase> find(AvroPersonalDataFieldDefinition fieldDescriptor) {
+    public SubjectIdentifierFieldDefinition<SpecificRecordBase> find(AvroUnionPersonalDataFieldDefinition fieldDescriptor) {
         var subjectsIdentifierFields = fieldDescriptor.getParentSchema().getFields().stream()
                 .filter(AvroSiblingSubjectIdentifierFinder::isSubjectIdentifierField)
                 .collect(toList());

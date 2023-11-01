@@ -85,6 +85,7 @@ public class OneOfPersonalDataFieldDefinition
                 });
     }
 
+    @Override
     public CompletableFuture<Void> swapToDecrypted(Decryptor decryptor, Message.Builder decryptingInstance) {
         var encryptedValue = decryptingInstance.getField(targetFieldForEncryption);
         if (!(encryptedValue instanceof EncryptedPersonalData)) {
