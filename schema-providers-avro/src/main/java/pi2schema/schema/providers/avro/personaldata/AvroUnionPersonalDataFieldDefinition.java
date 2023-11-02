@@ -46,7 +46,7 @@ public class AvroUnionPersonalDataFieldDefinition implements PersonalDataFieldDe
                     encryptingInstance.put(personalField.name(), EncryptedPersonalData.newBuilder()
                             .setSubjectId(subjectIdentifier)
                             .setData(cloneByteBuffer(encrypted.data())) //TODO input/output stream
-                            .setPersonalDataFieldNumber(0)
+                            .setPersonalDataFieldNumber("0")
                             .setUsedTransformation(encrypted.usedTransformation())
                             .setInitializationVector(ByteBuffer.wrap(encrypted.initializationVector().getIV()))
                             .setKmsId("unused-kafkaKms") //TODO

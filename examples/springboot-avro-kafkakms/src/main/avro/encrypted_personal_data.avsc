@@ -20,9 +20,7 @@
     },
     {
       "name": "personal_data_field_number",
-      "type": [
-        "string"
-      ]
+      "type": "string"
     },
     {
       "name": "usedTransformation",

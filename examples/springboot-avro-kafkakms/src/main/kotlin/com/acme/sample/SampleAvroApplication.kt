@@ -4,18 +4,15 @@ import org.apache.kafka.clients.admin.NewTopic
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
-import org.springframework.kafka.listener.DefaultErrorHandler
-import org.springframework.kafka.listener.SeekUtils
-import org.springframework.util.backoff.FixedBackOff
 
 
 fun main(args: Array<String>) {
-    runApplication<SampleApplication>(*args)
+    runApplication<SampleAvroApplication>(*args)
 }
 
 
 @SpringBootApplication
-class SampleApplication {
+class SampleAvroApplication {
 
     @Bean
     fun farmerTopic(): NewTopic = NewTopic(

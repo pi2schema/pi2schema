@@ -66,7 +66,7 @@ class AvroUnionPersonalDataFieldDefinitionTest {
         EncryptedPersonalData encryptedPersonalData = EncryptedPersonalData.newBuilder()
                 .setSubjectId(uuid)
                 .setData(encrypted)
-                .setPersonalDataFieldNumber(0)
+                .setPersonalDataFieldNumber("0")
                 .setKmsId("unused")
                 .setUsedTransformation("unused")
                 .setInitializationVector(ByteBuffer.wrap("unused".getBytes()))
