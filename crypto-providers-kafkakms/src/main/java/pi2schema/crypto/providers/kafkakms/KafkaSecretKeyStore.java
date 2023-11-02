@@ -2,6 +2,7 @@ package pi2schema.crypto.providers.kafkakms;
 
 import com.google.protobuf.ByteString;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.streams.*;
 import org.apache.kafka.streams.kstream.Aggregator;
@@ -15,12 +16,14 @@ import pi2schema.kms.KafkaProvider.*;
 
 import javax.crypto.KeyGenerator;
 import java.io.Closeable;
-import java.util.Map;
-import java.util.Properties;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.awaitility.Awaitility.await;
 
 /**
  * Kafka backed keystore, for development purposes without external dependencies (ie: vault or aws/gcp kms).
@@ -42,7 +45,10 @@ public class KafkaSecretKeyStore implements Closeable {
 
     private final KafkaProducer<Subject, Commands> commandProducer;
 
-    public KafkaSecretKeyStore(KeyGenerator keyGenerator, Map<String, ?> configs) {
+    public KafkaSecretKeyStore(KeyGenerator keyGenerator, Map<String, ?> originalConfigs) {
+        var configs = new HashMap<String, Object>(originalConfigs);
+        configs.remove(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG);
+
         this.keyGenerator = keyGenerator;
         this.config = new KafkaSecretKeyStoreConfig(configs);
         var producerConfig = new Properties();
@@ -110,7 +116,11 @@ public class KafkaSecretKeyStore implements Closeable {
 
     private CompletableFuture<SubjectCryptographicMaterialAggregate> existentMaterialsFor(
             Subject subject) {
-        return CompletableFuture.supplyAsync(() -> allKeys.get(subject));
+
+        await().atMost(30, SECONDS) //TODO configurable
+                .until(() -> Objects.nonNull(allKeys.get(subject)));
+
+        return CompletableFuture.completedFuture(allKeys.get(subject));
     }
 
     private KafkaStreams startStreams(Map<String, ?> providedConfigs) {
@@ -135,7 +145,7 @@ public class KafkaSecretKeyStore implements Closeable {
         streams.start();
 
         try {
-            if (!startLatch.await(60, TimeUnit.SECONDS)) {
+            if (!startLatch.await(60, SECONDS)) {
                 throw new RuntimeException("Streams never finished balancing on startup");
             }
         } catch (final InterruptedException e) {

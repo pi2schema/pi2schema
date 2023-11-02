@@ -33,7 +33,9 @@ public final class KafkaGdprAwareProtobufProducerInterceptor<K, V extends Messag
 
     @Override
     public void close() {
-        materialsProvider.close();
+        if(materialsProvider != null){
+            materialsProvider.close();
+        }
     }
 
     @Override

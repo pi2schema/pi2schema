@@ -60,3 +60,32 @@ For defining a personal data field we wrap it with an oneOf tag and simply add a
 
 The key management that is currently used out of the box is a simple JCE based AES-256 local encryptor and decryptor
 . The secret key is stored in a kafka topic for durability.
+
+
+# Running the example
+
+## Local environment
+Start the local environment with: 
+
+```shell
+docker compose -f exapmples/docker-compose.yaml up
+```
+
+## Running the services
+
+Producer:
+```shell
+./gradlew examples:springboot-protobuf-kafkakms:bootRun --args='--spring.profiles.active=registration'
+```
+
+Listener:
+```shell
+./gradlew examples:springboot-protobuf-kafkakms:bootRun --args='--spring.profiles.active=newsletter --server.port=8180'
+```
+
+
+Simulating a registration of a farmer with his personal data
+
+```httpie
+http -v  :8080/api/v1/farmers name=Test4 email=test4@email.com phone=15780807079
+```
