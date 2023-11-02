@@ -13,6 +13,7 @@ import pi2schema.schema.providers.avro.subject.AvroSiblingSubjectIdentifierFinde
 
 import javax.crypto.spec.IvParameterSpec;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 
 public class AvroUnionPersonalDataFieldDefinition implements PersonalDataFieldDefinition<SpecificRecordBase> {
@@ -75,9 +76,14 @@ public class AvroUnionPersonalDataFieldDefinition implements PersonalDataFieldDe
         return decryptor
                 .decrypt(subjectIdentifier, encryptedData)
                 .thenAccept((decryptedData) ->
-                    decryptingInstance.put(personalField.name(), new String(decryptedData.array()))
+                        decryptingInstance.put(personalField.name(), decodeAvro(decryptedData))
                 );
 
+    }
+
+    //TODO: decode and encode full avro definitions not only strings
+    private static String decodeAvro(ByteBuffer decryptedData) {
+        return StandardCharsets.UTF_8.decode(decryptedData).toString();
     }
 
     @Override
