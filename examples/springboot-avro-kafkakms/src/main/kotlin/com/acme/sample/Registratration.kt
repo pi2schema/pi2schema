@@ -16,7 +16,7 @@ import reactor.core.publisher.Mono
 import java.util.*
 
 @Configuration
-//@Profile("registration")
+@Profile("registration")
 class ApplicationRouter(private val handler: FarmerRegistrationHandler) {
 
     @Bean
@@ -37,7 +37,7 @@ data class FarmerRegistrationRequest(
 
 
 @Component
-//@Profile("registration")
+@Profile("registration")
 class FarmerRegistrationHandler(
     private val kafkaTemplate: KafkaTemplate<String, FarmerRegisteredEvent>,
     private val farmerTopic: NewTopic) {
