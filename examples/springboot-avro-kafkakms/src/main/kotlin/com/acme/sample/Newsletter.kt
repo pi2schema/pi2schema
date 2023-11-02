@@ -8,7 +8,7 @@ import org.springframework.kafka.annotation.EnableKafka
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.stereotype.Component
 
-@Profile("newsletter")
+//@Profile("newsletter")
 @EnableKafka
 @Component
 class NewsletterEventListener {
@@ -24,6 +24,4 @@ class NewsletterEventListener {
                 event.name,
                 event.email)
     }
-
-
 }
