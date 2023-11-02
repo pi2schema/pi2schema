@@ -3,8 +3,6 @@ name: redpanda-owl-shop
 networks:
   redpanda_network:
     driver: bridge
-volumes:
-  redpanda: null
 
 services:
   redpanda:
@@ -23,8 +21,6 @@ services:
       - 9092:9092
       - 9644:9644
       - 29092:29092
-    volumes:
-      - redpanda:/var/lib/redpanda/data
     networks:
       - redpanda_network
 
@@ -56,10 +52,3 @@ services:
       - redpanda_network
     depends_on:
       - redpanda
-    
-
-
-
-volumes:
-  connectPlugins: {}
-  redpanda: {}
