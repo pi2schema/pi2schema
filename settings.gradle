@@ -12,3 +12,4 @@ include 'serialization-kafka-avro'
 include 'serialization-kafka-protobuf'
 
 include 'examples:springboot-protobuf-kafkakms'
+include 'examples:springboot-avro-kafkakms'
