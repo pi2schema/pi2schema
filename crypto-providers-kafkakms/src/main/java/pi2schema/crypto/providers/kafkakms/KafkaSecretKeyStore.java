@@ -69,7 +69,7 @@ public class KafkaSecretKeyStore implements Closeable {
             @NotNull String subjectId) {
         var subject = Subject.newBuilder().setId(subjectId).build();
 
-        return existentMaterialsFor(subject)
+        return existentMaterialsFor(subject, false)
                 .thenCompose(material -> {
                     if (material != null) {
                         return CompletableFuture.completedFuture(material);
@@ -111,14 +111,15 @@ public class KafkaSecretKeyStore implements Closeable {
     }
 
     CompletableFuture<SubjectCryptographicMaterialAggregate> existentMaterialsFor(String subjectId) {
-        return existentMaterialsFor(Subject.newBuilder().setId(subjectId).build());
+        return existentMaterialsFor(Subject.newBuilder().setId(subjectId).build(), true);
     }
 
-    private CompletableFuture<SubjectCryptographicMaterialAggregate> existentMaterialsFor(
-            Subject subject) {
+    private CompletableFuture<SubjectCryptographicMaterialAggregate> existentMaterialsFor(Subject subject, boolean blocking) {
 
-        await().atMost(30, SECONDS) //TODO configurable
-                .until(() -> Objects.nonNull(allKeys.get(subject)));
+        if(blocking) {
+            await().atMost(30, SECONDS) //TODO configurable
+                    .until(() -> Objects.nonNull(allKeys.get(subject)));
+        }
 
         return CompletableFuture.completedFuture(allKeys.get(subject));
     }
