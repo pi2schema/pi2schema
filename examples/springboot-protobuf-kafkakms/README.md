@@ -68,7 +68,7 @@ The key management that is currently used out of the box is a simple JCE based A
 Start the local environment with: 
 
 ```shell
-docker compose -f exapmples/docker-compose.yaml up
+docker compose -f examples/docker-compose.yaml up
 ```
 
 ## Running the services

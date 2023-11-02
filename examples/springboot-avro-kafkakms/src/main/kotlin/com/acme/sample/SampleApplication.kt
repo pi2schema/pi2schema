@@ -18,13 +18,6 @@ fun main(args: Array<String>) {
 class SampleApplication {
 
     @Bean
-    fun kafkaErrorHandler() = DefaultErrorHandler(
-        { _, _ -> },
-        FixedBackOff(1500, SeekUtils.DEFAULT_MAX_FAILURES.toLong())
-    )
-
-
-    @Bean
     fun farmerTopic(): NewTopic = NewTopic(
             "farmer",
             3,
