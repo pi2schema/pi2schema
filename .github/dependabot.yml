@@ -7,4 +7,4 @@ updates:
   open-pull-requests-limit: 10
   ignore:  
     - dependency-name: "org.apache.kafka:kafka-clients"
-      versions: "*ce"
+      versions: "*.*.*-ce"
