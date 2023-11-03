@@ -1,0 +1,34 @@
+{
+  "namespace": "pi2schema",
+  "type": "record",
+  "name": "EncryptedPersonalData",
+  "fields": [
+    {
+      "name": "subjectId",
+      "type": "string"
+    },
+    {
+      "name": "kms_id",
+      "type": "string"
+    },
+    {
+      "name": "data",
+      "type": [
+        "null",
+        "bytes"
+      ]
+    },
+    {
+      "name": "personal_data_field_number",
+      "type": "string"
+    },
+    {
+      "name": "usedTransformation",
+      "type": "string"
+    },
+    {
+      "name": "initializationVector",
+      "type": "bytes"
+    }
+  ]
+}

@@ -6,7 +6,10 @@ include 'crypto-providers-vault'
 
 include 'schema-spi'
 include 'schema-providers-protobuf'
+include 'schema-providers-avro'
 
+include 'serialization-kafka-avro'
 include 'serialization-kafka-protobuf'
 
 include 'examples:springboot-protobuf-kafkakms'
+include 'examples:springboot-avro-kafkakms'

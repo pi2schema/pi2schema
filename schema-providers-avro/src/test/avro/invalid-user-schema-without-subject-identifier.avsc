@@ -1,0 +1,22 @@
+{
+  "namespace": "com.acme",
+  "type": "record",
+  "name": "InvalidUserWithoutSubjectIdentifier",
+  "fields": [
+    {
+      "name": "uuid",
+      "type": "string"
+    },
+    {
+      "name": "favorite_number",
+      "type": [
+        "null",
+        "int"
+      ]
+    },
+    {
+      "name": "email",
+      "type": "string"
+    }
+  ]
+}

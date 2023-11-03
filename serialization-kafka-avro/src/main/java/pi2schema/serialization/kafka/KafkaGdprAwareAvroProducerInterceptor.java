@@ -1,6 +1,6 @@
 package pi2schema.serialization.kafka;
 
-import com.google.protobuf.Message;
+import org.apache.avro.specific.SpecificRecordBase;
 import org.apache.kafka.clients.producer.ProducerInterceptor;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
@@ -12,12 +12,23 @@ import pi2schema.crypto.support.KeyGen;
 
 import java.util.Map;
 
-public final class KafkaGdprAwareProtobufProducerInterceptor<K, V extends Message> implements ProducerInterceptor<K, V> {
-    private ProtobufEncryptionEngine<V> encryptionEngine;
+public final class KafkaGdprAwareAvroProducerInterceptor<K, V extends SpecificRecordBase> implements ProducerInterceptor<K, V> {
+    private AvroEncryptionEngine<V> encryptionEngine;
     private EncryptingMaterialsProvider materialsProvider;
+
+    public KafkaGdprAwareAvroProducerInterceptor() {
+    }
+
+    public KafkaGdprAwareAvroProducerInterceptor(AvroEncryptionEngine<V> encryptionEngine, EncryptingMaterialsProvider materialsProvider) {
+        this.encryptionEngine = encryptionEngine;
+        this.materialsProvider = materialsProvider;
+    }
 
     @Override
     public ProducerRecord<K, V> onSend(ProducerRecord<K, V> record) {
+        if(record == null || record.value() == null)
+            return record;
+
         return new ProducerRecord<>(
                 record.topic(),
                 record.partition(),
@@ -33,14 +44,12 @@ public final class KafkaGdprAwareProtobufProducerInterceptor<K, V extends Messag
 
     @Override
     public void close() {
-        if(materialsProvider != null){
-            materialsProvider.close();
-        }
+        materialsProvider.close();
     }
 
     @Override
     public void configure(Map<String, ?> configs) {
         materialsProvider = new MostRecentMaterialsProvider(new KafkaSecretKeyStore(KeyGen.aes256(), configs));
-        encryptionEngine = new ProtobufEncryptionEngine<>(new LocalEncryptor(materialsProvider));
+        encryptionEngine = new AvroEncryptionEngine<>(new LocalEncryptor(materialsProvider));
     }
 }

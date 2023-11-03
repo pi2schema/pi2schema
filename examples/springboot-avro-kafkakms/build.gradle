@@ -1,20 +1,16 @@
-buildscript {
-	dependencies {
-		classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.19'
-	}
-}
-
-
 plugins {
 	id("io.spring.dependency-management") version "1.1.3"
 	id("org.springframework.boot") version "3.1.5"
 	id("org.jetbrains.kotlin.jvm") version '1.8.22'
 	id("org.jetbrains.kotlin.plugin.spring") version '1.8.22'
-	id("com.google.protobuf") version "0.8.19"
+	id "com.github.davidmc24.gradle.plugin.avro" version "1.9.1"
 }
 
+
 group = "com.acme"
-version = "0.0.1-SNAPSHOT"
+version = "0.0.2-SNAPSHOT"
+
+
 
 java {
 	toolchain {
@@ -22,22 +18,13 @@ java {
 	}
 }
 
-// bug issue: https://github.com/google/protobuf-gradle-plugin/issues/391
-configurations.forEach {
-	if (it.name.toLowerCase().contains("proto")) {
-		it.attributes.attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.class, "java-runtime"))
-	}
-}
-
 
 dependencies {
-	implementation(project(":serialization-kafka-protobuf"))
-	implementation(project(":schema-providers-protobuf"))
+	implementation(project(":schema-providers-avro"))
+	implementation(project(":serialization-kafka-avro"))
 
-	implementation("com.google.protobuf:protobuf-java:3.21.7")
-
-	implementation("io.confluent:kafka-protobuf-serializer:7.5.1")
-
+	implementation("io.confluent:kafka-avro-serializer:7.5.1")
+	implementation 'org.apache.avro:avro:1.11.3'
 	implementation("org.springframework.boot:spring-boot-starter-webflux")
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 	implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
@@ -61,19 +48,12 @@ dependencies {
 }
 
 
-
 compileKotlin {
+	dependsOn(":examples:springboot-avro-kafkakms:generateTestAvroJava")
 	kotlinOptions.freeCompilerArgs = ["-Xjsr305=strict"]
 	kotlinOptions.jvmTarget = "17"
 }
 
-
-protobuf {
-	protoc {
-		// Download from repositories
-		artifact = "com.google.protobuf:protoc:3.21.0"
-	}
-}
 
 spotbugs {
 	onlyAnalyze = ['com.acme.sample.*']

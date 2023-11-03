@@ -62,25 +62,16 @@ The key management that is currently used out of the box is a simple JCE based A
 . The secret key is stored in a kafka topic for durability.
 
 
-# Running the example
-
-## Local environment
-Start the local environment with: 
-
-```shell
-docker compose -f examples/docker-compose.yaml up
-```
-
 ## Running the services
 
 Producer:
 ```shell
-./gradlew examples:springboot-protobuf-kafkakms:bootRun --args='--spring.profiles.active=registration'
+./gradlew examples:springboot-avro-kafkakms:bootRun --args='--spring.profiles.active=registration'
 ```
 
 Listener:
 ```shell
-./gradlew examples:springboot-protobuf-kafkakms:bootRun --args='--spring.profiles.active=newsletter --server.port=8180'
+./gradlew examples:springboot-avro-kafkakms:bootRun --args='--spring.profiles.active=newsletter --server.port=8180'
 ```
 
 
