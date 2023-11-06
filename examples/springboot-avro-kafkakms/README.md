@@ -66,17 +66,17 @@ The key management that is currently used out of the box is a simple JCE based A
 
 Producer:
 ```shell
-./gradlew examples:springboot-avro-kafkakms:bootRun --args='--spring.profiles.active=registration'
+./gradlew examples:springboot-avro-kafkakms:bootRun --args='--spring.profiles.active=geoLocation'
 ```
 
 Listener:
 ```shell
-./gradlew examples:springboot-avro-kafkakms:bootRun --args='--spring.profiles.active=newsletter --server.port=8180'
+./gradlew examples:springboot-avro-kafkakms:bootRun --args='--spring.profiles.active=preProcessor --server.port=8180'
 ```
 
 
 Simulating a registration of a farmer with his personal data
 
 ```httpie
-http -v  :8080/api/v1/farmers name=Test4 email=test4@email.com phone=15780807079
+http -v  :8080/api/v1/geoLocation name=Ady geoLocation="55.76, 45.23"
 ```
