@@ -2,14 +2,12 @@ package pi2schema.crypto.providers.kafkakms;
 
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializerConfig;
 import org.apache.kafka.streams.StreamsConfig;
-import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.KafkaContainer;
-import org.testcontainers.containers.Network;
+import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.redpanda.RedpandaContainer;
 import pi2schema.crypto.support.KeyGen;
 import pi2schema.kms.KafkaProvider.SubjectCryptographicMaterialAggregate;
 
@@ -25,32 +23,18 @@ import static pi2schema.crypto.providers.kafkakms.KafkaTestUtils.createTopics;
 @Testcontainers
 class KafkaSecretKeyStoreTest {
 
-    @Rule
-    public KafkaContainer kafka = new KafkaContainer().withNetwork(Network.SHARED);
+    @Container
+    public RedpandaContainer redpandaContainer = new RedpandaContainer("docker.redpanda.com/redpandadata/redpanda:v23.2.14");
 
-    public GenericContainer schemaRegistry;
     private Map<String, Object> configs;
     private KafkaSecretKeyStore store;
 
     @BeforeEach
     void setUp() {
-        kafka.start();
-
-        schemaRegistry = new GenericContainer("confluentinc/cp-schema-registry:5.5.1")
-                .withNetwork(Network.SHARED)
-                .withEnv("SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS", "PLAINTEXT://" + kafka.getNetworkAliases().get(0) + ":9092")
-                .withEnv("SCHEMA_REGISTRY_HOST_NAME", "schema-registry")
-                .withEnv("SCHEMA_REGISTRY_LISTENERS", "http://0.0.0.0:8081")
-                .withExposedPorts(8081);
-
-        schemaRegistry.start();
-
-        String schemaRegistryUrl = "http://" + schemaRegistry.getContainerIpAddress() +
-                ":" + schemaRegistry.getMappedPort(8081);
 
         configs = new HashMap<>();
-        configs.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers());
-        configs.put(KafkaProtobufSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG, schemaRegistryUrl);
+        configs.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, redpandaContainer.getBootstrapServers());
+        configs.put(KafkaProtobufSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG, redpandaContainer.getSchemaRegistryAddress());
 
         createTopics(configs, "pi2schema.kms.commands");
 
@@ -60,8 +44,6 @@ class KafkaSecretKeyStoreTest {
     @AfterEach
     void tearDown() {
         store.close();
-        schemaRegistry.close();
-        kafka.close();
     }
 
     @Test
