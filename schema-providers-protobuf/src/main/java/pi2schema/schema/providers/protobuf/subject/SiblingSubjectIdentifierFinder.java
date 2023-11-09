@@ -15,23 +15,26 @@ public class SiblingSubjectIdentifierFinder implements SubjectIdentifierFinder<O
 
     @Override
     public ProtobufSubjectIdentifierFieldDefinition find(OneofDescriptor fieldDescriptor) {
-        List<FieldDescriptor> subjectsFields = fieldDescriptor.getContainingType() //parent
-                .getFields() //siblings
-                .stream()
-                .filter(f -> f.getOptions().getExtension(Subject.subjectIdentifier))
-                .collect(toList());
-
+        List<FieldDescriptor> subjectsFields = fieldDescriptor
+            .getContainingType() //parent
+            .getFields() //siblings
+            .stream()
+            .filter(f -> f.getOptions().getExtension(Subject.subjectIdentifier))
+            .collect(toList());
 
         if (subjectsFields.isEmpty()) { //This should return only optional empty in order to allow chained strategies
-            throw new SubjectIdentifierNotFoundException(SiblingSubjectIdentifierFinder.class, fieldDescriptor.getFullName());
+            throw new SubjectIdentifierNotFoundException(
+                SiblingSubjectIdentifierFinder.class,
+                fieldDescriptor.getFullName()
+            );
         } else if (subjectsFields.size() > 1) {
             throw new TooManySubjectIdentifiersException(
-                    SiblingSubjectIdentifierFinder.class,
-                    fieldDescriptor.getFullName(),
-                    subjectsFields.size());
+                SiblingSubjectIdentifierFinder.class,
+                fieldDescriptor.getFullName(),
+                subjectsFields.size()
+            );
         }
 
         return new ProtobufSubjectIdentifierFieldDefinition(subjectsFields.get(0));
     }
-
 }

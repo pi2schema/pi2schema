@@ -11,10 +11,11 @@ import pi2schema.schema.personaldata.PersonalDataFieldDefinition;
 import pi2schema.schema.personaldata.UnsupportedEncryptedFieldFormatException;
 import pi2schema.schema.providers.avro.subject.AvroSiblingSubjectIdentifierFinder;
 
-import javax.crypto.spec.IvParameterSpec;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
+
+import javax.crypto.spec.IvParameterSpec;
 
 public class AvroUnionPersonalDataFieldDefinition implements PersonalDataFieldDefinition<SpecificRecordBase> {
 
@@ -42,17 +43,21 @@ public class AvroUnionPersonalDataFieldDefinition implements PersonalDataFieldDe
         var subjectIdentifier = subjectIdentifierFinder.find(this).subjectFrom(encryptingInstance);
 
         return encryptor
-                .encrypt(subjectIdentifier, ByteBuffer.wrap(decryptedValue.getBytes()))
-                .thenAccept(encrypted -> {
-                    encryptingInstance.put(personalField.name(), EncryptedPersonalData.newBuilder()
-                            .setSubjectId(subjectIdentifier)
-                            .setData(cloneByteBuffer(encrypted.data())) //TODO input/output stream
-                            .setPersonalDataFieldNumber("0")
-                            .setUsedTransformation(encrypted.usedTransformation())
-                            .setInitializationVector(ByteBuffer.wrap(encrypted.initializationVector().getIV()))
-                            .setKmsId("unused-kafkaKms") //TODO
-                            .build());
-                });
+            .encrypt(subjectIdentifier, ByteBuffer.wrap(decryptedValue.getBytes()))
+            .thenAccept(encrypted -> {
+                encryptingInstance.put(
+                    personalField.name(),
+                    EncryptedPersonalData
+                        .newBuilder()
+                        .setSubjectId(subjectIdentifier)
+                        .setData(cloneByteBuffer(encrypted.data())) //TODO input/output stream
+                        .setPersonalDataFieldNumber("0")
+                        .setUsedTransformation(encrypted.usedTransformation())
+                        .setInitializationVector(ByteBuffer.wrap(encrypted.initializationVector().getIV()))
+                        .setKmsId("unused-kafkaKms") //TODO
+                        .build()
+                );
+            });
     }
 
     @Override
@@ -61,24 +66,24 @@ public class AvroUnionPersonalDataFieldDefinition implements PersonalDataFieldDe
 
         if (!(encryptedValue instanceof EncryptedPersonalData)) {
             throw new UnsupportedEncryptedFieldFormatException(
-                    EncryptedPersonalData.class.getName(), personalField.name(),
-                    encryptedValue.getClass());
+                EncryptedPersonalData.class.getName(),
+                personalField.name(),
+                encryptedValue.getClass()
+            );
         }
         var encryptedPersonalData = (EncryptedPersonalData) encryptedValue;
 
         var subjectIdentifier = encryptedPersonalData.getSubjectId();
 
         var encryptedData = new EncryptedData(
-                encryptedPersonalData.getData(),
-                encryptedPersonalData.getUsedTransformation(),
-                new IvParameterSpec(encryptedPersonalData.getInitializationVector().array()));
+            encryptedPersonalData.getData(),
+            encryptedPersonalData.getUsedTransformation(),
+            new IvParameterSpec(encryptedPersonalData.getInitializationVector().array())
+        );
 
         return decryptor
-                .decrypt(subjectIdentifier, encryptedData)
-                .thenAccept((decryptedData) ->
-                        decryptingInstance.put(personalField.name(), decodeAvro(decryptedData))
-                );
-
+            .decrypt(subjectIdentifier, encryptedData)
+            .thenAccept(decryptedData -> decryptingInstance.put(personalField.name(), decodeAvro(decryptedData)));
     }
 
     //TODO: decode and encode full avro definitions not only strings
@@ -92,15 +97,11 @@ public class AvroUnionPersonalDataFieldDefinition implements PersonalDataFieldDe
     }
 
     public static boolean hasPersonalData(Field field) {
-        return isUnion(field) &&
-                hasType(field, "pi2schema.EncryptedPersonalData") &&
-                hasType(field, "string");
+        return isUnion(field) && hasType(field, "pi2schema.EncryptedPersonalData") && hasType(field, "string");
     }
 
     private static boolean hasType(Field field, String expectedType) {
-        return field.schema().getTypes()
-                .stream()
-                .anyMatch(type -> expectedType.equals(type.getFullName()));
+        return field.schema().getTypes().stream().anyMatch(type -> expectedType.equals(type.getFullName()));
     }
 
     private static boolean isUnion(Field field) {

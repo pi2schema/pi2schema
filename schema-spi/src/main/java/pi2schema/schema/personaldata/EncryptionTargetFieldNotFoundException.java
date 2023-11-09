@@ -12,9 +12,10 @@ public class EncryptionTargetFieldNotFoundException extends RuntimeException {
 
     @Override
     public String getMessage() {
-        return String.format("The personal data container %s does not encapsulate a %s while exact one is required",
-                containerFieldName,
-                targetEncryptionFieldType
+        return String.format(
+            "The personal data container %s does not encapsulate a %s while exact one is required",
+            containerFieldName,
+            targetEncryptionFieldType
         );
     }
 }

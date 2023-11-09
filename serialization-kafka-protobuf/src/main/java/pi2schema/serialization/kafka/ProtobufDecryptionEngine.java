@@ -1,13 +1,11 @@
 package pi2schema.serialization.kafka;
 
-import pi2schema.crypto.Decryptor;
-import pi2schema.schema.providers.protobuf.personaldata.PersonalMetadata;
-import pi2schema.schema.providers.protobuf.personaldata.PersonalMetadataProvider;
 import com.google.protobuf.Message;
 import org.jetbrains.annotations.NotNull;
+import pi2schema.crypto.Decryptor;
+import pi2schema.schema.providers.protobuf.personaldata.PersonalMetadataProvider;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Stream;
 
 public class ProtobufDecryptionEngine<T extends Message> {
 
@@ -24,8 +22,8 @@ public class ProtobufDecryptionEngine<T extends Message> {
         var decrypted = metadata.decryptPersonalData(decryptor, decryptingBuilder);
 
         return (T) CompletableFuture
-                .allOf(decrypted.toArray(CompletableFuture[]::new))
-                .thenApply(__ -> decryptingBuilder.build())
-                .join();
+            .allOf(decrypted.toArray(CompletableFuture[]::new))
+            .thenApply(__ -> decryptingBuilder.build())
+            .join();
     }
 }

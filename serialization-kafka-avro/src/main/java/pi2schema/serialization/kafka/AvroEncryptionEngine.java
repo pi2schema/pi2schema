@@ -21,8 +21,8 @@ public class AvroEncryptionEngine<T extends SpecificRecordBase> {
         var encrypted = metadata.encryptPersonalData(encryptor, encryptingBuilder);
 
         return (T) CompletableFuture
-                .allOf(encrypted.toArray(CompletableFuture[]::new))
-                .thenApply(__ -> encryptingBuilder)
-                .join();
+            .allOf(encrypted.toArray(CompletableFuture[]::new))
+            .thenApply(__ -> encryptingBuilder)
+            .join();
     }
 }

@@ -1,8 +1,6 @@
 package pi2schema.schema.subject;
 
-
 public interface SubjectIdentifierFinder<D> {
-
     /**
      * Introspect the message content in order to identify the {@link SubjectIdentifierFieldDefinition}.
      *
@@ -13,5 +11,4 @@ public interface SubjectIdentifierFinder<D> {
      * @throws SubjectIdentifierNotFoundException case the strategy does not find possible subject identifier
      */
     SubjectIdentifierFieldDefinition<?> find(D fieldDescriptor);
-
 }

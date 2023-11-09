@@ -6,9 +6,8 @@ import java.io.Closeable;
 import java.util.concurrent.CompletableFuture;
 
 public interface EncryptingMaterialsProvider extends Closeable {
-
     CompletableFuture<SymmetricMaterial> encryptionKeysFor(String subjectId);
 
     @Override
-    default void close() { }
+    default void close() {}
 }

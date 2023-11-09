@@ -25,27 +25,24 @@ class LocalCryptoTest {
 
         @Override
         public Stream<? extends Arguments> provideArguments(ExtensionContext context) {
-            return Stream.of(18, 24, 56, 120, 248, 1_116, 50_000)
-                    .map(stringSize ->
-                            Arguments.of(
-                                    RandomStringUtils.random(stringSize, true, true)));
+            return Stream
+                .of(18, 24, 56, 120, 248, 1_116, 50_000)
+                .map(stringSize -> Arguments.of(RandomStringUtils.random(stringSize, true, true)));
         }
     }
 
     @ParameterizedTest
     @ArgumentsSource(RandomMultipleSizeStringArgumentsProvider.class)
     void encrypt(String text) throws ExecutionException, InterruptedException {
-
         //given
         var toBeEncrypted = StandardCharsets.UTF_8.encode(text).asReadOnlyBuffer();
-
 
         var secretKey = KeyGen.aes256().generateKey();
 
         EncryptingMaterialsProvider encProvider = s ->
-                CompletableFuture.completedFuture(new SymmetricMaterial(secretKey));
+            CompletableFuture.completedFuture(new SymmetricMaterial(secretKey));
         DecryptingMaterialsProvider decProvider = s ->
-                CompletableFuture.completedFuture(new SymmetricMaterial(secretKey));
+            CompletableFuture.completedFuture(new SymmetricMaterial(secretKey));
 
         var encryptor = new LocalEncryptor(encProvider);
         var decryptor = new LocalDecryptor(decProvider);

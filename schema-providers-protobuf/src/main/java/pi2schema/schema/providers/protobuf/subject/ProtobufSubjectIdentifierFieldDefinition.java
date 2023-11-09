@@ -1,11 +1,10 @@
 package pi2schema.schema.providers.protobuf.subject;
 
-import pi2schema.schema.subject.SubjectIdentifierFieldDefinition;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.Message;
+import pi2schema.schema.subject.SubjectIdentifierFieldDefinition;
 
-public class ProtobufSubjectIdentifierFieldDefinition
-        implements SubjectIdentifierFieldDefinition<Message.Builder> {
+public class ProtobufSubjectIdentifierFieldDefinition implements SubjectIdentifierFieldDefinition<Message.Builder> {
 
     private final Descriptors.FieldDescriptor fieldDescriptor;
 

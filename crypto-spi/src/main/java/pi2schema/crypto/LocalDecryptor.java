@@ -16,11 +16,12 @@ public class LocalDecryptor implements Decryptor {
 
     @Override
     public CompletableFuture<ByteBuffer> decrypt(String key, EncryptedData encryptedData) {
-        return provider.decryptionKeysFor(key)
-                .thenApply(SymmetricMaterial::getDecryptionKey)
-                .thenCompose(decryptionKey ->
-                        CompletableFuture.supplyAsync(
-                                Ciphers.forDecryption(decryptionKey, encryptedData)))
-                .thenComposeAsync(cipher -> Ciphers.apply(cipher, encryptedData.data()));
+        return provider
+            .decryptionKeysFor(key)
+            .thenApply(SymmetricMaterial::getDecryptionKey)
+            .thenCompose(decryptionKey ->
+                CompletableFuture.supplyAsync(Ciphers.forDecryption(decryptionKey, encryptedData))
+            )
+            .thenComposeAsync(cipher -> Ciphers.apply(cipher, encryptedData.data()));
     }
 }

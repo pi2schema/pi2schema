@@ -33,19 +33,22 @@ import static org.junit.jupiter.api.Assertions.fail;
 class KafkaGdprAwareProtobufIntegrationTest {
 
     @Container
-    public RedpandaContainer redpandaContainer = new RedpandaContainer("docker.redpanda.com/redpandadata/redpanda:v23.2.14");
+    public RedpandaContainer redpandaContainer = new RedpandaContainer(
+        "docker.redpanda.com/redpandadata/redpanda:v23.2.14"
+    );
 
     private Map<String, Object> configs;
 
     private Fruit waterMelon = FruitFixture.waterMelon().build();
 
-
     @BeforeEach
     void beforeEach() {
-
         var configuring = new HashMap<String, Object>();
         configuring.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, redpandaContainer.getBootstrapServers());
-        configuring.put(KafkaProtobufSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG, redpandaContainer.getSchemaRegistryAddress());
+        configuring.put(
+            KafkaProtobufSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG,
+            redpandaContainer.getSchemaRegistryAddress()
+        );
         configuring.put(KafkaProtobufSerializerConfig.AUTO_REGISTER_SCHEMAS, true);
         configuring.put(KafkaProtobufDeserializerConfig.DERIVE_TYPE_CONFIG, true);
 
@@ -56,12 +59,13 @@ class KafkaGdprAwareProtobufIntegrationTest {
 
     @Test
     void serializeShouldFailWithIllegalStateExceptionCaseTheConfigureMethodIsNotCalled() {
-
         //Default constructor is required by kafka for scenarios of configuration like key.serializer which the kafka
         // client uses reflection to instantiate and Configurable to initiate.
         var serializer = new KafkaGdprAwareProtobufSerializer<Fruit>();
-        var unconfiguredException = assertThrows(UnconfiguredException.class, () ->
-                serializer.serialize("", waterMelon));
+        var unconfiguredException = assertThrows(
+            UnconfiguredException.class,
+            () -> serializer.serialize("", waterMelon)
+        );
 
         assertThat(unconfiguredException).hasMessageContaining("configure method");
     }
@@ -69,8 +73,10 @@ class KafkaGdprAwareProtobufIntegrationTest {
     @Test
     void deserializeShouldFailWithIllegalStateExceptionCaseTheConfigureMethodIsNotCalled() {
         var deserializer = new KafkaGdprAwareProtobufDeserializer<Fruit>();
-        var unconfiguredException = assertThrows(UnconfiguredException.class, () ->
-                deserializer.deserialize("", new byte[0]));
+        var unconfiguredException = assertThrows(
+            UnconfiguredException.class,
+            () -> deserializer.deserialize("", new byte[0])
+        );
 
         assertThat(unconfiguredException).hasMessageContaining("configure method");
     }
@@ -98,32 +104,31 @@ class KafkaGdprAwareProtobufIntegrationTest {
         try (var deserializer = new KafkaGdprAwareProtobufDeserializer<FarmerRegisteredEvent>()) {
             deserializer.configure(configs, false);
 
-            await().atMost(Duration.ofSeconds(600)).untilAsserted(
-                    () -> {
-                        try {
-                            var decrypted = deserializer.deserialize("", serializedWithCryptoData);
-                            assertThat(eventWithPersonalData).isEqualTo(decrypted);
-                        } catch (CompletionException e) {
-                            // failed exception in order to be retried by the awaitability.
-                            if (e.getCause() instanceof MissingCryptoMaterialsException) {
-                                fail(e);
-                            }
-                            throw e;
+            await()
+                .atMost(Duration.ofSeconds(600))
+                .untilAsserted(() -> {
+                    try {
+                        var decrypted = deserializer.deserialize("", serializedWithCryptoData);
+                        assertThat(eventWithPersonalData).isEqualTo(decrypted);
+                    } catch (CompletionException e) {
+                        // failed exception in order to be retried by the awaitability.
+                        if (e.getCause() instanceof MissingCryptoMaterialsException) {
+                            fail(e);
                         }
+                        throw e;
                     }
-            );
+                });
         } finally {
             //also close the initial serializer
             serializer.close();
         }
-
     }
 
     private void createTopics(Map<String, Object> configs, String... topics) {
-        var newTopics =
-                Arrays.stream(topics)
-                        .map(topic -> new NewTopic(topic, 1, (short) 1))
-                        .collect(Collectors.toList());
+        var newTopics = Arrays
+            .stream(topics)
+            .map(topic -> new NewTopic(topic, 1, (short) 1))
+            .collect(Collectors.toList());
 
         try (var admin = AdminClient.create(configs)) {
             admin.createTopics(newTopics);

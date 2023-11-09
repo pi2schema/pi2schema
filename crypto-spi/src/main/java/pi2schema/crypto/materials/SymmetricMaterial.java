@@ -2,7 +2,6 @@ package pi2schema.crypto.materials;
 
 import javax.crypto.SecretKey;
 
-
 public class SymmetricMaterial implements EncryptingMaterial, DecryptingMaterial {
 
     private final SecretKey cryptoKey;
@@ -20,5 +19,4 @@ public class SymmetricMaterial implements EncryptingMaterial, DecryptingMaterial
     public SecretKey getDecryptionKey() {
         return cryptoKey;
     }
-
 }

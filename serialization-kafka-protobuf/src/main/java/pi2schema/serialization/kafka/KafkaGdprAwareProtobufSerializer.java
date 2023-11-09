@@ -14,7 +14,6 @@ import pi2schema.crypto.providers.kafkakms.KafkaSecretKeyStore;
 import pi2schema.crypto.providers.kafkakms.MostRecentMaterialsProvider;
 import pi2schema.crypto.support.KeyGen;
 
-import java.io.IOException;
 import java.util.Map;
 
 public class KafkaGdprAwareProtobufSerializer<T extends Message> implements Serializer<T> {
@@ -30,10 +29,12 @@ public class KafkaGdprAwareProtobufSerializer<T extends Message> implements Seri
         this.protobufEncryptionEngine = new UnconfiguredSerializer();
     }
 
-    KafkaGdprAwareProtobufSerializer(Encryptor encryptor,
-                                     SchemaRegistryClient schemaRegistry,
-                                     Map<String, ?> configs,
-                                     Class<T> clazz) {
+    KafkaGdprAwareProtobufSerializer(
+        Encryptor encryptor,
+        SchemaRegistryClient schemaRegistry,
+        Map<String, ?> configs,
+        Class<T> clazz
+    ) {
         this.protobufEncryptionEngine = new ProtobufEncryptionEngine<>(encryptor);
         this.inner = new KafkaProtobufSerializer<>(schemaRegistry, configs);
     }
@@ -68,6 +69,7 @@ public class KafkaGdprAwareProtobufSerializer<T extends Message> implements Seri
     }
 
     private class UnconfiguredSerializer extends ProtobufEncryptionEngine<T> {
+
         public UnconfiguredSerializer() {
             super(null);
         }

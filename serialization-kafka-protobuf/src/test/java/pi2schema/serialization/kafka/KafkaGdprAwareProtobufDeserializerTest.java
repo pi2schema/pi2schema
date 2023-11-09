@@ -30,22 +30,26 @@ public class KafkaGdprAwareProtobufDeserializerTest {
     private final KafkaProtobufSerializer serializer;
 
     private final Decryptor noOpDecryptor = (subj, encryptedData) ->
-            CompletableFuture.completedFuture(encryptedData.data());
+        CompletableFuture.completedFuture(encryptedData.data());
 
     public KafkaGdprAwareProtobufDeserializerTest() {
-        this.configs = Map.of(
-                KafkaProtobufSerializerConfig.AUTO_REGISTER_SCHEMAS, true,
-                KafkaProtobufSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG, "bogus");
+        this.configs =
+            Map.of(
+                KafkaProtobufSerializerConfig.AUTO_REGISTER_SCHEMAS,
+                true,
+                KafkaProtobufSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG,
+                "bogus"
+            );
         this.serializer = new KafkaProtobufSerializer(schemaRegistry, configs);
     }
 
     @Test
     public void shouldSupportNullRecordReturningNullData() {
         var deserializer = new KafkaGdprAwareProtobufDeserializer<>(
-                noOpDecryptor,
-                schemaRegistry,
-                configs,
-                Fruit.class
+            noOpDecryptor,
+            schemaRegistry,
+            configs,
+            Fruit.class
         );
 
         assertNull(deserializer.deserialize(topic, null));
@@ -57,10 +61,10 @@ public class KafkaGdprAwareProtobufDeserializerTest {
         var preferredMelon = FruitFixture.waterMelon().build();
 
         var deserializer = new KafkaGdprAwareProtobufDeserializer<>(
-                noOpDecryptor,
-                schemaRegistry,
-                configs,
-                Fruit.class
+            noOpDecryptor,
+            schemaRegistry,
+            configs,
+            Fruit.class
         );
 
         var serialized = serializer.serialize(topic, preferredMelon);
@@ -73,23 +77,22 @@ public class KafkaGdprAwareProtobufDeserializerTest {
         var encrypted = ByteString.copyFrom("encryptedMocked".getBytes());
         var decrypted = FarmerRegisteredEventFixture.johnDoe().getContactInfo().toByteString();
 
-        var encryptedEvent = FarmerRegisteredEvent.newBuilder()
-                .setUuid(uuid)
-                .setEncryptedPersonalData(EncryptedPersonalData.newBuilder()
-                        .setSubjectId(uuid)
-                        .setData(encrypted)
-                        .setPersonalDataFieldNumber(2))
-                .setRegisteredAt(Timestamp.newBuilder().setSeconds(Instant.now().getEpochSecond()))
-                .build();
+        var encryptedEvent = FarmerRegisteredEvent
+            .newBuilder()
+            .setUuid(uuid)
+            .setEncryptedPersonalData(
+                EncryptedPersonalData.newBuilder().setSubjectId(uuid).setData(encrypted).setPersonalDataFieldNumber(2)
+            )
+            .setRegisteredAt(Timestamp.newBuilder().setSeconds(Instant.now().getEpochSecond()))
+            .build();
 
-        Decryptor decryptor = (subj, data) ->
-                CompletableFuture.completedFuture(decrypted.asReadOnlyByteBuffer());
+        Decryptor decryptor = (subj, data) -> CompletableFuture.completedFuture(decrypted.asReadOnlyByteBuffer());
 
         var deserializer = new KafkaGdprAwareProtobufDeserializer<>(
-                decryptor,
-                schemaRegistry,
-                configs,
-                FarmerRegisteredEvent.class
+            decryptor,
+            schemaRegistry,
+            configs,
+            FarmerRegisteredEvent.class
         );
 
         //when
@@ -97,13 +100,10 @@ public class KafkaGdprAwareProtobufDeserializerTest {
         var actual = deserializer.deserialize(topic, serialized);
 
         //then
-        assertThat(actual.getUuid())
-                .isEqualTo(uuid);
+        assertThat(actual.getUuid()).isEqualTo(uuid);
 
-        assertThat(actual.getPersonalDataCase())
-                .isEqualTo(FarmerRegisteredEvent.PersonalDataCase.CONTACT_INFO);
+        assertThat(actual.getPersonalDataCase()).isEqualTo(FarmerRegisteredEvent.PersonalDataCase.CONTACT_INFO);
 
-        assertThat(actual.getContactInfo())
-                .isEqualTo(FarmerRegisteredEventFixture.johnDoe().getContactInfo());
+        assertThat(actual.getContactInfo()).isEqualTo(FarmerRegisteredEventFixture.johnDoe().getContactInfo());
     }
 }

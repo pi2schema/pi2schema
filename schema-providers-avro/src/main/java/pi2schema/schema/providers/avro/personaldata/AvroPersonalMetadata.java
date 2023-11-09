@@ -20,16 +20,17 @@ public class AvroPersonalMetadata {
         return !personalDataFields.isEmpty();
     }
 
-    public Stream<CompletableFuture<Void>> encryptPersonalData(Encryptor encryptor, SpecificRecordBase encryptingBuilder) {
-        return personalDataFields
-                .parallelStream()
-                .map(field -> field.swapToEncrypted(encryptor, encryptingBuilder));
+    public Stream<CompletableFuture<Void>> encryptPersonalData(
+        Encryptor encryptor,
+        SpecificRecordBase encryptingBuilder
+    ) {
+        return personalDataFields.parallelStream().map(field -> field.swapToEncrypted(encryptor, encryptingBuilder));
     }
 
     public Stream<CompletableFuture<Void>> decryptPersonalData(
-            Decryptor decryptor, SpecificRecordBase decryptingBuilder) {
-        return personalDataFields
-                .parallelStream()
-                .map(field -> field.swapToDecrypted(decryptor, decryptingBuilder));
+        Decryptor decryptor,
+        SpecificRecordBase decryptingBuilder
+    ) {
+        return personalDataFields.parallelStream().map(field -> field.swapToDecrypted(decryptor, decryptingBuilder));
     }
 }

@@ -4,7 +4,6 @@ import org.apache.avro.specific.SpecificRecordBase;
 import pi2schema.crypto.Decryptor;
 import pi2schema.schema.providers.avro.personaldata.AvroPersonalMetadataProvider;
 
-
 import java.util.concurrent.CompletableFuture;
 
 public class AvroDecryptionEngine<T extends SpecificRecordBase> {
@@ -22,8 +21,8 @@ public class AvroDecryptionEngine<T extends SpecificRecordBase> {
         var decrypted = metadata.decryptPersonalData(decryptor, decryptingBuilder);
 
         return (T) CompletableFuture
-                .allOf(decrypted.toArray(CompletableFuture[]::new))
-                .thenApply(__ -> decryptingBuilder)
-                .join();
+            .allOf(decrypted.toArray(CompletableFuture[]::new))
+            .thenApply(__ -> decryptingBuilder)
+            .join();
     }
 }

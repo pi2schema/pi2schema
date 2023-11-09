@@ -19,43 +19,37 @@ class PersonalMetadataProviderTest {
 
     @Test
     void givenADescriptorWithoutOneOfThenOptionalEmpty() {
-
         var descriptorWithoutOneOf = FruitFixture.waterMelon().build().getDescriptorForType();
 
         var metadata = personalMetadataProvider.forDescriptor(descriptorWithoutOneOf);
 
-        assertThat(metadata.requiresEncryption())
-                .isFalse();
+        assertThat(metadata.requiresEncryption()).isFalse();
     }
 
     @Test
     void givenADescriptorWithOneOfWithoutPersonalDataSiblingThenOptionalEmpty() {
-
-        var descriptorWithOneOf = PlantaeOuterClass.Plantae.newBuilder()
-                .setFruit(FruitFixture.waterMelon())
-                .build()
-                .getDescriptorForType();
+        var descriptorWithOneOf = PlantaeOuterClass.Plantae
+            .newBuilder()
+            .setFruit(FruitFixture.waterMelon())
+            .build()
+            .getDescriptorForType();
 
         var metadata = personalMetadataProvider.forDescriptor(descriptorWithOneOf);
 
-        assertThat(metadata.requiresEncryption())
-                .isFalse();
+        assertThat(metadata.requiresEncryption()).isFalse();
     }
 
     @Test
     void givenADescriptorWithOneOfWithPersonalDataAsSiblingThenPersonalMetadata() {
-        var descriptor = FarmerRegisteredEventFixture.johnDoe()
-                .build()
-                .getDescriptorForType();
+        var descriptor = FarmerRegisteredEventFixture.johnDoe().build().getDescriptorForType();
 
         var metadata = personalMetadataProvider.forDescriptor(descriptor);
 
-        assertThat(metadata.requiresEncryption())
-                .isTrue();
+        assertThat(metadata.requiresEncryption()).isTrue();
     }
 
     @Test
     void shouldCache() {
-//        fail();
+        //        fail();
     }
 }

@@ -5,10 +5,11 @@ import pi2schema.crypto.providers.DecryptingMaterialsProvider;
 import pi2schema.crypto.providers.EncryptingMaterialsProvider;
 import pi2schema.crypto.support.KeyGen;
 
-import javax.crypto.KeyGenerator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+
+import javax.crypto.KeyGenerator;
 
 /**
  * Development focused in memory key management.
@@ -31,8 +32,8 @@ public class InMemoryKms implements EncryptingMaterialsProvider, DecryptingMater
     @Override
     public CompletableFuture<SymmetricMaterial> encryptionKeysFor(String subjectId) {
         return CompletableFuture.completedFuture(
-                keyStore.computeIfAbsent(subjectId, missingKey ->
-                        new SymmetricMaterial(keyGenerator.generateKey())));
+            keyStore.computeIfAbsent(subjectId, missingKey -> new SymmetricMaterial(keyGenerator.generateKey()))
+        );
     }
 
     @Override
@@ -41,5 +42,5 @@ public class InMemoryKms implements EncryptingMaterialsProvider, DecryptingMater
     }
 
     @Override
-    public void close() { }
+    public void close() {}
 }

@@ -6,8 +6,9 @@ import pi2schema.crypto.providers.DecryptingMaterialsProvider;
 import pi2schema.crypto.providers.EncryptingMaterialsProvider;
 import pi2schema.kms.KafkaProvider.SubjectCryptographicMaterialAggregate;
 
-import javax.crypto.spec.SecretKeySpec;
 import java.util.concurrent.CompletableFuture;
+
+import javax.crypto.spec.SecretKeySpec;
 
 public class MostRecentMaterialsProvider implements EncryptingMaterialsProvider, DecryptingMaterialsProvider {
 
@@ -19,23 +20,19 @@ public class MostRecentMaterialsProvider implements EncryptingMaterialsProvider,
 
     @Override
     public CompletableFuture<SymmetricMaterial> encryptionKeysFor(String subjectId) {
-        return kafkaSecretKeyStore
-                .retrieveOrCreateCryptoMaterialsFor(subjectId)
-                .thenApply(this::latestSecretKey);
+        return kafkaSecretKeyStore.retrieveOrCreateCryptoMaterialsFor(subjectId).thenApply(this::latestSecretKey);
     }
 
     //TODO add versioning for the decryption
     @Override
     public CompletableFuture<SymmetricMaterial> decryptionKeysFor(String subjectId) {
         return kafkaSecretKeyStore
-                .existentMaterialsFor(subjectId)
-                .thenApply(materials -> {
-                            if (materials == null)
-                                throw new MissingCryptoMaterialsException(subjectId);
+            .existentMaterialsFor(subjectId)
+            .thenApply(materials -> {
+                if (materials == null) throw new MissingCryptoMaterialsException(subjectId);
 
-                            return latestSecretKey(materials);
-                        }
-                );
+                return latestSecretKey(materials);
+            });
     }
 
     //todo rethink the list structure / versioning

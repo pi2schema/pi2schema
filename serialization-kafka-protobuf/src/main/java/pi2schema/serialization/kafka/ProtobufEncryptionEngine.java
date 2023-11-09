@@ -22,8 +22,8 @@ public class ProtobufEncryptionEngine<T extends Message> {
         var encrypted = metadata.encryptPersonalData(encryptor, encryptingBuilder);
 
         return (T) CompletableFuture
-                .allOf(encrypted.toArray(CompletableFuture[]::new))
-                .thenApply(__ -> encryptingBuilder.build())
-                .join();
+            .allOf(encrypted.toArray(CompletableFuture[]::new))
+            .thenApply(__ -> encryptingBuilder.build())
+            .join();
     }
 }

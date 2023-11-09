@@ -14,13 +14,12 @@ import org.slf4j.LoggerFactory;
 import pi2schema.kms.KafkaProvider;
 import pi2schema.kms.KafkaProvider.*;
 
-import javax.crypto.KeyGenerator;
 import java.io.Closeable;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
+
+import javax.crypto.KeyGenerator;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
@@ -53,72 +52,86 @@ public class KafkaSecretKeyStore implements Closeable {
         this.config = new KafkaSecretKeyStoreConfig(configs);
         var producerConfig = new Properties();
         producerConfig.putAll(configs);
-        this.commandProducer = new KafkaProducer<>(producerConfig,
+        this.commandProducer =
+            new KafkaProducer<>(
+                producerConfig,
                 config.topics().COMMANDS.keySerializer(),
                 config.topics().COMMANDS.valueSerializer()
-        );
+            );
         this.streams = startStreams(configs);
-        this.allKeys = this.streams.store(
-                StoreQueryParameters.fromNameAndType(
+        this.allKeys =
+            this.streams.store(
+                    StoreQueryParameters.fromNameAndType(
                         config.stores().GLOBAL_AGGREGATE.name(),
-                        QueryableStoreTypes.keyValueStore())
-        );
+                        QueryableStoreTypes.keyValueStore()
+                    )
+                );
     }
 
     CompletableFuture<SubjectCryptographicMaterialAggregate> retrieveOrCreateCryptoMaterialsFor(
-            @NotNull String subjectId) {
+        @NotNull String subjectId
+    ) {
         var subject = Subject.newBuilder().setId(subjectId).build();
 
         return existentMaterialsFor(subject, false)
-                .thenCompose(material -> {
-                    if (material != null) {
-                        return CompletableFuture.completedFuture(material);
-                    } else {
-                        return createMaterialsFor(subject);
-                    }
-                });
+            .thenCompose(material -> {
+                if (material != null) {
+                    return CompletableFuture.completedFuture(material);
+                } else {
+                    return createMaterialsFor(subject);
+                }
+            });
     }
 
     private CompletableFuture<SubjectCryptographicMaterialAggregate> createMaterialsFor(Subject subject) {
+        var cryptoMaterial = SubjectCryptographicMaterial
+            .newBuilder()
+            .setId(UUID.randomUUID().toString())
+            .setSubject(subject)
+            .setAlgorithm(keyGenerator.getAlgorithm())
+            .setSymmetricKey(ByteString.copyFrom(keyGenerator.generateKey().getEncoded()))
+            .build();
 
-        var cryptoMaterial = SubjectCryptographicMaterial.newBuilder()
-                .setId(UUID.randomUUID().toString())
-                .setSubject(subject)
-                .setAlgorithm(keyGenerator.getAlgorithm())
-                .setSymmetricKey(ByteString.copyFrom(keyGenerator.generateKey().getEncoded()))
-                .build();
-
-        var command = Commands.newBuilder()
-                .setRegister(KafkaProvider.RegisterCryptographicMaterials.newBuilder().setMaterial(cryptoMaterial).build())
-                .build();
+        var command = Commands
+            .newBuilder()
+            .setRegister(KafkaProvider.RegisterCryptographicMaterials.newBuilder().setMaterial(cryptoMaterial).build())
+            .build();
 
         var future = new CompletableFuture<SubjectCryptographicMaterialAggregate>();
-        return CompletableFuture.supplyAsync(() ->
+        return CompletableFuture
+            .supplyAsync(() ->
                 commandProducer.send(
-                        new ProducerRecord<>(
-                                config.getString(KafkaSecretKeyStoreConfig.TOPIC_COMMANDS_CONFIG),
-                                subject,
-                                command),
-                        (metadata, exception) -> {
-                            if (exception != null) {
-                                future.completeExceptionally(exception);
-                            } else {
-                                future.complete(SubjectCryptographicMaterialAggregate
-                                        .newBuilder().addMaterials(cryptoMaterial).build());
-                            }
-                        })
-        ).thenComposeAsync(__ -> future);
+                    new ProducerRecord<>(
+                        config.getString(KafkaSecretKeyStoreConfig.TOPIC_COMMANDS_CONFIG),
+                        subject,
+                        command
+                    ),
+                    (metadata, exception) -> {
+                        if (exception != null) {
+                            future.completeExceptionally(exception);
+                        } else {
+                            future.complete(
+                                SubjectCryptographicMaterialAggregate.newBuilder().addMaterials(cryptoMaterial).build()
+                            );
+                        }
+                    }
+                )
+            )
+            .thenComposeAsync(__ -> future);
     }
 
     CompletableFuture<SubjectCryptographicMaterialAggregate> existentMaterialsFor(String subjectId) {
         return existentMaterialsFor(Subject.newBuilder().setId(subjectId).build(), true);
     }
 
-    private CompletableFuture<SubjectCryptographicMaterialAggregate> existentMaterialsFor(Subject subject, boolean blocking) {
-
-        if(blocking) {
-            await().atMost(30, SECONDS) //TODO configurable
-                    .until(() -> Objects.nonNull(allKeys.get(subject)));
+    private CompletableFuture<SubjectCryptographicMaterialAggregate> existentMaterialsFor(
+        Subject subject,
+        boolean blocking
+    ) {
+        if (blocking) {
+            await()
+                .atMost(30, SECONDS) //TODO configurable
+                .until(() -> Objects.nonNull(allKeys.get(subject)));
         }
 
         return CompletableFuture.completedFuture(allKeys.get(subject));
@@ -160,20 +173,20 @@ public class KafkaSecretKeyStore implements Closeable {
         var builder = new StreamsBuilder();
 
         builder
-                .stream(
-                        config.topics().COMMANDS.name(),
-                        config.topics().COMMANDS.consumed()
-                )
-                .groupByKey()
-                .aggregate(
-                        SubjectCryptographicMaterialAggregate::getDefaultInstance,
-                        new KmsCommandHandler(),
-                        config.stores().LOCAL_STORE.materialization());
+            .stream(config.topics().COMMANDS.name(), config.topics().COMMANDS.consumed())
+            .groupByKey()
+            .aggregate(
+                SubjectCryptographicMaterialAggregate::getDefaultInstance,
+                new KmsCommandHandler(),
+                config.stores().LOCAL_STORE.materialization()
+            );
 
         //TODO redo this part.
-        builder.globalTable(config.stores().LOCAL_STORE.internalTopic(),
-                config.stores().GLOBAL_AGGREGATE.consumed(),
-                config.stores().GLOBAL_AGGREGATE.materialization());
+        builder.globalTable(
+            config.stores().LOCAL_STORE.internalTopic(),
+            config.stores().GLOBAL_AGGREGATE.consumed(),
+            config.stores().GLOBAL_AGGREGATE.materialization()
+        );
 
         return builder.build();
     }
@@ -186,33 +199,38 @@ public class KafkaSecretKeyStore implements Closeable {
         log.info("Kafka secret key store stopped");
     }
 
-    private static class KmsCommandHandler implements Aggregator<Subject, Commands, SubjectCryptographicMaterialAggregate> {
+    private static class KmsCommandHandler
+        implements Aggregator<Subject, Commands, SubjectCryptographicMaterialAggregate> {
 
         @Override
-        public SubjectCryptographicMaterialAggregate apply(final Subject key, final Commands command, final SubjectCryptographicMaterialAggregate current) {
-
+        public SubjectCryptographicMaterialAggregate apply(
+            final Subject key,
+            final Commands command,
+            final SubjectCryptographicMaterialAggregate current
+        ) {
             final SubjectCryptographicMaterialAggregate newState;
             switch (command.getCommandCase()) {
                 case REGISTER:
                     if (current.getMaterialsList().isEmpty()) {
-                        newState = current.toBuilder().addMaterials(
-                                command.getRegister().getMaterial()
-                        ).build();
+                        newState = current.toBuilder().addMaterials(command.getRegister().getMaterial()).build();
                     } else {
                         newState = current;
-                        log.info("Secret key already present for subject {}, no key versioning implemented at the moment.", key);
+                        log.info(
+                            "Secret key already present for subject {}, no key versioning implemented at the moment.",
+                            key
+                        );
                     }
                     break;
-
                 case FORGET:
                     log.error("Forgotten feature not implemented yet.");
                     newState = current;
                     break;
-
                 default:
-                    log.error("Received unexpected command {}, supported commands at the moment are {}.",
-                            command,
-                            "[CREATE, FORGET]");
+                    log.error(
+                        "Received unexpected command {}, supported commands at the moment are {}.",
+                        command,
+                        "[CREATE, FORGET]"
+                    );
                     newState = current;
                     break;
             }

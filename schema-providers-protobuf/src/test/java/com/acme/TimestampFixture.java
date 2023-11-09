@@ -7,9 +7,6 @@ import java.time.Instant;
 public class TimestampFixture {
 
     public static Timestamp.Builder now() {
-        return Timestamp.newBuilder()
-                .setSeconds(
-                        Instant.now().getEpochSecond()
-                );
+        return Timestamp.newBuilder().setSeconds(Instant.now().getEpochSecond());
     }
 }

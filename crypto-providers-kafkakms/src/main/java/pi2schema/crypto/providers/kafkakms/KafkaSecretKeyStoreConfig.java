@@ -39,24 +39,26 @@ public class KafkaSecretKeyStoreConfig extends AbstractConfig {
     private final Stores stores;
 
     static {
-        CONFIG = new ConfigDef()
-                .define(KMS_APPLICATION_ID_CONFIG,
-                        ConfigDef.Type.STRING,
-                        KMS_APPLICATION_ID_DEFAULT,
-                        ConfigDef.Importance.LOW,
-                        KMS_APPLICATION_ID_DOC
+        CONFIG =
+            new ConfigDef()
+                .define(
+                    KMS_APPLICATION_ID_CONFIG,
+                    ConfigDef.Type.STRING,
+                    KMS_APPLICATION_ID_DEFAULT,
+                    ConfigDef.Importance.LOW,
+                    KMS_APPLICATION_ID_DOC
                 )
-                .define(TOPIC_COMMANDS_CONFIG,
-                        ConfigDef.Type.STRING,
-                        TOPIC_COMMANDS_DEFAULT,
-                        ConfigDef.Importance.LOW,
-                        TOPIC_COMMANDS_DOC
+                .define(
+                    TOPIC_COMMANDS_CONFIG,
+                    ConfigDef.Type.STRING,
+                    TOPIC_COMMANDS_DEFAULT,
+                    ConfigDef.Importance.LOW,
+                    TOPIC_COMMANDS_DOC
                 );
     }
 
     KafkaSecretKeyStoreConfig(Map<?, ?> provided) {
         super(CONFIG, provided, true);
-
         this.topics = new Topics();
         this.stores = new Stores();
     }
@@ -68,13 +70,16 @@ public class KafkaSecretKeyStoreConfig extends AbstractConfig {
         values.remove(KMS_APPLICATION_ID_CONFIG);
         values.put(StreamsConfig.APPLICATION_ID_CONFIG, applicationId);
 
-        values.computeIfAbsent(StreamsConfig.STATE_DIR_CONFIG, __ -> {
-            try {
-                return Files.createTempDirectory(applicationId).toString();
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
+        values.computeIfAbsent(
+            StreamsConfig.STATE_DIR_CONFIG,
+            __ -> {
+                try {
+                    return Files.createTempDirectory(applicationId).toString();
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
             }
-        });
+        );
 
         return values;
     }
@@ -87,33 +92,39 @@ public class KafkaSecretKeyStoreConfig extends AbstractConfig {
         return stores;
     }
 
-
     class Topics {
+
         final Topic<Subject, Commands> COMMANDS;
 
         private Topics() {
-            COMMANDS = new Topic<>(
+            COMMANDS =
+                new Topic<>(
                     getString(KafkaSecretKeyStoreConfig.TOPIC_COMMANDS_CONFIG),
                     serdeFactory.serdeFor(Subject.class, true),
                     serdeFactory.serdeFor(Commands.class, false)
-            );
+                );
         }
     }
 
     class Stores {
+
         final Store<Subject, SubjectCryptographicMaterialAggregate> LOCAL_STORE;
         final Store<Subject, SubjectCryptographicMaterialAggregate> GLOBAL_AGGREGATE;
 
         private Stores() {
-            LOCAL_STORE = new Store<>("local",
+            LOCAL_STORE =
+                new Store<>(
+                    "local",
                     serdeFactory.serdeFor(Subject.class, true),
                     serdeFactory.serdeFor(SubjectCryptographicMaterialAggregate.class, false)
-            );
+                );
 
-            GLOBAL_AGGREGATE = new Store<>("global",
+            GLOBAL_AGGREGATE =
+                new Store<>(
+                    "global",
                     serdeFactory.serdeFor(Subject.class, true),
                     serdeFactory.serdeFor(SubjectCryptographicMaterialAggregate.class, false)
-            );
+                );
         }
     }
 
@@ -121,6 +132,7 @@ public class KafkaSecretKeyStoreConfig extends AbstractConfig {
      * Simple factory intended to hand always ready and configured serdes.
      */
     private class SerdeFactory {
+
         <T extends Message> Serde<T> serdeFor(Class<T> type, boolean isKey) {
             var serde = new KafkaProtobufSerde<T>(type);
             serde.configure(originals(), isKey);
@@ -129,6 +141,7 @@ public class KafkaSecretKeyStoreConfig extends AbstractConfig {
     }
 
     class Topic<K, V> extends AbstractKafkaPersistence<K, V> {
+
         Topic(String name, Serde<K> keySerde, Serde<V> valueSerde) {
             super(name, keySerde, valueSerde);
         }
@@ -141,9 +154,10 @@ public class KafkaSecretKeyStoreConfig extends AbstractConfig {
         }
 
         Materialized<K, V, KeyValueStore<Bytes, byte[]>> materialization() {
-            return Materialized.<K, V>as(org.apache.kafka.streams.state.Stores.persistentKeyValueStore(name))
-                    .withKeySerde(keySerde)
-                    .withValueSerde(valueSerde);
+            return Materialized
+                .<K, V>as(org.apache.kafka.streams.state.Stores.persistentKeyValueStore(name))
+                .withKeySerde(keySerde)
+                .withValueSerde(valueSerde);
         }
 
         public String internalTopic() {
@@ -151,7 +165,7 @@ public class KafkaSecretKeyStoreConfig extends AbstractConfig {
         }
     }
 
-    static abstract class AbstractKafkaPersistence<K, V> {
+    abstract static class AbstractKafkaPersistence<K, V> {
 
         protected final String name;
         protected final Serde<K> keySerde;
@@ -172,10 +186,7 @@ public class KafkaSecretKeyStoreConfig extends AbstractConfig {
         }
 
         Consumed<K, V> consumed() {
-            return Consumed.with(
-                    keySerde,
-                    valueSerde
-            );
+            return Consumed.with(keySerde, valueSerde);
         }
 
         String name() {
