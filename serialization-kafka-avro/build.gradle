@@ -4,7 +4,7 @@ dependencies {
     implementation project(':schema-providers-avro')
     implementation project(':crypto-providers-kafkakms') //todo service locator / dynamic factory
 
-    implementation 'org.apache.kafka:kafka-clients:3.2.3'
+    implementation 'org.apache.kafka:kafka-clients:6.2.13-ce'
     implementation 'io.confluent:kafka-avro-serializer:7.5.2'
 
     testImplementation "org.testcontainers:testcontainers:1.19.1"
