@@ -32,6 +32,8 @@ allprojects {
 
     spotless {
         java {
+            target 'src/*/java/**/*.java'
+
             toggleOffOn()
             removeUnusedImports()
             trimTrailingWhitespace()
