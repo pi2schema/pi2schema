@@ -15,10 +15,10 @@ public class TooManySubjectIdentifiersException extends RuntimeException {
     @Override
     public String getMessage() {
         return String.format(
-                "The strategy %s has found %d possible identifiers for the field %s while exact one is required",
-                strategyName,
-                subjectIdentifiersFound,
-                fieldName
+            "The strategy %s has found %d possible identifiers for the field %s while exact one is required",
+            strategyName,
+            subjectIdentifiersFound,
+            fieldName
         );
     }
 }

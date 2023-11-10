@@ -9,12 +9,9 @@ import static com.acme.FarmerRegisteredEventOuterClass.FarmerRegisteredEvent;
 public class FarmerRegisteredEventFixture {
 
     public static FarmerRegisteredEvent.Builder johnDoe() {
-        return FarmerRegisteredEvent.newBuilder()
-                .setContactInfo(
-                        ContactInfo.newBuilder()
-                                .setName("John Doe")
-                                .setEmail("john.doe@acme.com")
-                );
+        return FarmerRegisteredEvent
+            .newBuilder()
+            .setContactInfo(ContactInfo.newBuilder().setName("John Doe").setEmail("john.doe@acme.com"));
     }
 
     public static OneOfPersonalDataFieldDefinition personalDataFieldDefinition() {

@@ -4,8 +4,7 @@ import org.apache.avro.Schema;
 import org.apache.avro.specific.SpecificRecordBase;
 import pi2schema.schema.subject.SubjectIdentifierFieldDefinition;
 
-public class AvroSubjectIdentifierFieldDefinition
-        implements SubjectIdentifierFieldDefinition<SpecificRecordBase> {
+public class AvroSubjectIdentifierFieldDefinition implements SubjectIdentifierFieldDefinition<SpecificRecordBase> {
 
     public static final String SUBJECT_IDENTIFIER_PROPERTY_NAME = "pi2schema-subject-identifier";
 

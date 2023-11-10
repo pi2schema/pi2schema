@@ -1,7 +1,8 @@
 package pi2schema.crypto;
 
-import javax.crypto.spec.IvParameterSpec;
 import java.nio.ByteBuffer;
+
+import javax.crypto.spec.IvParameterSpec;
 
 public final class EncryptedData {
 

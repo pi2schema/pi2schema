@@ -17,28 +17,24 @@ public class AvroPersonalMetadataProviderTest {
         this.personalMetadataProvider = new AvroPersonalMetadataProvider();
     }
 
-
     @Test
     void givenADescriptorWithoutOneOfThenOptionalEmpty() {
-
         var metadata = personalMetadataProvider.forDescriptor(InvalidUserWithoutSubjectIdentifier.getClassSchema());
 
-        assertThat(metadata.requiresEncryption())
-                .isFalse();
+        assertThat(metadata.requiresEncryption()).isFalse();
     }
 
     @Test
     void givenADescriptorWithUnionWithoutPersonalDataSiblingThenNoEncryptionRequired() {
+        var metadata = personalMetadataProvider.forDescriptor(
+            InvalidUserWithMultipleSubjectIdentifiers.getClassSchema()
+        );
 
-        var metadata = personalMetadataProvider.forDescriptor(InvalidUserWithMultipleSubjectIdentifiers.getClassSchema());
-
-        assertThat(metadata.requiresEncryption())
-                .isFalse();
+        assertThat(metadata.requiresEncryption()).isFalse();
     }
 
     @Test
     void givenADescriptorWithPersonalDataAsSiblingInUnionType() {
-
         var metadata = personalMetadataProvider.forDescriptor(UserValid.getClassSchema());
 
         assertThat(metadata.requiresEncryption()).isTrue();
@@ -46,7 +42,6 @@ public class AvroPersonalMetadataProviderTest {
 
     @Test
     void shouldCache() {
-//        fail();
+        //        fail();
     }
-
 }

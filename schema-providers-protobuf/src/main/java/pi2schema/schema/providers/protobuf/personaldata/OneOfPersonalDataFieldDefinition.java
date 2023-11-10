@@ -14,26 +14,28 @@ import pi2schema.crypto.Encryptor;
 import pi2schema.schema.personaldata.*;
 import pi2schema.schema.providers.protobuf.subject.ProtobufSubjectIdentifierFieldDefinition;
 
-import javax.crypto.spec.IvParameterSpec;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public class OneOfPersonalDataFieldDefinition
-        implements PersonalDataFieldDefinition<Message.Builder> {
+import javax.crypto.spec.IvParameterSpec;
+
+public class OneOfPersonalDataFieldDefinition implements PersonalDataFieldDefinition<Message.Builder> {
 
     private static final Logger log = LoggerFactory.getLogger(OneOfPersonalDataFieldDefinition.class);
 
-    private static final Predicate<FieldDescriptor> isEncryptedFieldType = (f) ->
-            EncryptedPersonalData.getDescriptor().getFullName().equals(f.getMessageType().getFullName());
+    private static final Predicate<FieldDescriptor> isEncryptedFieldType = f ->
+        EncryptedPersonalData.getDescriptor().getFullName().equals(f.getMessageType().getFullName());
 
     private final OneofDescriptor containerOneOfDescriptor;
     private final ProtobufSubjectIdentifierFieldDefinition subjectIdentifierFieldDefinition;
     private final FieldDescriptor targetFieldForEncryption;
 
-    public OneOfPersonalDataFieldDefinition(OneofDescriptor descriptor,
-                                            ProtobufSubjectIdentifierFieldDefinition subjectIdentifierFieldDefinition) {
+    public OneOfPersonalDataFieldDefinition(
+        OneofDescriptor descriptor,
+        ProtobufSubjectIdentifierFieldDefinition subjectIdentifierFieldDefinition
+    ) {
         this.containerOneOfDescriptor = descriptor;
         this.subjectIdentifierFieldDefinition = subjectIdentifierFieldDefinition;
         this.targetFieldForEncryption = determineEncryptionField();
@@ -62,8 +64,10 @@ public class OneOfPersonalDataFieldDefinition
     @Override
     public CompletableFuture<Void> swapToEncrypted(Encryptor encryptor, Message.Builder encryptingInstance) {
         if (!encryptingInstance.hasOneof(containerOneOfDescriptor)) {
-            log.info("The oneOf personal data container {} has no data set. Optional field?",
-                    containerOneOfDescriptor.getFullName());
+            log.info(
+                "The oneOf personal data container {} has no data set. Optional field?",
+                containerOneOfDescriptor.getFullName()
+            );
             return CompletableFuture.allOf();
         }
 
@@ -72,17 +76,21 @@ public class OneOfPersonalDataFieldDefinition
         var subjectId = subjectIdentifierFieldDefinition.subjectFrom(encryptingInstance);
 
         return encryptor
-                .encrypt(subjectId, valueFrom(encryptingInstance))
-                .thenAccept(encrypted -> {
-                    encryptingInstance.clearOneof(containerOneOfDescriptor);
-                    encryptingInstance.setField(targetFieldForEncryption, EncryptedPersonalData.newBuilder()
-                            .setSubjectId(subjectId)
-                            .setData(ByteString.copyFrom(encrypted.data())) //TODO input/output stream
-                            .setPersonalDataFieldNumber(sourceFieldNumber)
-                            .setUsedTransformation(encrypted.usedTransformation())
-                            .setInitializationVector(ByteString.copyFrom(encrypted.initializationVector().getIV()))
-                            .build());
-                });
+            .encrypt(subjectId, valueFrom(encryptingInstance))
+            .thenAccept(encrypted -> {
+                encryptingInstance.clearOneof(containerOneOfDescriptor);
+                encryptingInstance.setField(
+                    targetFieldForEncryption,
+                    EncryptedPersonalData
+                        .newBuilder()
+                        .setSubjectId(subjectId)
+                        .setData(ByteString.copyFrom(encrypted.data())) //TODO input/output stream
+                        .setPersonalDataFieldNumber(sourceFieldNumber)
+                        .setUsedTransformation(encrypted.usedTransformation())
+                        .setInitializationVector(ByteString.copyFrom(encrypted.initializationVector().getIV()))
+                        .build()
+                );
+            });
     }
 
     @Override
@@ -90,56 +98,60 @@ public class OneOfPersonalDataFieldDefinition
         var encryptedValue = decryptingInstance.getField(targetFieldForEncryption);
         if (!(encryptedValue instanceof EncryptedPersonalData)) {
             throw new UnsupportedEncryptedFieldFormatException(
-                    EncryptedPersonalData.class.getName(), targetFieldForEncryption.getFullName(),
-                    encryptedValue.getClass());
+                EncryptedPersonalData.class.getName(),
+                targetFieldForEncryption.getFullName(),
+                encryptedValue.getClass()
+            );
         }
         var encryptedPersonalData = (EncryptedPersonalData) encryptedValue;
 
         var encryptedData = new EncryptedData(
-                encryptedPersonalData.getData().asReadOnlyByteBuffer(),
-                encryptedPersonalData.getUsedTransformation(),
-                new IvParameterSpec(encryptedPersonalData.getInitializationVector().toByteArray()));
+            encryptedPersonalData.getData().asReadOnlyByteBuffer(),
+            encryptedPersonalData.getUsedTransformation(),
+            new IvParameterSpec(encryptedPersonalData.getInitializationVector().toByteArray())
+        );
 
         return decryptor
-                .decrypt(encryptedPersonalData.getSubjectId(), encryptedData)
-                .thenAccept(decrypted -> {
-                    decryptingInstance.clearOneof(containerOneOfDescriptor);
-                    var personalDataUnencryptedField =
-                            containerOneOfDescriptor
-                                    .getContainingType()
-                                    .findFieldByNumber(encryptedPersonalData.getPersonalDataFieldNumber());
-                    try {
-                        decryptingInstance.getFieldBuilder(personalDataUnencryptedField)
-                                .mergeFrom(ByteString.copyFrom(decrypted));
-                    } catch (InvalidProtocolBufferException e) {
-                        throw new InvalidEncryptedMessageException(e);
-                    }
-                });
+            .decrypt(encryptedPersonalData.getSubjectId(), encryptedData)
+            .thenAccept(decrypted -> {
+                decryptingInstance.clearOneof(containerOneOfDescriptor);
+                var personalDataUnencryptedField = containerOneOfDescriptor
+                    .getContainingType()
+                    .findFieldByNumber(encryptedPersonalData.getPersonalDataFieldNumber());
+                try {
+                    decryptingInstance
+                        .getFieldBuilder(personalDataUnencryptedField)
+                        .mergeFrom(ByteString.copyFrom(decrypted));
+                } catch (InvalidProtocolBufferException e) {
+                    throw new InvalidEncryptedMessageException(e);
+                }
+            });
     }
 
     static boolean hasPersonalData(OneofDescriptor descriptor) {
-        return descriptor.getFields()
-                .stream()
-                .anyMatch(isEncryptedFieldType);
+        return descriptor.getFields().stream().anyMatch(isEncryptedFieldType);
     }
 
     private FieldDescriptor determineEncryptionField() {
-        var encryptionFields = containerOneOfDescriptor.getFields()
-                .stream()
-                .filter(isEncryptedFieldType)
-                .collect(Collectors.toList());
+        var encryptionFields = containerOneOfDescriptor
+            .getFields()
+            .stream()
+            .filter(isEncryptedFieldType)
+            .collect(Collectors.toList());
 
         if (encryptionFields.isEmpty()) {
             throw new EncryptionTargetFieldNotFoundException(
-                    EncryptedPersonalData.getDescriptor().getFullName(),
-                    containerOneOfDescriptor.getFullName());
+                EncryptedPersonalData.getDescriptor().getFullName(),
+                containerOneOfDescriptor.getFullName()
+            );
         }
 
         if (encryptionFields.size() > 1) {
             throw new TooManyEncryptionTargetFieldsException(
-                    EncryptedPersonalData.getDescriptor().getFullName(),
-                    containerOneOfDescriptor.getFullName(),
-                    encryptionFields.size());
+                EncryptedPersonalData.getDescriptor().getFullName(),
+                containerOneOfDescriptor.getFullName(),
+                encryptionFields.size()
+            );
         }
 
         return encryptionFields.get(0);

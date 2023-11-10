@@ -24,17 +24,21 @@ import static pi2schema.crypto.providers.kafkakms.KafkaTestUtils.createTopics;
 class KafkaSecretKeyStoreTest {
 
     @Container
-    public RedpandaContainer redpandaContainer = new RedpandaContainer("docker.redpanda.com/redpandadata/redpanda:v23.2.14");
+    public RedpandaContainer redpandaContainer = new RedpandaContainer(
+        "docker.redpanda.com/redpandadata/redpanda:v23.2.14"
+    );
 
     private Map<String, Object> configs;
     private KafkaSecretKeyStore store;
 
     @BeforeEach
     void setUp() {
-
         configs = new HashMap<>();
         configs.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, redpandaContainer.getBootstrapServers());
-        configs.put(KafkaProtobufSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG, redpandaContainer.getSchemaRegistryAddress());
+        configs.put(
+            KafkaProtobufSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG,
+            redpandaContainer.getSchemaRegistryAddress()
+        );
 
         createTopics(configs, "pi2schema.kms.commands");
 
@@ -54,19 +58,17 @@ class KafkaSecretKeyStoreTest {
         var firstMaterials = store.retrieveOrCreateCryptoMaterialsFor(subject).join();
 
         assertThat(firstMaterials.getMaterialsList()).hasSize(1);
-        assertThat(firstMaterials.getMaterials(0).getAlgorithm())
-                .isEqualTo("AES");
-        assertThat(firstMaterials.getMaterials(0).getSymmetricKey())
-                .isNotEmpty();
+        assertThat(firstMaterials.getMaterials(0).getAlgorithm()).isEqualTo("AES");
+        assertThat(firstMaterials.getMaterials(0).getSymmetricKey()).isNotEmpty();
 
         // retrieve
         // the key propagation is asynchronous
-        await().atMost(Duration.ofSeconds(120)).untilAsserted(
-                () -> {
-                    SubjectCryptographicMaterialAggregate retrievedMaterials = store.existentMaterialsFor(subject).join();
-                    assertThat(retrievedMaterials).isEqualTo(firstMaterials);
-                }
-        );
+        await()
+            .atMost(Duration.ofSeconds(120))
+            .untilAsserted(() -> {
+                SubjectCryptographicMaterialAggregate retrievedMaterials = store.existentMaterialsFor(subject).join();
+                assertThat(retrievedMaterials).isEqualTo(firstMaterials);
+            });
 
         // once the key is propagated, should reuse the previous key and not create new ones
         var retrieveOrCreateSecond = store.retrieveOrCreateCryptoMaterialsFor(subject).join();

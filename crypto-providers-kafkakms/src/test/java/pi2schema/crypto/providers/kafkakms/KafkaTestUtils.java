@@ -10,10 +10,10 @@ import java.util.stream.Collectors;
 public class KafkaTestUtils {
 
     public static void createTopics(Map<String, Object> configs, String... topics) {
-        var newTopics =
-                Arrays.stream(topics)
-                        .map(topic -> new NewTopic(topic, 1, (short) 1))
-                        .collect(Collectors.toList());
+        var newTopics = Arrays
+            .stream(topics)
+            .map(topic -> new NewTopic(topic, 1, (short) 1))
+            .collect(Collectors.toList());
 
         try (AdminClient admin = AdminClient.create(configs)) {
             admin.createTopics(newTopics);

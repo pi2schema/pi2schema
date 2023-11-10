@@ -28,10 +28,12 @@ public class KafkaGdprAwareProtobufDeserializer<T extends Message> implements De
         this.inner = new UncofiguredDeserializer<>();
     }
 
-    KafkaGdprAwareProtobufDeserializer(Decryptor decryptor,
-                                       SchemaRegistryClient schemaRegistry,
-                                       Map<String, ?> configs,
-                                       Class<T> clazz) {
+    KafkaGdprAwareProtobufDeserializer(
+        Decryptor decryptor,
+        SchemaRegistryClient schemaRegistry,
+        Map<String, ?> configs,
+        Class<T> clazz
+    ) {
         this.inner = new KafkaProtobufDeserializer<>(schemaRegistry, configs, clazz);
         decryptionEngine = new ProtobufDecryptionEngine<>(decryptor);
     }
@@ -39,7 +41,9 @@ public class KafkaGdprAwareProtobufDeserializer<T extends Message> implements De
     @Override
     public void configure(Map<String, ?> configs, boolean isKey) {
         if (this.decryptionEngine != null || !(this.inner instanceof UncofiguredDeserializer)) {
-            throw new IllegalStateException("Configure method was called even though the deserializer was already configured");
+            throw new IllegalStateException(
+                "Configure method was called even though the deserializer was already configured"
+            );
         }
 
         this.inner = new KafkaProtobufDeserializer<>();
@@ -71,6 +75,7 @@ public class KafkaGdprAwareProtobufDeserializer<T extends Message> implements De
     }
 
     private class UncofiguredDeserializer<T> implements Deserializer<T> {
+
         @Override
         public T deserialize(String topic, byte[] data) {
             throw new UnconfiguredException();

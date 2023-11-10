@@ -12,8 +12,10 @@ public class SubjectIdentifierNotFoundException extends RuntimeException {
 
     @Override
     public String getMessage() {
-        return String.format("The strategy %s has not found any possible identifiers for the field %s while exact one is required",
-                strategyName,
-                fieldName);
+        return String.format(
+            "The strategy %s has not found any possible identifiers for the field %s while exact one is required",
+            strategyName,
+            fieldName
+        );
     }
 }

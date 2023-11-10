@@ -14,13 +14,13 @@ public class PersonalMetadataProvider {
     private final SiblingSubjectIdentifierFinder subjectIdentifierFinder = new SiblingSubjectIdentifierFinder();
 
     public PersonalMetadata forDescriptor(Descriptor descriptorForType) {
-
         //protobuf oneOf strategy
-        var personalDataFieldDefinitions = descriptorForType.getOneofs()
-                .stream()
-                .filter(OneOfPersonalDataFieldDefinition::hasPersonalData)
-                .map(this::createFieldDefinition)
-                .collect(collectingAndThen(toList(), Collections::unmodifiableList));
+        var personalDataFieldDefinitions = descriptorForType
+            .getOneofs()
+            .stream()
+            .filter(OneOfPersonalDataFieldDefinition::hasPersonalData)
+            .map(this::createFieldDefinition)
+            .collect(collectingAndThen(toList(), Collections::unmodifiableList));
 
         return new PersonalMetadata(personalDataFieldDefinitions);
     }

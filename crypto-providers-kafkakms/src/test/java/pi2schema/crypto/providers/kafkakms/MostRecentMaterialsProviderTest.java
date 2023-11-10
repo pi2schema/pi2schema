@@ -26,15 +26,15 @@ class MostRecentMaterialsProviderTest {
     @InjectMocks
     private MostRecentMaterialsProvider materialsProvider;
 
-
     @Test
     void decryptionKeysForSubjectNotFoundShouldThrowException() {
         //simulate a missing key
-        when(kafkaSecretKeyStore.existentMaterialsFor("subjectX"))
-                .thenReturn(CompletableFuture.completedFuture(null));
+        when(kafkaSecretKeyStore.existentMaterialsFor("subjectX")).thenReturn(CompletableFuture.completedFuture(null));
 
-        var expected = assertThrows(CompletionException.class, () ->
-                materialsProvider.decryptionKeysFor("subjectX").join());
+        var expected = assertThrows(
+            CompletionException.class,
+            () -> materialsProvider.decryptionKeysFor("subjectX").join()
+        );
 
         assertThat(expected.getCause()).isInstanceOf(MissingCryptoMaterialsException.class);
 
@@ -43,15 +43,19 @@ class MostRecentMaterialsProviderTest {
 
     @Test
     void decryptionKeys() {
-        var materials = SubjectCryptographicMaterialAggregate.newBuilder()
-                .addMaterials(KafkaProvider.SubjectCryptographicMaterial.newBuilder()
-                        .setAlgorithm("AES")
-                        .setId("1")
-                        .setSymmetricKey(ByteString.copyFrom("aKeyValue".getBytes()))
-                        .build())
-                .build();
+        var materials = SubjectCryptographicMaterialAggregate
+            .newBuilder()
+            .addMaterials(
+                KafkaProvider.SubjectCryptographicMaterial
+                    .newBuilder()
+                    .setAlgorithm("AES")
+                    .setId("1")
+                    .setSymmetricKey(ByteString.copyFrom("aKeyValue".getBytes()))
+                    .build()
+            )
+            .build();
         when(kafkaSecretKeyStore.existentMaterialsFor("existentSubject"))
-                .thenReturn(CompletableFuture.completedFuture(materials));
+            .thenReturn(CompletableFuture.completedFuture(materials));
 
         var existentSubjectKeys = materialsProvider.decryptionKeysFor("existentSubject").join();
 

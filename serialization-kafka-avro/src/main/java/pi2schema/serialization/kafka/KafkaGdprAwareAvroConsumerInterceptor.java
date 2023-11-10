@@ -15,49 +15,59 @@ import pi2schema.crypto.support.KeyGen;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public final class KafkaGdprAwareAvroConsumerInterceptor<K, V extends SpecificRecordBase> implements ConsumerInterceptor<K, V> {
+public final class KafkaGdprAwareAvroConsumerInterceptor<K, V extends SpecificRecordBase>
+    implements ConsumerInterceptor<K, V> {
+
     private AvroDecryptionEngine<V> decryptionEngine;
     private DecryptingMaterialsProvider materialsProvider;
 
-    public KafkaGdprAwareAvroConsumerInterceptor() {
-    }
+    public KafkaGdprAwareAvroConsumerInterceptor() {}
 
-    public KafkaGdprAwareAvroConsumerInterceptor(AvroDecryptionEngine<V> decryptionEngine, DecryptingMaterialsProvider materialsProvider) {
+    public KafkaGdprAwareAvroConsumerInterceptor(
+        AvroDecryptionEngine<V> decryptionEngine,
+        DecryptingMaterialsProvider materialsProvider
+    ) {
         this.decryptionEngine = decryptionEngine;
         this.materialsProvider = materialsProvider;
     }
 
     @Override
     public ConsumerRecords<K, V> onConsume(ConsumerRecords<K, V> records) {
-        var decryptedRecords = records.partitions().stream().map(partition -> {
-                    var decrypted = records.records(partition).stream().map(record ->
-                            new ConsumerRecord<>(
-                                    record.topic(),
-                                    record.partition(),
-                                    record.offset(),
-                                    record.timestamp(),
-                                    record.timestampType(),
-                                    record.serializedKeySize(),
-                                    record.serializedValueSize(),
-                                    record.key(),
-                                    decryptionEngine.decrypt(record.value()),
-                                    record.headers(),
-                                    record.leaderEpoch()
-                            )
-                    ).collect(Collectors.toList());
-                    return Map.of(partition, decrypted);
-                }
-        ).reduce((m1, m2) -> {
-            m1.putAll(m2);
-            return m1;
-        }).orElse(Map.of());
+        var decryptedRecords = records
+            .partitions()
+            .stream()
+            .map(partition -> {
+                var decrypted = records
+                    .records(partition)
+                    .stream()
+                    .map(record ->
+                        new ConsumerRecord<>(
+                            record.topic(),
+                            record.partition(),
+                            record.offset(),
+                            record.timestamp(),
+                            record.timestampType(),
+                            record.serializedKeySize(),
+                            record.serializedValueSize(),
+                            record.key(),
+                            decryptionEngine.decrypt(record.value()),
+                            record.headers(),
+                            record.leaderEpoch()
+                        )
+                    )
+                    .collect(Collectors.toList());
+                return Map.of(partition, decrypted);
+            })
+            .reduce((m1, m2) -> {
+                m1.putAll(m2);
+                return m1;
+            })
+            .orElse(Map.of());
         return new ConsumerRecords<>(decryptedRecords);
     }
 
     @Override
-    public void onCommit(Map<TopicPartition, OffsetAndMetadata> offsets) {
-
-    }
+    public void onCommit(Map<TopicPartition, OffsetAndMetadata> offsets) {}
 
     @Override
     public void close() {
@@ -67,7 +77,9 @@ public final class KafkaGdprAwareAvroConsumerInterceptor<K, V extends SpecificRe
     @Override
     public void configure(Map<String, ?> configs) {
         if (this.decryptionEngine != null) {
-            throw new IllegalStateException("Configure method was called even though the deserializer was already configured");
+            throw new IllegalStateException(
+                "Configure method was called even though the deserializer was already configured"
+            );
         }
 
         materialsProvider = new MostRecentMaterialsProvider(new KafkaSecretKeyStore(KeyGen.aes256(), configs));

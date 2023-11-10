@@ -14,10 +14,11 @@ import org.junit.jupiter.api.Test;
 import pi2schema.crypto.EncryptedData;
 import pi2schema.crypto.Encryptor;
 
-import javax.crypto.spec.IvParameterSpec;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+
+import javax.crypto.spec.IvParameterSpec;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,14 +33,18 @@ class KafkaGdprAwareProtobufSerializerTest {
 
     private final ByteBuffer encrypted = ByteBuffer.wrap("mockEncryption".getBytes()).asReadOnlyBuffer();
     private final Encryptor encryptorMock = (subjectId, data) ->
-            CompletableFuture.completedFuture(
-                    new EncryptedData(encrypted, "AES/CBC/PKCS5Padding", new IvParameterSpec(new byte[0]))
-            );
+        CompletableFuture.completedFuture(
+            new EncryptedData(encrypted, "AES/CBC/PKCS5Padding", new IvParameterSpec(new byte[0]))
+        );
 
     KafkaGdprAwareProtobufSerializerTest() {
-        this.configs = Map.of(
-                KafkaProtobufSerializerConfig.AUTO_REGISTER_SCHEMAS, true,
-                KafkaProtobufSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG, "bogus");
+        this.configs =
+            Map.of(
+                KafkaProtobufSerializerConfig.AUTO_REGISTER_SCHEMAS,
+                true,
+                KafkaProtobufSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG,
+                "bogus"
+            );
     }
 
     @Test
@@ -55,11 +60,7 @@ class KafkaGdprAwareProtobufSerializerTest {
         var preferredMelon = FruitFixture.waterMelon().build();
         var serializer = pi2schemaProtobufSerializerFor(Fruit.class);
 
-        var deserializer = new KafkaProtobufDeserializer<>(
-                schemaRegistry,
-                configs,
-                Fruit.class
-        );
+        var deserializer = new KafkaProtobufDeserializer<>(schemaRegistry, configs, Fruit.class);
 
         var serialized = serializer.serialize(topic, preferredMelon);
         assertEquals(preferredMelon, deserializer.deserialize(topic, serialized));
@@ -70,17 +71,14 @@ class KafkaGdprAwareProtobufSerializerTest {
         //given
         var uuid = UUID.randomUUID().toString();
 
-        var original = FarmerRegisteredEventFixture.johnDoe()
-                .setUuid(uuid)
-                .setRegisteredAt(TimestampFixture.now())
-                .build();
+        var original = FarmerRegisteredEventFixture
+            .johnDoe()
+            .setUuid(uuid)
+            .setRegisteredAt(TimestampFixture.now())
+            .build();
 
         var serializer = pi2schemaProtobufSerializerFor(FarmerRegisteredEvent.class);
-        var deserializer = new KafkaProtobufDeserializer<>(
-                schemaRegistry,
-                configs,
-                FarmerRegisteredEvent.class
-        );
+        var deserializer = new KafkaProtobufDeserializer<>(schemaRegistry, configs, FarmerRegisteredEvent.class);
 
         //when
         byte[] data = serializer.serialize(topic, original);
@@ -88,27 +86,19 @@ class KafkaGdprAwareProtobufSerializerTest {
         encrypted.rewind();
 
         //then
-        assertThat(actual.getUuid())
-                .isEqualTo(uuid);
+        assertThat(actual.getUuid()).isEqualTo(uuid);
 
         assertThat(actual.getPersonalDataCase())
-                .isEqualTo(FarmerRegisteredEvent.PersonalDataCase.ENCRYPTEDPERSONALDATA);
+            .isEqualTo(FarmerRegisteredEvent.PersonalDataCase.ENCRYPTEDPERSONALDATA);
 
-        assertThat(actual.getEncryptedPersonalData().getSubjectId())
-                .isEqualTo(uuid);
+        assertThat(actual.getEncryptedPersonalData().getSubjectId()).isEqualTo(uuid);
 
-        assertThat(actual.getEncryptedPersonalData().getData().asReadOnlyByteBuffer())
-                .isEqualTo(encrypted);
+        assertThat(actual.getEncryptedPersonalData().getData().asReadOnlyByteBuffer()).isEqualTo(encrypted);
 
-        assertThat(actual.getEncryptedPersonalData().getPersonalDataFieldNumber())
-                .isEqualTo(2);
-
+        assertThat(actual.getEncryptedPersonalData().getPersonalDataFieldNumber()).isEqualTo(2);
     }
 
     private <T extends Message> KafkaGdprAwareProtobufSerializer<T> pi2schemaProtobufSerializerFor(Class<T> aClazz) {
-        return new KafkaGdprAwareProtobufSerializer<>(
-                encryptorMock,
-                schemaRegistry,
-                configs, aClazz);
+        return new KafkaGdprAwareProtobufSerializer<>(encryptorMock, schemaRegistry, configs, aClazz);
     }
 }

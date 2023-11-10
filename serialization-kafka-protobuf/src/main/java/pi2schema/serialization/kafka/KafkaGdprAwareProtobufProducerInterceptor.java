@@ -12,28 +12,29 @@ import pi2schema.crypto.support.KeyGen;
 
 import java.util.Map;
 
-public final class KafkaGdprAwareProtobufProducerInterceptor<K, V extends Message> implements ProducerInterceptor<K, V> {
+public final class KafkaGdprAwareProtobufProducerInterceptor<K, V extends Message>
+    implements ProducerInterceptor<K, V> {
+
     private ProtobufEncryptionEngine<V> encryptionEngine;
     private EncryptingMaterialsProvider materialsProvider;
 
     @Override
     public ProducerRecord<K, V> onSend(ProducerRecord<K, V> record) {
         return new ProducerRecord<>(
-                record.topic(),
-                record.partition(),
-                record.timestamp(),
-                record.key(),
-                encryptionEngine.encrypt(record.value())
+            record.topic(),
+            record.partition(),
+            record.timestamp(),
+            record.key(),
+            encryptionEngine.encrypt(record.value())
         );
     }
 
     @Override
-    public void onAcknowledgement(RecordMetadata metadata, Exception exception) {
-    }
+    public void onAcknowledgement(RecordMetadata metadata, Exception exception) {}
 
     @Override
     public void close() {
-        if(materialsProvider != null){
+        if (materialsProvider != null) {
             materialsProvider.close();
         }
     }

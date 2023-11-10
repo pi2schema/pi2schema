@@ -20,17 +20,11 @@ public class PersonalMetadata {
         return !personalDataFields.isEmpty();
     }
 
-    public Stream<CompletableFuture<Void>> encryptPersonalData(
-            Encryptor encryptor, Message.Builder encryptingBuilder) {
-        return personalDataFields
-                .parallelStream()
-                .map(field -> field.swapToEncrypted(encryptor, encryptingBuilder));
+    public Stream<CompletableFuture<Void>> encryptPersonalData(Encryptor encryptor, Message.Builder encryptingBuilder) {
+        return personalDataFields.parallelStream().map(field -> field.swapToEncrypted(encryptor, encryptingBuilder));
     }
 
-    public Stream<CompletableFuture<Void>> decryptPersonalData(
-            Decryptor decryptor, Message.Builder decryptingBuilder) {
-        return personalDataFields
-                .parallelStream()
-                .map(field -> field.swapToDecrypted(decryptor, decryptingBuilder));
+    public Stream<CompletableFuture<Void>> decryptPersonalData(Decryptor decryptor, Message.Builder decryptingBuilder) {
+        return personalDataFields.parallelStream().map(field -> field.swapToDecrypted(decryptor, decryptingBuilder));
     }
 }

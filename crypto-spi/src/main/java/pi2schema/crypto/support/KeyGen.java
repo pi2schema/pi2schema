@@ -1,7 +1,8 @@
 package pi2schema.crypto.support;
 
-import javax.crypto.KeyGenerator;
 import java.security.NoSuchAlgorithmException;
+
+import javax.crypto.KeyGenerator;
 
 public final class KeyGen {
 
@@ -14,5 +15,4 @@ public final class KeyGen {
             throw new RuntimeException(e); // wrap internal?
         }
     }
-
 }
