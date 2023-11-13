@@ -8,7 +8,5 @@ package pi2schema.schema.personaldata;
  * @param <T> original object type.
  */
 public interface PersonalMetadataProvider<T> {
-
     PersonalMetadata<T> forType(T originalObject);
-
 }

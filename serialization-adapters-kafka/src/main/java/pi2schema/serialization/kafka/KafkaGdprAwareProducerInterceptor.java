@@ -1,6 +1,5 @@
 package pi2schema.serialization.kafka;
 
-import org.apache.avro.specific.SpecificRecordBase;
 import org.apache.kafka.clients.producer.ProducerInterceptor;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
@@ -13,34 +12,31 @@ import pi2schema.crypto.support.KeyGen;
 import java.util.Map;
 
 public final class KafkaGdprAwareProducerInterceptor<K, V> implements ProducerInterceptor<K, V> {
-    private AvroEncryptionEngine<V> encryptionEngine;
+
     private EncryptingMaterialsProvider materialsProvider;
+    private LocalEncryptor localEncryptor;
 
-    public KafkaGdprAwareProducerInterceptor() {
-    }
+    public KafkaGdprAwareProducerInterceptor() {}
 
-    public KafkaGdprAwareProducerInterceptor(AvroEncryptionEngine<V> encryptionEngine, EncryptingMaterialsProvider materialsProvider) {
-        this.encryptionEngine = encryptionEngine;
+    public KafkaGdprAwareProducerInterceptor(EncryptingMaterialsProvider materialsProvider) {
         this.materialsProvider = materialsProvider;
     }
 
     @Override
     public ProducerRecord<K, V> onSend(ProducerRecord<K, V> record) {
-        if(record == null || record.value() == null)
-            return record;
+        if (record == null || record.value() == null) return record;
 
         return new ProducerRecord<>(
-                record.topic(),
-                record.partition(),
-                record.timestamp(),
-                record.key(),
-                encryptionEngine.encrypt(record.value())
+            record.topic(),
+            record.partition(),
+            record.timestamp(),
+            record.key(),
+            record.value()
         );
     }
 
     @Override
-    public void onAcknowledgement(RecordMetadata metadata, Exception exception) {
-    }
+    public void onAcknowledgement(RecordMetadata metadata, Exception exception) {}
 
     @Override
     public void close() {
@@ -50,6 +46,6 @@ public final class KafkaGdprAwareProducerInterceptor<K, V> implements ProducerIn
     @Override
     public void configure(Map<String, ?> configs) {
         materialsProvider = new MostRecentMaterialsProvider(new KafkaSecretKeyStore(KeyGen.aes256(), configs));
-        encryptionEngine = new AvroEncryptionEngine<>(new LocalEncryptor(materialsProvider));
+        localEncryptor = new LocalEncryptor(materialsProvider);
     }
 }

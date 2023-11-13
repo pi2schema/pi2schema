@@ -19,7 +19,7 @@ java {
 
 dependencies {
 	implementation(project(":schema-providers-avro"))
-	implementation(project(":serialization-kafka-avro"))
+	implementation(project(":serialization-adapters-kafka"))
 
 	implementation("io.confluent:kafka-avro-serializer:7.5.2")
 	implementation 'org.apache.avro:avro:1.11.3'
