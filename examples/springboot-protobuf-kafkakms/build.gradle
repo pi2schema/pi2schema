@@ -31,8 +31,8 @@ configurations.forEach {
 
 
 dependencies {
-	implementation(project(":serialization-kafka-protobuf"))
 	implementation(project(":schema-providers-protobuf"))
+	implementation(project(":serialization-adapters-kafka"))
 
 	implementation("com.google.protobuf:protobuf-java:3.25.1")
 
