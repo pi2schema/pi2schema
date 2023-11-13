@@ -13,11 +13,9 @@ import java.util.stream.Stream;
  * @param <T> The type of the object
  */
 public interface PersonalMetadata<T> {
-
     boolean requiresEncryption();
 
-    Stream<CompletableFuture<Void>> swapToEncrypted(Encryptor encryptor, T decryptedInstance);
+    T swapToEncrypted(Encryptor encryptor, T decryptedInstance);
 
-    Stream<CompletableFuture<Void>> swapToDecrypted(Decryptor decryptor, T DecryptedInstance);
-
+    T swapToDecrypted(Decryptor decryptor, T DecryptedInstance);
 }
