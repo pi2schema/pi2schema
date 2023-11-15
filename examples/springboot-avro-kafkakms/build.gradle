@@ -42,7 +42,7 @@ dependencies {
 
 	testImplementation("org.testcontainers:testcontainers:1.19.1")
 	testImplementation("org.testcontainers:junit-jupiter:1.19.1")
-	testImplementation ("org.testcontainers:redpanda:1.19.1")
+	testImplementation ("org.testcontainers:redpanda:1.19.2")
 }
 
 
