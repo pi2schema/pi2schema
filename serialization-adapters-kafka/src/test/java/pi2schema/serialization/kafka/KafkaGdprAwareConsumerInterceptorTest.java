@@ -9,13 +9,8 @@ public class KafkaGdprAwareConsumerInterceptorTest {
 
     @Test
     public void shouldThrowExceptionIfConfigurationsDoesNotContainMandatoryConfigs() {
-
         try (var interceptor = new KafkaGdprAwareConsumerInterceptor<>()) {
             Assertions.assertThatException().isThrownBy(() -> interceptor.configure(Collections.emptyMap()));
         }
-
     }
-
-
-
 }
