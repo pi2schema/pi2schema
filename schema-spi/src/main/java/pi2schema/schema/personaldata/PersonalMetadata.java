@@ -3,9 +3,6 @@ package pi2schema.schema.personaldata;
 import pi2schema.crypto.Decryptor;
 import pi2schema.crypto.Encryptor;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Stream;
-
 /**
  * Describes a personal identifiable information for a whole object defining possible operations
  * for the object and its fields.

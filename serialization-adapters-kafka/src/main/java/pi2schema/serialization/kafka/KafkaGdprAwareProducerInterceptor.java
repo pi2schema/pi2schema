@@ -18,8 +18,7 @@ public final class KafkaGdprAwareProducerInterceptor<K, V> implements ProducerIn
 
     public KafkaGdprAwareProducerInterceptor() {}
 
-    public KafkaGdprAwareProducerInterceptor(EncryptingMaterialsProvider materialsProvider
-    ) {
+    public KafkaGdprAwareProducerInterceptor(EncryptingMaterialsProvider materialsProvider) {
         this.materialsProvider = materialsProvider;
     }
 
