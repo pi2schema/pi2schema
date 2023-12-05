@@ -8,20 +8,20 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class PersonalMetadataProviderTest {
+class ProtobufPersonalMetadataProviderTest {
 
-    PersonalMetadataProvider personalMetadataProvider;
+    ProtobufPersonalMetadataProvider protobufPersonalMetadataProvider;
 
     @BeforeEach
     public void setUp() {
-        this.personalMetadataProvider = new PersonalMetadataProvider();
+        this.protobufPersonalMetadataProvider = new ProtobufPersonalMetadataProvider();
     }
 
     @Test
     void givenADescriptorWithoutOneOfThenOptionalEmpty() {
         var descriptorWithoutOneOf = FruitFixture.waterMelon().build().getDescriptorForType();
 
-        var metadata = personalMetadataProvider.forDescriptor(descriptorWithoutOneOf);
+        var metadata = protobufPersonalMetadataProvider.forDescriptor(descriptorWithoutOneOf);
 
         assertThat(metadata.requiresEncryption()).isFalse();
     }
@@ -34,7 +34,7 @@ class PersonalMetadataProviderTest {
             .build()
             .getDescriptorForType();
 
-        var metadata = personalMetadataProvider.forDescriptor(descriptorWithOneOf);
+        var metadata = protobufPersonalMetadataProvider.forDescriptor(descriptorWithOneOf);
 
         assertThat(metadata.requiresEncryption()).isFalse();
     }
@@ -43,7 +43,7 @@ class PersonalMetadataProviderTest {
     void givenADescriptorWithOneOfWithPersonalDataAsSiblingThenPersonalMetadata() {
         var descriptor = FarmerRegisteredEventFixture.johnDoe().build().getDescriptorForType();
 
-        var metadata = personalMetadataProvider.forDescriptor(descriptor);
+        var metadata = protobufPersonalMetadataProvider.forDescriptor(descriptor);
 
         assertThat(metadata.requiresEncryption()).isTrue();
     }
