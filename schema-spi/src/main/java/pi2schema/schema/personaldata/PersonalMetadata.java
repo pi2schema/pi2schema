@@ -14,5 +14,5 @@ public interface PersonalMetadata<T> {
 
     T swapToEncrypted(Encryptor encryptor, T decryptedInstance);
 
-    T swapToDecrypted(Decryptor decryptor, T DecryptedInstance);
+    T swapToDecrypted(Decryptor decryptor, T encryptedInstance);
 }

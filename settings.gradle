@@ -9,6 +9,7 @@ include 'schema-providers-protobuf'
 include 'schema-providers-avro'
 
 include 'serialization-adapters-kafka'
+include 'serialization-kafka-protobuf'
 
 include 'examples:springboot-protobuf-kafkakms'
 include 'examples:springboot-avro-kafkakms'

@@ -3,12 +3,13 @@ package pi2schema.schema.providers.avro.personaldata;
 import org.apache.avro.specific.SpecificRecordBase;
 import pi2schema.crypto.Decryptor;
 import pi2schema.crypto.Encryptor;
+import pi2schema.schema.personaldata.PersonalMetadata;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
-public class AvroPersonalMetadata {
+public class AvroPersonalMetadata<T extends SpecificRecordBase> implements PersonalMetadata<T> {
 
     private final List<AvroUnionPersonalDataFieldDefinition> personalDataFields;
 
@@ -16,21 +17,33 @@ public class AvroPersonalMetadata {
         this.personalDataFields = personalDataFields;
     }
 
+    @Override
     public boolean requiresEncryption() {
         return !personalDataFields.isEmpty();
     }
 
-    public Stream<CompletableFuture<Void>> encryptPersonalData(
-        Encryptor encryptor,
-        SpecificRecordBase encryptingBuilder
-    ) {
-        return personalDataFields.parallelStream().map(field -> field.swapToEncrypted(encryptor, encryptingBuilder));
+    @Override
+    public T swapToEncrypted(Encryptor encryptor, T decryptedInstance) {
+
+        var encryptingBuilder = decryptedInstance; //TODO to builder/clone
+        var encrypted = personalDataFields.parallelStream().map(field -> field.swapToEncrypted(encryptor, decryptedInstance));
+
+        return CompletableFuture
+                .allOf(encrypted.toArray(CompletableFuture[]::new))
+                .thenApply(__ -> encryptingBuilder)
+                .join();
     }
 
-    public Stream<CompletableFuture<Void>> decryptPersonalData(
-        Decryptor decryptor,
-        SpecificRecordBase decryptingBuilder
-    ) {
-        return personalDataFields.parallelStream().map(field -> field.swapToDecrypted(decryptor, decryptingBuilder));
+    @Override
+    public T swapToDecrypted(Decryptor decryptor, T decryptedInstance) {
+
+        var decryptingBuilder = decryptedInstance; //TODO: find a way toBuilder()
+        var decrypted = personalDataFields.parallelStream().map(field -> field.swapToDecrypted(decryptor, decryptedInstance));
+
+        return (T) CompletableFuture
+                .allOf(decrypted.toArray(CompletableFuture[]::new))
+                .thenApply(__ -> decryptingBuilder)
+                .join();
     }
+
 }
