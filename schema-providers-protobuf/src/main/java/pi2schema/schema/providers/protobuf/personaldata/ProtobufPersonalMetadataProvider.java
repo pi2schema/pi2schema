@@ -21,7 +21,7 @@ public class ProtobufPersonalMetadataProvider<T extends Message> implements Pers
         return null;
     }
 
-    public PersonalMetadata forDescriptor(Descriptor descriptorForType) {
+    public ProtobufPersonalMetadata forDescriptor(Descriptor descriptorForType) {
         //protobuf oneOf strategy
         var personalDataFieldDefinitions = descriptorForType
             .getOneofs()
@@ -30,7 +30,7 @@ public class ProtobufPersonalMetadataProvider<T extends Message> implements Pers
             .map(this::createFieldDefinition)
             .collect(collectingAndThen(toList(), Collections::unmodifiableList));
 
-        return new PersonalMetadata(personalDataFieldDefinitions);
+        return new ProtobufPersonalMetadata(personalDataFieldDefinitions);
     }
 
     private OneOfPersonalDataFieldDefinition createFieldDefinition(Descriptors.OneofDescriptor descriptor) {
