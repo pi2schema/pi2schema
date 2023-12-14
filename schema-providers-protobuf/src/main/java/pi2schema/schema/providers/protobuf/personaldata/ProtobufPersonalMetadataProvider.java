@@ -3,6 +3,7 @@ package pi2schema.schema.providers.protobuf.personaldata;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Message;
+import pi2schema.schema.personaldata.PersonalMetadata;
 import pi2schema.schema.personaldata.PersonalMetadataProvider;
 import pi2schema.schema.providers.protobuf.subject.SiblingSubjectIdentifierFinder;
 
@@ -17,11 +18,11 @@ public class ProtobufPersonalMetadataProvider<T extends Message> implements Pers
 
 
     @Override
-    public pi2schema.schema.personaldata.PersonalMetadata<T> forType(T originalObject) {
-        return null;
+    public PersonalMetadata<T> forType(T originalObject) {
+        return forDescriptor(originalObject.getDescriptorForType());
     }
 
-    public PersonalMetadata forDescriptor(Descriptor descriptorForType) {
+    public ProtobufPersonalMetadata<T> forDescriptor(Descriptor descriptorForType) {
         //protobuf oneOf strategy
         var personalDataFieldDefinitions = descriptorForType
             .getOneofs()
@@ -30,7 +31,7 @@ public class ProtobufPersonalMetadataProvider<T extends Message> implements Pers
             .map(this::createFieldDefinition)
             .collect(collectingAndThen(toList(), Collections::unmodifiableList));
 
-        return new PersonalMetadata(personalDataFieldDefinitions);
+        return new ProtobufPersonalMetadata<>(personalDataFieldDefinitions);
     }
 
     private OneOfPersonalDataFieldDefinition createFieldDefinition(Descriptors.OneofDescriptor descriptor) {
