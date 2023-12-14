@@ -14,7 +14,7 @@ import static pi2schema.serialization.kafka.PiiAwareInterceptorConfig.PERSONAL_M
 public class KafkaGdprAwareInterceptorIntegrationTest {
 
 
-    private final Map<String, String> configs = Map.of(PERSONAL_METADATA_PROVIDER_CONFIG, "pi2schema.schema.providers.protobuf.personaldata.PersonalMetadataProvider",
+    private final Map<String, String> configs = Map.of(PERSONAL_METADATA_PROVIDER_CONFIG, "pi2schema.schema.providers.protobuf.personaldata.ProtobufPersonalMetadataProvider",
             MATERIALS_PROVIDER_CONFIG, "pi2schema.serialization.kafka.materials.InMemoryMaterialsProvider");
 
     @Test
