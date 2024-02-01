@@ -10,6 +10,10 @@ dependencies {
     testImplementation "org.testcontainers:junit-jupiter:1.19.1"
     testImplementation "org.testcontainers:redpanda:1.19.1"
 
+    // To fully test the dynamic class instantiation, we test against all available schema providers
+    testImplementation "com.google.protobuf:protobuf-java:3.25.1"
+    testImplementation "org.apache.avro:avro:1.11.3"
+
     // TODO: Adopt test features in a way it includes generated source code
     // ref.: for further reading
     // https://docs.gradle.org/5.6/release-notes.html#test-fixtures-for-java-projects
@@ -18,5 +22,6 @@ dependencies {
     // https://github.com/gradle/gradle/blob/f8ea607a7dfe0f8715e3bf656df7414a415449b5/subprojects/plugins/src/main/java/org/gradle/api/plugins/JavaTestFixturesPlugin.java
     testImplementation project(':schema-providers-protobuf').sourceSets.test.output
     testImplementation project(':schema-providers-protobuf')
-    testImplementation "com.google.protobuf:protobuf-java:3.25.1"
+    testImplementation project(':schema-providers-avro').sourceSets.test.output
+    testImplementation project(':schema-providers-avro')
 }

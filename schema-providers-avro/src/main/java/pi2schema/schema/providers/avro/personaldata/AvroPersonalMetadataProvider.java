@@ -23,6 +23,6 @@ public class AvroPersonalMetadataProvider<T extends SpecificRecordBase> implemen
                 .map(f -> new AvroUnionPersonalDataFieldDefinition(f, schema))
                 .collect(collectingAndThen(toList(), Collections::unmodifiableList));
 
-        return new AvroPersonalMetadata(personalDataFieldDefinitions);
+        return new AvroPersonalMetadata<>(personalDataFieldDefinitions);
     }
 }

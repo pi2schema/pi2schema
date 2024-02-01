@@ -29,7 +29,7 @@ public final class KafkaGdprAwareProducerInterceptor<K, V> implements ProducerIn
             record.partition(),
             record.timestamp(),
             record.key(),
-            record.value()
+            metadataProvider.forType(record.value()).swapToEncrypted(localEncryptor, record.value())
         );
     }
 
