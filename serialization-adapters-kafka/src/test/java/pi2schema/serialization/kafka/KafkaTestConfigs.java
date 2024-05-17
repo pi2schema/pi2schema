@@ -25,7 +25,7 @@ public class KafkaTestConfigs {
 
 
     @NotNull
-    static Map<String, String> configsForPotobuf() {
+    static Map<String, String> configsForPotobuffer() {
         return Map.ofEntries(materialsProviderConfig, protobufMetadataProviderConfig);
     }
 }
