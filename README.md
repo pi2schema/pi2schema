@@ -9,6 +9,11 @@ This repo intends to present some experimentation on gdpr which were not ...
 
 Further more provide an ?open? space to collaborate in a so complex subject and with so many possible combinations for example with cloud kms implementations, use cases  as Acls including the extense kafka ecosystem.
 
+Personal information in the world of distributed system and especially in event driven...
+
+How to describe the payload data sensitivty.
+references [xmlenc](https://www.w3.org/TR/xmlenc-core1/#sec-Design), similarly to [JWE](https://datatracker.ietf.org/doc/rfc7516/)
+
 ## Project Goals
 *  Gdpr compliant / right to be forgotten
 *  No deletion, event loss, data loss of non personal data
