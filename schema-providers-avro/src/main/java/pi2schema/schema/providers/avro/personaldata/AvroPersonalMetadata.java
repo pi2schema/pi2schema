@@ -7,7 +7,6 @@ import pi2schema.schema.personaldata.PersonalMetadata;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Stream;
 
 public class AvroPersonalMetadata<T extends SpecificRecordBase> implements PersonalMetadata<T> {
 
@@ -24,26 +23,27 @@ public class AvroPersonalMetadata<T extends SpecificRecordBase> implements Perso
 
     @Override
     public T swapToEncrypted(Encryptor encryptor, T decryptedInstance) {
-
         var encryptingBuilder = decryptedInstance; //TODO to builder/clone
-        var encrypted = personalDataFields.parallelStream().map(field -> field.swapToEncrypted(encryptor, decryptedInstance));
+        var encrypted = personalDataFields
+            .parallelStream()
+            .map(field -> field.swapToEncrypted(encryptor, decryptedInstance));
 
         return CompletableFuture
-                .allOf(encrypted.toArray(CompletableFuture[]::new))
-                .thenApply(__ -> encryptingBuilder)
-                .join();
+            .allOf(encrypted.toArray(CompletableFuture[]::new))
+            .thenApply(__ -> encryptingBuilder)
+            .join();
     }
 
     @Override
     public T swapToDecrypted(Decryptor decryptor, T decryptedInstance) {
-
         var decryptingBuilder = decryptedInstance; //TODO: find a way toBuilder()
-        var decrypted = personalDataFields.parallelStream().map(field -> field.swapToDecrypted(decryptor, decryptedInstance));
+        var decrypted = personalDataFields
+            .parallelStream()
+            .map(field -> field.swapToDecrypted(decryptor, decryptedInstance));
 
         return (T) CompletableFuture
-                .allOf(decrypted.toArray(CompletableFuture[]::new))
-                .thenApply(__ -> decryptingBuilder)
-                .join();
+            .allOf(decrypted.toArray(CompletableFuture[]::new))
+            .thenApply(__ -> decryptingBuilder)
+            .join();
     }
-
 }

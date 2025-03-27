@@ -16,7 +16,6 @@ public class ProtobufPersonalMetadataProvider<T extends Message> implements Pers
 
     private final SiblingSubjectIdentifierFinder subjectIdentifierFinder = new SiblingSubjectIdentifierFinder();
 
-
     @Override
     public PersonalMetadata<T> forType(T originalObject) {
         return forDescriptor(originalObject.getDescriptorForType());
@@ -37,5 +36,4 @@ public class ProtobufPersonalMetadataProvider<T extends Message> implements Pers
     private OneOfPersonalDataFieldDefinition createFieldDefinition(Descriptors.OneofDescriptor descriptor) {
         return new OneOfPersonalDataFieldDefinition(descriptor, subjectIdentifierFinder.find(descriptor));
     }
-
 }
