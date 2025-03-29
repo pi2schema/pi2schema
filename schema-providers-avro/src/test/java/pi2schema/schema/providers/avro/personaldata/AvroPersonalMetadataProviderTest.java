@@ -1,8 +1,6 @@
 package pi2schema.schema.providers.avro.personaldata;
 
-import com.acme.InvalidUserWithMultipleSubjectIdentifiers;
-import com.acme.InvalidUserWithoutSubjectIdentifier;
-import com.acme.UserValid;
+import com.acme.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -19,7 +17,8 @@ public class AvroPersonalMetadataProviderTest {
 
     @Test
     void givenADescriptorWithoutOneOfThenOptionalEmpty() {
-        var without = InvalidUserWithoutSubjectIdentifier.newBuilder().build();
+        var without = InvalidUserWithoutSubjectIdentifierFixture.johnDoe()
+                .build();
         var metadata = personalMetadataProvider.forType(without);
 
         assertThat(metadata.requiresEncryption()).isFalse();
@@ -27,7 +26,7 @@ public class AvroPersonalMetadataProviderTest {
 
     @Test
     void givenADescriptorWithUnionWithoutPersonalDataSiblingThenNoEncryptionRequired() {
-        var doubleIdentifiers = InvalidUserWithMultipleSubjectIdentifiers.newBuilder().build();
+        var doubleIdentifiers = InvalidUserWithMultipleSubjectIdentifiersFixture.johnDoe().build();
         var metadata = personalMetadataProvider.forType(doubleIdentifiers);
 
         assertThat(metadata.requiresEncryption()).isFalse();
@@ -35,7 +34,7 @@ public class AvroPersonalMetadataProviderTest {
 
     @Test
     void givenADescriptorWithPersonalDataAsSiblingInUnionType() {
-        var valid = UserValid.newBuilder().build();
+        var valid = UserValidFixture.johnDoe().build();
         var metadata = personalMetadataProvider.forType(valid);
 
         assertThat(metadata.requiresEncryption()).isTrue();
