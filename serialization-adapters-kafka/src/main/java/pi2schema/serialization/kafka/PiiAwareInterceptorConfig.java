@@ -12,10 +12,11 @@ public class PiiAwareInterceptorConfig extends AbstractConfig {
 
     public static final String PERSONAL_METADATA_PROVIDER_CONFIG = "pi2schema.personal.metadata.provider";
     public static final String PERSONAL_METADATA_PROVIDER_CONFIG_DOC =
-        "The Personal metadata provider capable of ispect the ";
+        "The Personal metadata provider capable of inspecting the personal data from the message";
 
     public static final String MATERIALS_PROVIDER_CONFIG = "pi2schema.personal.materials.provider";
-    public static final String MATERIALS_PROVIDER_CONFIG_DOC = "The material metadata provider capable of ispect the ";
+    public static final String MATERIALS_PROVIDER_CONFIG_DOC = 
+        "The material provider factory capable of creating the materials provider for cryptographic operations";
 
     // TODO: improve documentation, describe currently supported classes.
 
