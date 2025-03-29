@@ -17,8 +17,7 @@ public class AvroPersonalMetadataProviderTest {
 
     @Test
     void givenADescriptorWithoutOneOfThenOptionalEmpty() {
-        var without = InvalidUserWithoutSubjectIdentifierFixture.johnDoe()
-                .build();
+        var without = InvalidUserWithoutSubjectIdentifierFixture.johnDoe().build();
         var metadata = personalMetadataProvider.forType(without);
 
         assertThat(metadata.requiresEncryption()).isFalse();
