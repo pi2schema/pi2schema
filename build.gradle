@@ -80,7 +80,7 @@ subprojects {
 
     dependencies {
 
-        implementation 'ch.qos.logback:logback-classic:1.4.11'
+        implementation 'ch.qos.logback:logback-classic:1.4.14'
 
         testImplementation 'org.junit.jupiter:junit-jupiter:5.10.5'
         testImplementation 'org.junit.jupiter:junit-jupiter-params:5.10.5'
