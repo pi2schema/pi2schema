@@ -25,7 +25,7 @@ class KafkaSecretKeyStoreTest {
 
     @Container
     public RedpandaContainer redpandaContainer = new RedpandaContainer(
-        "docker.redpanda.com/redpandadata/redpanda:v23.2.14"
+        "docker.redpanda.com/redpandadata/redpanda:v24.3.9"
     );
 
     private Map<String, Object> configs;

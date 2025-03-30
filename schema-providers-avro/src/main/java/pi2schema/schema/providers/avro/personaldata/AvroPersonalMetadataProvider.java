@@ -1,16 +1,20 @@
 package pi2schema.schema.providers.avro.personaldata;
 
-import org.apache.avro.Schema;
+import org.apache.avro.specific.SpecificRecordBase;
+import pi2schema.schema.personaldata.PersonalMetadata;
+import pi2schema.schema.personaldata.PersonalMetadataProvider;
 
 import java.util.Collections;
 
 import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toList;
 
-public class AvroPersonalMetadataProvider {
+public class AvroPersonalMetadataProvider<T extends SpecificRecordBase> implements PersonalMetadataProvider<T> {
 
-    public AvroPersonalMetadata forDescriptor(Schema schema) {
+    @Override
+    public PersonalMetadata<T> forType(T originalObject) {
         //avro union strategy
+        var schema = originalObject.getSchema();
         var personalDataFieldDefinitions = schema
             .getFields()
             .stream()
@@ -18,6 +22,6 @@ public class AvroPersonalMetadataProvider {
             .map(f -> new AvroUnionPersonalDataFieldDefinition(f, schema))
             .collect(collectingAndThen(toList(), Collections::unmodifiableList));
 
-        return new AvroPersonalMetadata(personalDataFieldDefinitions);
+        return new AvroPersonalMetadata<>(personalDataFieldDefinitions);
     }
 }
