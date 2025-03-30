@@ -1,3 +1,11 @@
+// Define the plugin version in buildscript
+buildscript {
+    ext {
+        protobufGradlePluginVersion = '0.9.4'
+    }
+}
+
+// Define centralized versions
 plugins {
     id 'net.researchgate.release' version '3.0.2'
     id "com.github.spotbugs" version "6.0.13" apply false
@@ -10,6 +18,15 @@ plugins {
     id "org.springframework.boot"  version "3.1.8"  apply false
     id "com.github.davidmc24.gradle.plugin.avro" version "1.9.1" apply false
     id "com.google.protobuf" version "0.9.4" apply false
+}
+
+// Define centralized versions
+ext {
+    versions = [
+            protobufJava: '3.25.1',
+            protoc: '3.25.1',
+            protobufGradlePlugin: protobufGradlePluginVersion
+    ]
 }
 
 allprojects {
