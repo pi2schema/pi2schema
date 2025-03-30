@@ -1,6 +1,6 @@
 buildscript {
 	dependencies {
-		classpath 'com.google.protobuf:protobuf-gradle-plugin:0.9.4'
+		classpath "com.google.protobuf:protobuf-gradle-plugin:${rootProject.ext.versions.protobufGradlePlugin}"
 	}
 }
 
@@ -34,7 +34,7 @@ dependencies {
 	implementation(project(":schema-providers-protobuf"))
 	implementation(project(":serialization-adapters-kafka"))
 
-	implementation("com.google.protobuf:protobuf-java:3.25.1")
+	implementation("com.google.protobuf:protobuf-java:${rootProject.ext.versions.protobufJava}")
 
 	implementation("io.confluent:kafka-protobuf-serializer:7.5.3")
 
@@ -71,7 +71,7 @@ compileKotlin {
 protobuf {
 	protoc {
 		// Download from repositories
-		artifact = "com.google.protobuf:protoc:3.25.1"
+		artifact = "com.google.protobuf:protoc:${rootProject.ext.versions.protoc}"
 	}
 }
 

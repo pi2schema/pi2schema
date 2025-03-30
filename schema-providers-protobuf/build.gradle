@@ -1,6 +1,6 @@
 buildscript {
     dependencies {
-        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.9.4'
+        classpath "com.google.protobuf:protobuf-gradle-plugin:${rootProject.ext.versions.protobufGradlePlugin}"
     }
 }
 
@@ -11,7 +11,7 @@ plugins {
 
 protobuf {
     protoc {
-        artifact = 'com.google.protobuf:protoc:3.25.1'
+        artifact = "com.google.protobuf:protoc:${rootProject.ext.versions.protoc}"
     }
 }
 
@@ -31,5 +31,5 @@ spotbugs {
 dependencies {
     implementation project(':crypto-spi')
     implementation project(':schema-spi')
-    implementation 'com.google.protobuf:protobuf-java:3.25.1'
+    implementation "com.google.protobuf:protobuf-java:${rootProject.ext.versions.protobufJava}"
 }
