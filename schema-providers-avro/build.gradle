@@ -13,5 +13,5 @@ spotbugs {
 dependencies {
     implementation project(':crypto-spi')
     implementation project(':schema-spi')
-    implementation 'org.apache.avro:avro:1.11.3'
+    implementation 'org.apache.avro:avro:1.11.4'
 }
