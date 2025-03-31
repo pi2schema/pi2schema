@@ -12,7 +12,7 @@ dependencies {
 
     // To fully test the dynamic class instantiation, we test against all available schema providers
     testImplementation "com.google.protobuf:protobuf-java:${rootProject.ext.versions.protobufJava}"
-    testImplementation "org.apache.avro:avro:1.11.3"
+    testImplementation "org.apache.avro:avro:1.11.4"
 
     // TODO: Adopt test features in a way it includes generated source code
     // ref.: for further reading

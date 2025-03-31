@@ -22,7 +22,7 @@ dependencies {
 	implementation(project(":serialization-adapters-kafka"))
 
 	implementation("io.confluent:kafka-avro-serializer:7.5.2")
-	implementation 'org.apache.avro:avro:1.11.3'
+	implementation 'org.apache.avro:avro:1.11.4'
 	implementation("org.springframework.boot:spring-boot-starter-webflux")
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 	implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
