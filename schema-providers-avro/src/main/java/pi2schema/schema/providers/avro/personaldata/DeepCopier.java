@@ -38,6 +38,7 @@ public final class DeepCopier {
             output.writeInt(buffer.capacity());
             output.writeInt(buffer.position());
             output.writeInt(buffer.limit());
+            output.writeBoolean(buffer.isDirect());
 
             var dup = buffer.duplicate();
             dup.position(0);
@@ -53,9 +54,10 @@ public final class DeepCopier {
             int capacity = input.readInt();
             int position = input.readInt();
             int limit = input.readInt();
+            boolean isDirect = input.readBoolean();
 
             byte[] data = input.readBytes(capacity);
-            var buffer = ByteBuffer.allocate(capacity);
+            var buffer = isDirect ? ByteBuffer.allocateDirect(capacity) : ByteBuffer.allocate(capacity);
             buffer.put(data);
             buffer.position(position);
             buffer.limit(limit);
@@ -64,17 +66,14 @@ public final class DeepCopier {
 
         @Override
         public ByteBuffer copy(Kryo kryo, ByteBuffer original) {
-            var copy = ByteBuffer.allocate(original.capacity());
-            int originalPosition = original.position();
-            int originalLimit = original.limit();
+            int capacity = original.capacity();
+            var copy = original.isDirect() ? ByteBuffer.allocateDirect(capacity) : ByteBuffer.allocate(capacity);
 
-            original.rewind();
-            copy.put(original);
-            copy.position(originalPosition);
-            copy.limit(originalLimit);
+            var duplicate = original.duplicate().clear();
+            copy.put(duplicate);
+            copy.position(original.position());
+            copy.limit(original.limit());
 
-            original.position(originalPosition);
-            original.limit(originalLimit);
             return copy;
         }
     }
