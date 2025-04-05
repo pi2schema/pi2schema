@@ -8,7 +8,8 @@ import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer;
 
 import java.nio.ByteBuffer;
 
-final public class DeepCopier {
+public final class DeepCopier {
+
     private final Kryo kryo;
 
     public DeepCopier() {
@@ -31,6 +32,7 @@ final public class DeepCopier {
     }
 
     final class ByteBufferSerializer extends Serializer<ByteBuffer> {
+
         @Override
         public void write(Kryo kryo, Output output, ByteBuffer buffer) {
             output.writeInt(buffer.capacity());
