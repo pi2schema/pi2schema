@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class AvroPersonalMetadata<T extends SpecificRecordBase> implements PersonalMetadata<T> {
+
     private final List<AvroUnionPersonalDataFieldDefinition> personalDataFields;
     private final DeepCopier copier;
 
@@ -26,9 +27,9 @@ public class AvroPersonalMetadata<T extends SpecificRecordBase> implements Perso
     public T swapToEncrypted(Encryptor encryptor, T decryptedInstance) {
         var encryptingInstance = copier.copy(decryptedInstance);
         var futures = personalDataFields
-                .parallelStream()
-                .map(field -> field.swapToEncrypted(encryptor, encryptingInstance))
-                .toArray(CompletableFuture[]::new);
+            .parallelStream()
+            .map(field -> field.swapToEncrypted(encryptor, encryptingInstance))
+            .toArray(CompletableFuture[]::new);
         CompletableFuture.allOf(futures).join();
 
         return encryptingInstance;
@@ -38,9 +39,9 @@ public class AvroPersonalMetadata<T extends SpecificRecordBase> implements Perso
     public T swapToDecrypted(Decryptor decryptor, T decryptedInstance) {
         var decryptingInstance = copier.copy(decryptedInstance);
         var futures = personalDataFields
-                .stream()
-                .map(field -> field.swapToDecrypted(decryptor, decryptingInstance))
-                .toArray(CompletableFuture[]::new);
+            .parallelStream()
+            .map(field -> field.swapToDecrypted(decryptor, decryptingInstance))
+            .toArray(CompletableFuture[]::new);
         CompletableFuture.allOf(futures).join();
 
         return decryptingInstance;
