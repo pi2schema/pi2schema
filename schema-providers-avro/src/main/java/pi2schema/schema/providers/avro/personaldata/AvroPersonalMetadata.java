@@ -11,9 +11,11 @@ import java.util.concurrent.CompletableFuture;
 public class AvroPersonalMetadata<T extends SpecificRecordBase> implements PersonalMetadata<T> {
 
     private final List<AvroUnionPersonalDataFieldDefinition> personalDataFields;
+    private final DeepCopier copier;
 
     public AvroPersonalMetadata(List<AvroUnionPersonalDataFieldDefinition> personalDataFields) {
         this.personalDataFields = personalDataFields;
+        this.copier = new DeepCopier();
     }
 
     @Override
@@ -23,27 +25,25 @@ public class AvroPersonalMetadata<T extends SpecificRecordBase> implements Perso
 
     @Override
     public T swapToEncrypted(Encryptor encryptor, T decryptedInstance) {
-        var encryptingBuilder = decryptedInstance; //TODO to builder/clone
-        var encrypted = personalDataFields
+        var encryptingInstance = copier.copy(decryptedInstance);
+        var futures = personalDataFields
             .parallelStream()
-            .map(field -> field.swapToEncrypted(encryptor, decryptedInstance));
+            .map(field -> field.swapToEncrypted(encryptor, encryptingInstance))
+            .toArray(CompletableFuture[]::new);
+        CompletableFuture.allOf(futures).join();
 
-        return CompletableFuture
-            .allOf(encrypted.toArray(CompletableFuture[]::new))
-            .thenApply(__ -> encryptingBuilder)
-            .join();
+        return encryptingInstance;
     }
 
     @Override
     public T swapToDecrypted(Decryptor decryptor, T decryptedInstance) {
-        var decryptingBuilder = decryptedInstance; //TODO: find a way toBuilder()
-        var decrypted = personalDataFields
+        var decryptingInstance = copier.copy(decryptedInstance);
+        var futures = personalDataFields
             .parallelStream()
-            .map(field -> field.swapToDecrypted(decryptor, decryptedInstance));
+            .map(field -> field.swapToDecrypted(decryptor, decryptingInstance))
+            .toArray(CompletableFuture[]::new);
+        CompletableFuture.allOf(futures).join();
 
-        return (T) CompletableFuture
-            .allOf(decrypted.toArray(CompletableFuture[]::new))
-            .thenApply(__ -> decryptingBuilder)
-            .join();
+        return decryptingInstance;
     }
 }
