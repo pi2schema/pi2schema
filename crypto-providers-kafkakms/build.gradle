@@ -41,7 +41,7 @@ dependencies {
     implementation project(':crypto-spi')
 
     implementation 'org.apache.kafka:kafka-streams:3.2.3'
-    implementation 'io.confluent:kafka-streams-protobuf-serde:7.5.8'
+    implementation 'io.confluent:kafka-streams-protobuf-serde:7.5.9'
 
     implementation "com.google.protobuf:protobuf-java:${rootProject.ext.versions.protobufJava}"
 
