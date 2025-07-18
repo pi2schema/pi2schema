@@ -1,7 +1,9 @@
 package com.acme.sample
 
-import com.acme.FarmerRegisteredEvent
+import com.acme.CourierLocationEvent
 import org.apache.kafka.clients.admin.NewTopic
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
@@ -16,46 +18,47 @@ import reactor.core.publisher.Mono
 import java.util.*
 
 @Configuration
-@Profile("registration")
-class ApplicationRouter(private val handler: FarmerRegistrationHandler) {
+@Profile("geoLocation")
+class ApplicationRouter(private val handler: CourierLocationHandler) {
 
     @Bean
-    fun registrationRouter(): RouterFunction<ServerResponse> = router {
+    fun geoLocationRouter(): RouterFunction<ServerResponse> = router {
         POST(
-                "/api/v1/farmers",
+                "/api/v1/geoLocation",
                 accept(MediaType.APPLICATION_JSON),
-                handler::register
+                handler::geoLocation
         )
     }
 }
 
 
-data class FarmerRegistrationRequest(
+data class CourierLocationRequest(
         val name: String,
-        val email: String,
-        val phone: String)
+        val geoLocation: String)
 
 
 @Component
-@Profile("registration")
-class FarmerRegistrationHandler(
-    private val kafkaTemplate: KafkaTemplate<String, FarmerRegisteredEvent>,
-    private val farmerTopic: NewTopic) {
+@Profile("geoLocation")
+class CourierLocationHandler(
+    private val kafkaTemplate: KafkaTemplate<String, CourierLocationEvent>,
+    private val geoLocationTopic: NewTopic) {
 
-    fun register(request: ServerRequest): Mono<ServerResponse> {
+    val log: Logger = LoggerFactory.getLogger(PreProcessorListener::class.java)
 
-        return request.bodyToMono(FarmerRegistrationRequest::class.java)
+    fun geoLocation(request: ServerRequest): Mono<ServerResponse> {
+
+        return request.bodyToMono(CourierLocationRequest::class.java)
                 .map { command ->
-                    FarmerRegisteredEvent.newBuilder()
-                            .setUuid(UUID.randomUUID().toString())
+                    CourierLocationEvent.newBuilder()
+                            .setCourierId(Random().nextInt(99999).toString())
                             .setName(command.name)
-                            .setPhone(command.phone)
-                            .setEmail(command.email)
+                            .setGeoLocation(command.geoLocation)
                             .build()
                 }
+                .doOnNext { event -> log.info("Publishing event {}", event)}
                 .flatMap { event ->
                     Mono.fromFuture(
-                            kafkaTemplate.send(farmerTopic.name(), event.uuid, event)
+                            kafkaTemplate.send(geoLocationTopic.name(), event.courierId, event)
                     )
                 }
                 .flatMap {
