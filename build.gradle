@@ -26,7 +26,8 @@ ext {
             protobufJava: '3.25.1',
             protoc: '3.25.1',
             protobufGradlePlugin: protobufGradlePluginVersion,
-            junitJupiter: '5.10.5'
+            junitJupiter: '5.10.5',
+            confluent: '7.5.8'
     ]
 }
 

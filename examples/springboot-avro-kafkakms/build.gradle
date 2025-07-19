@@ -21,7 +21,7 @@ dependencies {
 	implementation(project(":schema-providers-avro"))
 	implementation(project(":serialization-adapters-kafka"))
 
-	implementation("io.confluent:kafka-avro-serializer:7.5.9")
+	implementation("io.confluent:kafka-avro-serializer:${rootProject.ext.versions.confluent}")
 	implementation 'org.apache.avro:avro:1.11.4'
 	implementation("org.springframework.boot:spring-boot-starter-webflux")
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")

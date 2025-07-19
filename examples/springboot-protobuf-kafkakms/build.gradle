@@ -36,7 +36,7 @@ dependencies {
 
 	implementation("com.google.protobuf:protobuf-java:${rootProject.ext.versions.protobufJava}")
 
-	implementation("io.confluent:kafka-protobuf-serializer:7.5.9")
+	implementation("io.confluent:kafka-protobuf-serializer:${rootProject.ext.versions.confluent}")
 
 	implementation("org.springframework.boot:spring-boot-starter-webflux")
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
