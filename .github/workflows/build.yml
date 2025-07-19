@@ -34,6 +34,14 @@ jobs:
     - name: Build with Gradle
       run: ./gradlew --continue build --parallel
 
+    - name: Upload test results and reports as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-and-reports
+        path: |
+          **/build/test-results/gi
+          **/build/reports/
+
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
       with:
