@@ -35,11 +35,12 @@ jobs:
       run: ./gradlew --continue build --parallel
 
     - name: Upload test results and reports as artifact
+      if: ${{ always() }}
       uses: actions/upload-artifact@v4
       with:
         name: test-results-and-reports
         path: |
-          **/build/test-results/gi
+          **/build/test-results/
           **/build/reports/
 
     - name: Upload coverage to Codecov
