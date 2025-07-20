@@ -52,6 +52,8 @@ class KafkaSecretKeyStoreTest {
 
     @Test
     void getOrCreate() {
+        await().atMost(Duration.ofSeconds(20)).until(() -> store.isRunning());
+
         var subject = UUID.randomUUID().toString();
 
         // create
