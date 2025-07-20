@@ -44,6 +44,14 @@ public class KafkaSecretKeyStore implements Closeable {
 
     private final KafkaProducer<Subject, Commands> commandProducer;
 
+    /**
+     * Initializes a KafkaSecretKeyStore with the provided key generator and configuration.
+     *
+     * Sets up the Kafka producer, configures and starts the Kafka Streams topology, and prepares access to the global cryptographic material store.
+     *
+     * @param keyGenerator the key generator used for creating cryptographic materials
+     * @param originalConfigs configuration properties for Kafka Streams and producer setup
+     */
     public KafkaSecretKeyStore(KeyGenerator keyGenerator, Map<String, ?> originalConfigs) {
         var configs = new HashMap<String, Object>(originalConfigs);
         configs.remove(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG);
@@ -68,10 +76,21 @@ public class KafkaSecretKeyStore implements Closeable {
                 );
     }
 
+    /**
+     * Returns whether the Kafka Streams instance is currently running or rebalancing.
+     *
+     * @return true if the Kafka Streams state is running or rebalancing; false otherwise
+     */
     boolean isRunning() {
         return streams.state().isRunningOrRebalancing();
     }
 
+    /**
+     * Retrieves the cryptographic material aggregate for the specified subject ID, or creates new materials if none exist.
+     *
+     * @param subjectId the unique identifier of the subject
+     * @return a CompletableFuture containing the subject's cryptographic material aggregate
+     */
     CompletableFuture<SubjectCryptographicMaterialAggregate> retrieveOrCreateCryptoMaterialsFor(
         @NotNull String subjectId
     ) {
