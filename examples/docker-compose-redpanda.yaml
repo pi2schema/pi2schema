@@ -6,7 +6,7 @@ networks:
 
 services:
   redpanda:
-    image: docker.redpanda.com/redpandadata/redpanda:v23.2.14
+    image: docker.redpanda.com/redpandadata/redpanda:v24.3.18
     command:
       - redpanda start
       - --smp 1
