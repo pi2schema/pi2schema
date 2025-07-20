@@ -68,6 +68,10 @@ public class KafkaSecretKeyStore implements Closeable {
                 );
     }
 
+    boolean isRunning() {
+        return streams.state().isRunningOrRebalancing();
+    }
+
     CompletableFuture<SubjectCryptographicMaterialAggregate> retrieveOrCreateCryptoMaterialsFor(
         @NotNull String subjectId
     ) {
