@@ -118,6 +118,12 @@ public class KafkaJsonSchemaProvider implements JsonSchemaProvider {
      * Convert Confluent ParsedSchema to Everit Schema for consistency with JsonSchemaProvider interface
      */
     private Schema convertToEveritSchema(ParsedSchema parsedSchema) {
-        return (Schema) parsedSchema.rawSchema();
+        Object rawSchema = parsedSchema.rawSchema();
+        if (rawSchema instanceof Schema) {
+            return (Schema) rawSchema;
+        }
+        throw new IllegalStateException(
+            "Expected Everit Schema but got: " +
+            (rawSchema != null ? rawSchema.getClass().getName() : "null")
+        );
     }
-}
