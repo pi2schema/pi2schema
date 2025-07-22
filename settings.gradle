@@ -1,14 +1,11 @@
 rootProject.name = 'pi2schema'
-
 include 'crypto-spi'
 include 'crypto-providers-kafkakms'
 include 'crypto-providers-vault'
-
 include 'schema-spi'
 include 'schema-providers-protobuf'
 include 'schema-providers-avro'
-
+include 'schema-providers-jsonschema'
 include 'serialization-adapters-kafka'
-
 include 'examples:springboot-protobuf-kafkakms'
 include 'examples:springboot-avro-kafkakms'

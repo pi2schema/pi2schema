@@ -47,6 +47,8 @@ This specification defines the requirements for implementing a JSON Schema provi
 - **REQ-007**: The provider SHALL identify subject identifier fields through custom JSON Schema extensions
 - **REQ-008**: The provider SHALL support encryption/decryption operations on identified PII fields
 - **REQ-009**: The provider SHALL maintain compatibility with Kafka serialization adapters
+- **REQ-010**: The provider SHALL implement `JsonSchemaProvider` interface for schema discovery
+- **REQ-011**: The provider SHALL support schema discovery via `SchemaProvider<JsonSchema>` SPI interface
 
 ### Security Requirements
 
