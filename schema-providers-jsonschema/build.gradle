@@ -1,0 +1,27 @@
+plugins {
+    id 'java-test-fixtures'
+}
+
+// remove auto generated proto classes used for the serialization persistence.
+spotbugs {
+    onlyAnalyze = ['pi2schema.schema.providers.jsonschema.*']
+}
+
+dependencies {
+    implementation project(':crypto-spi')
+    implementation project(':schema-spi')
+    
+    // JSON processing dependencies
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.18.2'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.18.2'
+    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.18.2'
+    
+    // JSON Schema validation
+    implementation 'com.github.erosb:everit-json-schema:1.14.4'
+    
+    // Testing dependencies
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
+    testImplementation 'org.assertj:assertj-core:3.25.3'
+    testImplementation 'org.mockito:mockito-core:5.14.2'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.14.2'
+}
