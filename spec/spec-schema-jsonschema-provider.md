@@ -1,8 +1,8 @@
 ---
 title: JSON Schema Provider Implementation for PII Data Handling
-version: 1.0
+version: 1.1
 date_created: 2025-07-20
-last_updated: 2025-07-20
+last_updated: 2025-07-23
 owner: pi2schema
 tags: [schema, json-schema, pii, encryption, provider, infrastructure]
 ---
@@ -42,7 +42,7 @@ This specification defines the requirements for implementing a JSON Schema provi
 - **REQ-002**: The provider SHALL implement `PersonalDataFieldDefinition<T>` interface  
 - **REQ-003**: The provider SHALL implement `SubjectIdentifierFinder<T>` interface
 - **REQ-004**: The provider SHALL implement `SubjectIdentifierFieldDefinition<T>` interface
-- **REQ-005**: The provider SHALL support JSON objects as the primary data structure
+- **REQ-005**: The provider SHALL support any business object as the primary data structure
 - **REQ-006**: The provider SHALL identify PII fields through custom JSON Schema extensions
 - **REQ-007**: The provider SHALL identify subject identifier fields through custom JSON Schema extensions
 - **REQ-008**: The provider SHALL support encryption/decryption operations on identified PII fields
@@ -75,15 +75,15 @@ This specification defines the requirements for implementing a JSON Schema provi
 - **GUD-001**: Use JSON Schema custom extensions for metadata annotation
 - **GUD-002**: Follow the existing package structure pattern: `pi2schema.schema.providers.jsonschema`
 - **GUD-003**: Implement caching for parsed schema metadata
-- **GUD-004**: Use Jackson or similar JSON processing library for object manipulation
+- **GUD-004**: Use Jackson or similar JSON processing library for business object to JSON conversion
 - **GUD-005**: Provide clear error messages for schema validation failures
 
 ### Implementation Patterns
 
 - **PAT-001**: Use `oneOf` or `anyOf` patterns to define encrypted/plaintext field variants
 - **PAT-002**: Follow the sibling subject identifier finder pattern from Avro implementation
-- **PAT-003**: Implement deep copying for object mutation during encryption/decryption
-- **PAT-004**: Use reflection or object mapping for dynamic field access
+- **PAT-003**: Implement deep copying for business object mutation during encryption/decryption
+- **PAT-004**: Use Jackson ObjectMapper for business object to JSON conversion and field access
 
 ## 4. Interfaces & Data Contracts
 
@@ -143,20 +143,21 @@ public class JsonSchemaPersonalMetadataProvider<T> implements PersonalMetadataPr
 
 #### PersonalDataFieldDefinition Implementation
 ```java
-public class JsonSchemaPersonalDataFieldDefinition implements PersonalDataFieldDefinition<Map<String, Object>> {
-    CompletableFuture<Void> swapToEncrypted(Encryptor encryptor, Map<String, Object> buildingInstance);
-    CompletableFuture<Void> swapToDecrypted(Decryptor decryptor, Map<String, Object> decryptingInstance);
-    ByteBuffer valueFrom(Map<String, Object> instance);
+public class JsonSchemaPersonalDataFieldDefinition<T> implements PersonalDataFieldDefinition<T> {
+    CompletableFuture<Void> swapToEncrypted(Encryptor encryptor, T buildingInstance);
+    CompletableFuture<Void> swapToDecrypted(Decryptor decryptor, T decryptingInstance);
+    ByteBuffer valueFrom(T instance);
 }
 ```
 
 ### Data Structure Contracts
 
 #### Input Object Format
-- SHALL accept `Map<String, Object>` representing JSON objects
-- SHALL support nested object structures
-- SHALL handle array fields containing PII data
+- SHALL accept any business object type as input
+- SHALL support conversion to/from JSON representation internally
+- SHALL support simple field access (top-level fields only in initial version)
 - SHALL preserve non-PII fields unchanged
+- **Note**: While internally JSON objects may be represented as `Map<String, Object>`, the provider accepts any business object type
 
 #### Encrypted Data Format
 - SHALL use the same `EncryptedPersonalData` structure as Avro/Protobuf providers
@@ -211,7 +212,7 @@ public class JsonSchemaPersonalDataFieldDefinition implements PersonalDataFieldD
 
 **oneOf Pattern**: Using `oneOf` to define encrypted/plaintext variants allows the same field to exist in either state while maintaining schema validation. This pattern aligns with the union approach used in Avro.
 
-**Map-based Object Representation**: Using `Map<String, Object>` provides flexibility for dynamic field access while maintaining compatibility with JSON processing libraries.
+**Map-based Object Representation**: Using any business object type provides maximum flexibility while internally converting to JSON representation for processing. This maintains compatibility with JSON processing libraries and allows for type-safe business object usage.
 
 **Sibling Subject Identifier Strategy**: Following the same strategy as Avro ensures consistency across providers and leverages proven patterns.
 
@@ -269,20 +270,36 @@ String schema = """
 }
 """;
 
-// Usage in code
-var provider = new JsonSchemaPersonalMetadataProvider<Map<String, Object>>();
-var userData = Map.of(
-    "userId", "user-123",
-    "email", "john@example.com"
-);
+// Usage with business object
+public class UserData {
+    private String userId;
+    private String email;
+    
+    public UserData() {}
+    public UserData(String userId, String email) {
+        this.userId = userId;
+        this.email = email;
+    }
+    // getters/setters...
+}
 
-var metadata = provider.forType(userData);
+var provider = new JsonSchemaPersonalMetadataProvider<UserData>();
+var userData = new UserData("user-123", "john@example.com");
+
+var metadata = provider.forSchema(schema);
 var encryptedData = metadata.swapToEncrypted(encryptor, userData);
+
+// Alternative usage with Map (for dynamic scenarios)
+var mapProvider = new JsonSchemaPersonalMetadataProvider<Map<String, Object>>();
+var userMap = Map.of("userId", "user-123", "email", "john@example.com");
+
+var mapMetadata = mapProvider.forSchema(schema);
+var encryptedMap = mapMetadata.swapToEncrypted(encryptor, userMap);
 ```
 
 ### Edge Cases
 
-#### Nested Object Handling
+#### Nested Object Handling (Future Enhancement)
 ```json
 {
   "type": "object",
@@ -307,23 +324,35 @@ var encryptedData = metadata.swapToEncrypted(encryptor, userData);
 }
 ```
 
-#### Array Field Handling
+**Note**: Nested object handling is not implemented in the initial version. The focus is on simple top-level field encryption only.
+
+#### UnionType Field Handling (Future Enhancement)
 ```json
 {
   "type": "object",
   "properties": {
     "contacts": {
-      "type": "array",
-      "items": {
-        "oneOf": [
-          {"type": "string", "pi2schema-personal-data": true},
-          {"$ref": "#/$defs/EncryptedPersonalData"}
-        ]
-      }
+      "oneOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pi2schema-personal-data": true
+          }
+        },
+        {
+          "type": "array", 
+          "items": {
+            "$ref": "#/$defs/EncryptedPersonalData"
+          }
+        }
+      ]
     }
   }
 }
 ```
+
+**Note**: Array/Union type handling is not implemented in the initial version. The focus is on simple field-level PII encryption using `PersonalDataFieldDefinition` only.
 
 #### Multiple Subject Identifiers (Error Case)
 ```java

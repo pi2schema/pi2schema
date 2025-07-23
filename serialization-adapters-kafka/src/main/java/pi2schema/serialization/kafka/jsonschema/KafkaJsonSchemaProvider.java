@@ -1,12 +1,13 @@
 package pi2schema.serialization.kafka.jsonschema;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.confluent.kafka.schemaregistry.ParsedSchema;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
 import io.confluent.kafka.schemaregistry.json.JsonSchema;
 import io.confluent.kafka.schemaregistry.json.JsonSchemaUtils;
 import io.confluent.kafka.serializers.subject.strategy.SubjectNameStrategy;
-import org.everit.json.schema.Schema;
 import pi2schema.schema.providers.jsonschema.JsonSchemaProvider;
 
 import java.io.IOException;
@@ -24,6 +25,7 @@ public class KafkaJsonSchemaProvider implements JsonSchemaProvider {
     private final SubjectNameStrategy subjectNameStrategy;
     private final String topic;
     private final boolean isKey;
+    private final ObjectMapper objectMapper;
 
     public KafkaJsonSchemaProvider(
         SchemaRegistryClient schemaRegistryClient,
@@ -35,10 +37,11 @@ public class KafkaJsonSchemaProvider implements JsonSchemaProvider {
         this.topic = Objects.requireNonNull(topic, "topic cannot be null");
         this.isKey = isKey;
         this.subjectNameStrategy = Objects.requireNonNull(subjectNameStrategy, "subjectNameStrategy cannot be null");
+        this.objectMapper = new ObjectMapper();
     }
 
     @Override
-    public Schema schemaFor(Object businessObject, Supplier<Optional<Integer>> schemaIdSupplier) {
+    public JsonNode schemaFor(Object businessObject, Supplier<Optional<Integer>> schemaIdSupplier) {
         // Consumer case: schema ID is provided (retrieved from payload headers)
         if (schemaIdSupplier != null) {
             Optional<Integer> schemaId = schemaIdSupplier.get();
@@ -54,10 +57,10 @@ public class KafkaJsonSchemaProvider implements JsonSchemaProvider {
     /**
      * Consumer case: retrieve schema by ID from Schema Registry
      */
-    private Schema getSchemaById(Integer schemaId) {
+    private JsonNode getSchemaById(Integer schemaId) {
         try {
             var schemaMetadata = schemaRegistryClient.getSchemaById(schemaId);
-            return convertToEveritSchema(schemaMetadata);
+            return convertToJsonNode(schemaMetadata);
         } catch (IOException | RestClientException e) {
             throw new RuntimeException("Failed to retrieve schema with ID " + schemaId + " from Schema Registry", e);
         }
@@ -66,7 +69,7 @@ public class KafkaJsonSchemaProvider implements JsonSchemaProvider {
     /**
      * Producer case: discover schema for business object using Confluent patterns
      */
-    private Schema discoverSchemaForProducer(Object businessObject) {
+    private JsonNode discoverSchemaForProducer(Object businessObject) {
         try {
             // Use Confluent's JsonSchemaUtils to create schema from business object
             JsonSchema jsonSchema = JsonSchemaUtils.getSchema(businessObject);
@@ -115,15 +118,14 @@ public class KafkaJsonSchemaProvider implements JsonSchemaProvider {
     }
 
     /**
-     * Convert Confluent ParsedSchema to Everit Schema for consistency with JsonSchemaProvider interface
+     * Convert Confluent ParsedSchema to JsonNode for consistency with JsonSchemaProvider interface
      */
-    private Schema convertToEveritSchema(ParsedSchema parsedSchema) {
-        Object rawSchema = parsedSchema.rawSchema();
-        if (rawSchema instanceof Schema) {
-            return (Schema) rawSchema;
+    private JsonNode convertToJsonNode(ParsedSchema parsedSchema) {
+        try {
+            String schemaString = parsedSchema.canonicalString();
+            return objectMapper.readTree(schemaString);
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to convert schema to JsonNode: " + parsedSchema.schemaType(), e);
         }
-        throw new IllegalStateException(
-            "Expected Everit Schema but got: " +
-            (rawSchema != null ? rawSchema.getClass().getName() : "null")
-        );
     }
+}
