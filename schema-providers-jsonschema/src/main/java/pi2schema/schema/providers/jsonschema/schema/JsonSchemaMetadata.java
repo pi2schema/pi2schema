@@ -1,7 +1,6 @@
 package pi2schema.schema.providers.jsonschema.schema;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.everit.json.schema.Schema;
 
 import java.util.List;
 
@@ -11,25 +10,18 @@ import java.util.List;
  */
 public class JsonSchemaMetadata {
 
-    private final Schema schema;
     private final JsonNode schemaNode;
     private final List<String> subjectIdentifierFields;
     private final List<JsonPiiFieldInfo> piiFields;
 
     public JsonSchemaMetadata(
-        Schema schema,
         JsonNode schemaNode,
         List<String> subjectIdentifierFields,
         List<JsonPiiFieldInfo> piiFields
     ) {
-        this.schema = schema;
         this.schemaNode = schemaNode;
         this.subjectIdentifierFields = List.copyOf(subjectIdentifierFields);
         this.piiFields = List.copyOf(piiFields);
-    }
-
-    public Schema getSchema() {
-        return schema;
     }
 
     public JsonNode getSchemaNode() {

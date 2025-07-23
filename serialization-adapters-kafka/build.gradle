@@ -9,7 +9,6 @@ dependencies {
     implementation "io.confluent:kafka-schema-registry-client:${rootProject.ext.versions.confluent}"
     implementation "io.confluent:kafka-json-schema-provider:${rootProject.ext.versions.confluent}"
     implementation "io.confluent:kafka-schema-serializer:${rootProject.ext.versions.confluent}"
-    implementation 'com.github.erosb:everit-json-schema:1.14.4'
 
     testImplementation "org.testcontainers:testcontainers:1.20.6"
     testImplementation "org.testcontainers:junit-jupiter:1.20.6"

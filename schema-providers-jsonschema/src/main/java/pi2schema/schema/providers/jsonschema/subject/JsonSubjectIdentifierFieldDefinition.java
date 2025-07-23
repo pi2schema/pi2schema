@@ -1,26 +1,38 @@
 package pi2schema.schema.providers.jsonschema.subject;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import pi2schema.schema.subject.SubjectIdentifierFieldDefinition;
 
 import java.util.Map;
 
 /**
  * Implementation of SubjectIdentifierFieldDefinition for JSON Schema.
- * Extracts subject identifier values from JSON objects.
+ * Extracts subject identifier values from business objects.
  */
-public class JsonSubjectIdentifierFieldDefinition implements SubjectIdentifierFieldDefinition<Map<String, Object>> {
+public class JsonSubjectIdentifierFieldDefinition<T> implements SubjectIdentifierFieldDefinition<T> {
 
     public static final String SUBJECT_IDENTIFIER_EXTENSION = "pi2schema-subject-identifier";
 
     private final String fieldPath;
+    private final ObjectMapper objectMapper;
 
     public JsonSubjectIdentifierFieldDefinition(String fieldPath) {
         this.fieldPath = fieldPath;
+        this.objectMapper = new ObjectMapper();
+    }
+
+    public JsonSubjectIdentifierFieldDefinition(String fieldPath, ObjectMapper objectMapper) {
+        this.fieldPath = fieldPath;
+        this.objectMapper = objectMapper;
     }
 
     @Override
-    public String subjectFrom(Map<String, Object> instance) {
-        Object value = getNestedValue(instance, fieldPath);
+    public String subjectFrom(T instance) {
+        // Convert business object to Map for field access
+        @SuppressWarnings("unchecked")
+        Map<String, Object> objectMap = objectMapper.convertValue(instance, Map.class);
+
+        Object value = getNestedValue(objectMap, fieldPath);
         if (value == null) {
             throw new IllegalArgumentException("Subject identifier field '" + fieldPath + "' is null or missing");
         }
