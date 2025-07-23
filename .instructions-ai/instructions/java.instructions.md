@@ -1,12 +1,14 @@
-[//]: #instructions-ai.sh source:https://github.com/github/awesome-copilot/blob/main/instructions/java.instructions.md version:1ba5cc7
+[//]: #instructions-ai.sh source:<https://github.com/github/awesome-copilot/blob/main/instructions/java.instructions.md> version:1ba5cc7
 ---
 description: 'Guidelines for building Java base applications'
 applyTo: '**/*.java'
 ---
 
-# Java Development
+Java Development
+================
 
-## General Instructions
+General Instructions
+--------------------
 
 - First, prompt the user if they want to integrate static analysis tools (SonarQube, PMD, Checkstyle)
   into their project setup. If yes, provide guidance on tool selection and configuration.
@@ -15,7 +17,8 @@ applyTo: '**/*.java'
 - Focus on readability, maintainability, and performance when refactoring identified issues.
 - Use IDE / Code editor reported warnings and suggestions to catch common patterns early in development.
 
-## Best practices
+Best practices
+--------------
 
 - **Records**: For classes primarily intended to store data (e.g., DTOs, immutable data structures), **Java Records should be used instead of traditional classes**.
 - **Pattern Matching**: Utilize pattern matching for `instanceof` and `switch` expression to simplify conditional logic and type casting.
@@ -24,7 +27,8 @@ applyTo: '**/*.java'
 - **Streams and Lambdas**: Use the Streams API and lambda expressions for collection processing. Employ method references (e.g., `stream.map(Foo::toBar)`).
 - **Null Handling**: Avoid returning or accepting `null`. Use `Optional<T>` for possibly-absent values and `Objects` utility methods like `equals()` and `requireNonNull()`.
 
-### Naming Conventions
+Naming Conventions
+------------------
 
 - Follow Google's Java style guide:
   - `UpperCamelCase` for class and interface names.
@@ -34,17 +38,19 @@ applyTo: '**/*.java'
 - Use nouns for classes (`UserService`) and verbs for methods (`getUserById`).
 - Avoid abbreviations and Hungarian notation.
 
-### Bug Patterns
+Bug Patterns
+------------
 
 | Rule ID | Description                                                 | Example / Notes                                                                                  |
 | ------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | `S2095` | Resources should be closed                                  | Use try-with-resources when working with streams, files, sockets, etc.                           |
 | `S1698` | Objects should be compared with `.equals()` instead of `==` | Especially important for Strings and boxed primitives.                                           |
 | `S1905` | Redundant casts should be removed                           | Clean up unnecessary or unsafe casts.                                                            |
-| `S3518` | Conditions should not always evaluate to true or false      | Watch for infinite loops or if-conditions that never change.                                     |
+| `S3516` | Conditions should not always evaluate to true or false      | Watch for infinite loops or if-conditions that never change.                                     |
 | `S108`  | Unreachable code should be removed                          | Code after `return`, `throw`, etc., must be cleaned up.                                          |
 
-## Code Smells
+Code Smells
+-----------
 
 | Rule ID | Description                                            | Example / Notes                                                               |
 | ------- | ------------------------------------------------------ | ----------------------------------------------------------------------------- |
@@ -57,7 +63,8 @@ applyTo: '**/*.java'
 | `S109`  | Magic numbers should be replaced with constants        | Improves readability and maintainability.                                     |
 | `S1188` | Catch blocks should not be empty                       | Always log or handle exceptions meaningfully.                                 |
 
-## Build and Verification
+Build and Verification
+----------------------
 
 - After adding or modifying code, verify the project continues to build successfully.
 - If the project uses Maven, run `mvn clean install`.
