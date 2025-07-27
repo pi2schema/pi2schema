@@ -1,35 +1,29 @@
 package pi2schema.schema.providers.jsonschema.subject;
 
-import pi2schema.schema.providers.jsonschema.schema.JsonSchemaMetadata;
-import pi2schema.schema.subject.SubjectIdentifierFieldDefinition;
+import pi2schema.schema.providers.jsonschema.json.JsonField;
+import pi2schema.schema.subject.SubjectIdentifierFinder;
 import pi2schema.schema.subject.SubjectIdentifierNotFoundException;
-import pi2schema.schema.subject.TooManySubjectIdentifiersException;
 
-import java.util.List;
+import static pi2schema.schema.providers.jsonschema.subject.JsonSubjectIdentifierFieldDefinition.isSubjectIdentifier;
 
 /**
- * Finds subject identifier fields in JSON Schema metadata.
- * Follows the sibling pattern used in Avro implementation.
+ * Finds subject identifier in the sibling fields of a JSON Schema property.
  */
-public class JsonSiblingSubjectIdentifierFinder<T> {
+public class JsonSiblingSubjectIdentifierFinder implements SubjectIdentifierFinder<JsonField> {
 
-    /**
-     * Finds subject identifier field definition from schema metadata and field path.
-     */
-    public SubjectIdentifierFieldDefinition<T> find(JsonSchemaMetadata metadata, String fieldPath) {
-        List<String> subjectIdentifierFields = metadata.getSubjectIdentifierFields();
-
-        if (subjectIdentifierFields.isEmpty()) {
-            throw new SubjectIdentifierNotFoundException(JsonSiblingSubjectIdentifierFinder.class, fieldPath);
-        } else if (subjectIdentifierFields.size() > 1) {
-            throw new TooManySubjectIdentifiersException(
-                JsonSiblingSubjectIdentifierFinder.class,
-                fieldPath,
-                subjectIdentifierFields.size()
+    @Override
+    public JsonSubjectIdentifierFieldDefinition find(JsonField field) {
+        return field
+            .parent()
+            .properties()
+            .stream()
+            .filter(e -> isSubjectIdentifier(e.getValue()))
+            .map(field::child)
+            .map(JsonField::absolutPath)
+            .findFirst()
+            .map(JsonSubjectIdentifierFieldDefinition::new)
+            .orElseThrow(() ->
+                new SubjectIdentifierNotFoundException(JsonSiblingSubjectIdentifierFinder.class, field.absolutPath())
             );
-        }
-
-        String subjectIdentifierField = subjectIdentifierFields.get(0);
-        return new JsonSubjectIdentifierFieldDefinition<>(subjectIdentifierField);
     }
 }

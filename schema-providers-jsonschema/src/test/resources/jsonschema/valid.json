@@ -1,0 +1,16 @@
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "pi2schema-subject-identifier": true
+    },
+    "name": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string",
+      "pi2schema-personal-data": true
+    }
+  }
+}
