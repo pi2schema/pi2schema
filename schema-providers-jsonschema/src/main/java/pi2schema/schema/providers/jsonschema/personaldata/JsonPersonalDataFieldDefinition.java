@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import pi2schema.crypto.Decryptor;
 import pi2schema.crypto.Encryptor;
 import pi2schema.schema.personaldata.PersonalDataFieldDefinition;
+import pi2schema.schema.providers.jsonschema.subject.JsonSubjectIdentifierFieldDefinition;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
@@ -20,10 +21,15 @@ public class JsonPersonalDataFieldDefinition<T> implements PersonalDataFieldDefi
 
     private final String fieldPath;
     private final JsonNode fieldSchema;
+    private final JsonSubjectIdentifierFieldDefinition subjectIdentifier;
 
-    public JsonPersonalDataFieldDefinition(String fieldPath, JsonNode fieldSchema) {
+    public JsonPersonalDataFieldDefinition(
+        String fieldPath,
+        JsonSubjectIdentifierFieldDefinition jsonSubjectIdentifierFieldDefinition
+    ) {
         this.fieldPath = fieldPath;
-        this.fieldSchema = fieldSchema;
+        this.fieldSchema = null;
+        this.subjectIdentifier = jsonSubjectIdentifierFieldDefinition;
     }
 
     static boolean hasPersonalData(JsonNode field) {
