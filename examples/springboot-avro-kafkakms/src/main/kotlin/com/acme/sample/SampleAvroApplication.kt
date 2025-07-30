@@ -15,8 +15,8 @@ fun main(args: Array<String>) {
 class SampleAvroApplication {
 
     @Bean
-    fun farmerTopic(): NewTopic = NewTopic(
-            "farmer",
+    fun geoLocationTopic(): NewTopic = NewTopic(
+            "geoLocation",
             3,
             1)
 
