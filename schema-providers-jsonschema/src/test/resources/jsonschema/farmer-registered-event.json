@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://acme.com/schemas/farmer_registered_event.json",
+  "title": "FarmerRegisteredEvent",
+  "type": "object",
+  "properties": {
+    "uuid": {
+      "type": "string",
+      "description": "Unique identifier",
+      "pi2schema-subject-identifier": true
+    },
+    "name": {
+      "type": "string"
+    },
+    "phoneNumber": {
+      "type": "string",
+      "pi2schema-personal-data": true
+    },
+    "email": {
+      "type": "string",
+      "pi2schema-personal-data": true
+    },
+    "registeredAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "referer": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "uuid",
+    "registeredAt"
+  ]
+}
+
