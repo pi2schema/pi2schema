@@ -23,16 +23,28 @@ This specification defines the requirements for implementing a JSON Schema provi
 - Knowledge of Java cryptographic operations
 - Understanding of Kafka serialization patterns
 
-## 2. Definitions
+## Terminology
 
-- **JSON Schema**: A vocabulary that allows annotation and validation of JSON documents
-- **PII (Personal Identifiable Information)**: Data that can identify a specific individual
-- **Subject Identifier**: A field that uniquely identifies the data subject (e.g., user ID, email)
-- **Personal Data Field**: A field containing PII that requires encryption
-- **Schema Provider**: Implementation of pi2schema SPI interfaces for a specific schema format
-- **Field Enrichment**: Adding metadata to schema fields to indicate PII handling requirements
-- **oneOf**: JSON Schema keyword that validates against exactly one of the given subschemas
-- **anyOf**: JSON Schema keyword that validates against any of the given subschemas
+The following terms are used throughout this specification:
+
+- **JSON Schema**: A vocabulary that allows you to annotate and validate JSON documents
+- **pi2schema-personal-data**: Custom extension to mark fields containing personal/sensitive data
+- **pi2schema-subject-identifier**: Custom extension to identify the subject of personal data
+- **PersonalDataFieldDefinition**: Core interface for defining personal data fields in schemas
+
+## Scope and Limitations
+
+**Current Implementation Scope:**
+- Top-level field encryption only
+- Simple field-level PII encryption using `PersonalDataFieldDefinition`
+- Direct annotation-based PII marking
+
+**Explicitly Unsupported Features:**
+- oneOf/anyOf patterns for encrypted/plaintext field variants
+- Union types
+- Nested object field encryption
+- Array element encryption
+- Complex schema validation patterns
 
 ## 3. Requirements, Constraints & Guidelines
 
@@ -80,7 +92,7 @@ This specification defines the requirements for implementing a JSON Schema provi
 
 ### Implementation Patterns
 
-- **PAT-001**: Use `oneOf` or `anyOf` patterns to define encrypted/plaintext field variants
+- **PAT-001**: Use direct annotation with `pi2schema-personal-data` extension to mark PII fields
 - **PAT-002**: Follow the sibling subject identifier finder pattern from Avro implementation
 - **PAT-003**: Implement deep copying for business object mutation during encryption/decryption
 - **PAT-004**: Use Jackson ObjectMapper for business object to JSON conversion and field access
@@ -101,35 +113,18 @@ The provider SHALL use custom JSON Schema extensions to identify PII and subject
       "pi2schema-subject-identifier": true
     },
     "email": {
-      "oneOf": [
-        {
-          "type": "string",
-          "pi2schema-personal-data": true
-        },
-        {
-          "$ref": "#/$defs/EncryptedPersonalData"
-        }
-      ]
+      "type": "string",
+      "format": "email",
+      "pi2schema-personal-data": true
     },
     "name": {
       "type": "string"
     }
-  },
-  "$defs": {
-    "EncryptedPersonalData": {
-      "type": "object",
-      "properties": {
-        "subjectId": {"type": "string"},
-        "data": {"type": "string", "format": "base64"},
-        "personalDataFieldNumber": {"type": "string"},
-        "usedTransformation": {"type": "string"},
-        "initializationVector": {"type": "string", "format": "base64"},
-        "kmsId": {"type": "string"}
-      },
-      "required": ["subjectId", "data", "usedTransformation", "initializationVector"]
-    }
   }
 }
+```
+
+**Note**: This simplified implementation supports only direct field annotation. Complex patterns like oneOf/anyOf for encrypted/plaintext variants are not supported.
 ```
 
 ### SPI Interface Implementations
@@ -210,9 +205,11 @@ public class JsonSchemaPersonalDataFieldDefinition<T> implements PersonalDataFie
 
 **JSON Schema Extensions**: Custom extensions provide explicit metadata without altering the core JSON Schema specification. This approach mirrors the annotation-based strategies used in Avro and Protobuf implementations.
 
-**oneOf Pattern**: Using `oneOf` to define encrypted/plaintext variants allows the same field to exist in either state while maintaining schema validation. This pattern aligns with the union approach used in Avro.
+**Direct Field Annotation**: Using direct `pi2schema-personal-data` annotation provides a simple and clear way to mark PII fields without complex schema patterns. This simplified approach focuses on essential functionality.
 
-**Map-based Object Representation**: Using any business object type provides maximum flexibility while internally converting to JSON representation for processing. This maintains compatibility with JSON processing libraries and allows for type-safe business object usage.
+**Top-level Field Encryption**: The current implementation focuses on top-level field encryption only, providing a solid foundation that can be extended in future versions.
+
+**Business Object Flexibility**: Using any business object type provides maximum flexibility while internally converting to JSON representation for processing. This maintains compatibility with JSON processing libraries and allows for type-safe business object usage.
 
 **Sibling Subject Identifier Strategy**: Following the same strategy as Avro ensures consistency across providers and leverages proven patterns.
 
@@ -299,60 +296,51 @@ var encryptedMap = mapMetadata.swapToEncrypted(encryptor, userMap);
 
 ### Edge Cases
 
-#### Nested Object Handling (Future Enhancement)
+## 9. Current Limitations and Future Enhancements
+
+### Unsupported Features (Current Implementation)
+
+The current implementation focuses on simplicity and reliability. The following features are explicitly **not supported**:
+
+#### Nested Object Handling
+- Nested field encryption (e.g., `user.profile.email`) is not supported
+- Only top-level fields can be marked as personal data
+- Complex object hierarchies require flattening to top-level fields
+
+#### oneOf/anyOf Patterns  
+- Schema patterns using `oneOf` or `anyOf` for encrypted/plaintext variants are not supported
+- Union types combining multiple data types are not supported
+- Only direct field annotation with `pi2schema-personal-data` is supported
+
+#### Array and Collection Handling
+- Array element encryption is not supported
+- Collection-level PII handling is not implemented
+- Complex data structure encryption requires custom handling
+
+### Supported Patterns (Current Implementation)
+
+#### Direct Field Annotation
 ```json
 {
-  "type": "object",
+  "type": "object", 
   "properties": {
-    "user": {
-      "type": "object",
-      "properties": {
-        "profile": {
-          "type": "object", 
-          "properties": {
-            "email": {
-              "oneOf": [
-                {"type": "string", "pi2schema-personal-data": true},
-                {"$ref": "#/$defs/EncryptedPersonalData"}
-              ]
-            }
-          }
-        }
-      }
+    "email": {
+      "type": "string",
+      "format": "email", 
+      "pi2schema-personal-data": true
+    },
+    "userId": {
+      "type": "string",
+      "pi2schema-subject-identifier": true
+    },
+    "name": {
+      "type": "string"
     }
   }
 }
 ```
 
-**Note**: Nested object handling is not implemented in the initial version. The focus is on simple top-level field encryption only.
-
-#### UnionType Field Handling (Future Enhancement)
-```json
-{
-  "type": "object",
-  "properties": {
-    "contacts": {
-      "oneOf": [
-        {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "pi2schema-personal-data": true
-          }
-        },
-        {
-          "type": "array", 
-          "items": {
-            "$ref": "#/$defs/EncryptedPersonalData"
-          }
-        }
-      ]
-    }
-  }
-}
-```
-
-**Note**: Array/Union type handling is not implemented in the initial version. The focus is on simple field-level PII encryption using `PersonalDataFieldDefinition` only.
+This simplified approach provides a clear foundation for PII field identification and encryption.
 
 #### Multiple Subject Identifiers (Error Case)
 ```java

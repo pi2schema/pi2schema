@@ -36,48 +36,24 @@ spring.kafka.properties.schema.registry.url=http://localhost:8081/
       "pi2schema-subject-identifier": true
     },
     "email": {
+      "type": "string",
+      "format": "email",
       "description": "User email address (PII)",
-      "oneOf": [
-        {
-          "type": "string",
-          "format": "email",
-          "pi2schema-personal-data": true
-        },
-        {
-          "$ref": "#/$defs/EncryptedPersonalData"
-        }
-      ]
+      "pi2schema-personal-data": true
     },
-    "profile": {
-      "type": "object",
-      "properties": {
-        "firstName": {
-          "oneOf": [
-            {
-              "type": "string",
-              "pi2schema-personal-data": true
-            },
-            {
-              "$ref": "#/$defs/EncryptedPersonalData"
-            }
-          ]
-        },
-        "lastName": {
-          "oneOf": [
-            {
-              "type": "string", 
-              "pi2schema-personal-data": true
-            },
-            {
-              "$ref": "#/$defs/EncryptedPersonalData"
-            }
-          ]
-        },
-        "age": {
-          "type": "integer",
-          "minimum": 0
-        }
-      }
+    "firstName": {
+      "type": "string",
+      "description": "User first name (PII)",
+      "pi2schema-personal-data": true
+    },
+    "lastName": {
+      "type": "string", 
+      "description": "User last name (PII)",
+      "pi2schema-personal-data": true
+    },
+    "age": {
+      "type": "integer",
+      "minimum": 0
     },
     "preferences": {
       "type": "object",
@@ -87,17 +63,8 @@ spring.kafka.properties.schema.registry.url=http://localhost:8081/
       }
     }
   },
-  "required": ["userId", "email"],
-  "$defs": {
-    "EncryptedPersonalData": {
-      "type": "object",
-      "properties": {
-        "subjectId": {"type": "string"},
-        "data": {"type": "string", "format": "base64"},
-        "personalDataFieldNumber": {"type": "string"},
-        "usedTransformation": {"type": "string"},
-        "initializationVector": {"type": "string", "format": "base64"},
-        "kmsId": {"type": "string"}
+  "required": ["userId", "email"]
+}
       },
       "required": ["subjectId", "data", "usedTransformation", "initializationVector"]
     }
@@ -150,21 +117,20 @@ public class UserRegistrationConsumer {
             // Process decrypted user data
             String userId = (String) userData.get("userId");
             String email = (String) userData.get("email"); // Decrypted automatically
-            
-            Map<String, Object> profile = (Map<String, Object>) userData.get("profile");
-            String firstName = (String) profile.get("firstName"); // Decrypted automatically
+            String firstName = (String) userData.get("firstName"); // Decrypted automatically
+            String lastName = (String) userData.get("lastName"); // Decrypted automatically
             
             // Business logic here...
-            processUserRegistration(userId, email, firstName);
+            processUserRegistration(userId, email, firstName, lastName);
             
         } catch (Exception e) {
             log.error("Failed to process user registration", e);
         }
     }
     
-    private void processUserRegistration(String userId, String email, String firstName) {
+    private void processUserRegistration(String userId, String email, String firstName, String lastName) {
         // Your business logic here
-        log.info("Processing registration for user: {} with email: {}", firstName, email);
+        log.info("Processing registration for user: {} {} with email: {}", firstName, lastName, email);
     }
 }
 ```
@@ -206,4 +172,14 @@ public class ManualPiiHandlingService {
 - **Schema-Driven**: PII handling is defined in the JSON Schema itself
 - **Transparent**: Application code doesn't need to change for encryption
 - **Compatible**: Works with existing Kafka infrastructure
-- **Flexible**: Supports nested objects and complex data structures
+- **Simple and Reliable**: Focus on top-level field encryption for clear, maintainable code
+
+## Current Implementation Scope
+
+This example demonstrates the current implementation which supports:
+
+- **Top-level field encryption**: Fields like `email`, `firstName`, `lastName` are directly marked and encrypted
+- **Direct annotation**: Simple `pi2schema-personal-data` marking without complex patterns
+- **Subject identifier support**: Clear identification of data subjects
+
+**Note**: This implementation focuses on simplicity and reliability. Nested object encryption, oneOf patterns, and complex schema validation are not supported in the current version.

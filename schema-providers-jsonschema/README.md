@@ -35,29 +35,19 @@ The provider uses custom extensions to annotate JSON Schema fields:
       "pi2schema-subject-identifier": true
     },
     "email": {
-      "oneOf": [
-        {
-          "type": "string",
-          "pi2schema-personal-data": true
-        },
-        {
-          "$ref": "#/$defs/EncryptedPersonalData"
-        }
-      ]
+      "type": "string",
+      "format": "email",
+      "pi2schema-personal-data": true
+    },
+    "phone": {
+      "type": "string",
+      "pi2schema-personal-data": true
     },
     "name": {
       "type": "string"
     }
-  },
-  "$defs": {
-    "EncryptedPersonalData": {
-      "type": "object",
-      "properties": {
-        "subjectId": {"type": "string"},
-        "data": {"type": "string", "format": "base64"},
-        "personalDataFieldNumber": {"type": "string"},
-        "usedTransformation": {"type": "string"},
-        "initializationVector": {"type": "string", "format": "base64"},
+  }
+}
         "kmsId": {"type": "string"}
       },
       "required": ["subjectId", "data", "usedTransformation", "initializationVector"]
@@ -101,44 +91,37 @@ The JSON Schema provider follows the same architectural patterns as existing pro
 
 ## Patterns Supported
 
-### oneOf Pattern for Encrypted/Plaintext Fields
+## Current Implementation Scope
 
-The provider supports the `oneOf` pattern to define fields that can exist in either plaintext or encrypted form:
+This implementation focuses on simple, reliable PII field encryption with the following features:
+
+### Direct Field Annotation
+Fields are marked directly with the `pi2schema-personal-data` extension:
 
 ```json
 {
   "email": {
-    "oneOf": [
-      {"type": "string", "pi2schema-personal-data": true},
-      {"$ref": "#/$defs/EncryptedPersonalData"}
-    ]
+    "type": "string",
+    "format": "email",
+    "pi2schema-personal-data": true
+  },
+  "phone": {
+    "type": "string", 
+    "pi2schema-personal-data": true
   }
 }
 ```
 
-### Nested Object Support
+### Limitations
 
-The provider handles nested objects through dot notation:
+The current implementation has the following explicit limitations:
 
-```json
-{
-  "user": {
-    "type": "object",
-    "properties": {
-      "profile": {
-        "type": "object",
-        "properties": {
-          "email": {
-            "oneOf": [
-              {"type": "string", "pi2schema-personal-data": true},
-              {"$ref": "#/$defs/EncryptedPersonalData"}
-            ]
-          }
-        }
-      }
-    }
-  }
-}
+- **Top-level fields only**: Nested object field encryption is not supported
+- **No oneOf/anyOf patterns**: Complex schema patterns for encrypted/plaintext variants are not supported  
+- **No array encryption**: Array element encryption is not implemented
+- **No union types**: Union type handling is not supported
+
+This simplified approach provides a solid foundation focused on essential PII protection capabilities.
 ```
 
 ## Error Handling
