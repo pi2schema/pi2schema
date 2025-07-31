@@ -11,8 +11,8 @@ import java.util.concurrent.CompletableFuture;
  * Implementation of PersonalMetadata for JSON Schema.
  * Handles encryption/decryption operations for business objects containing PII fields.
  *
- * NOTE: This version supports simple top-level field access only.
- * Nested field support will be added in future versions.
+ * This implementation supports direct field annotation with pi2schema-personal-data extension
+ * for top-level fields only.
  */
 public class JsonPersonalMetadata<T> implements PersonalMetadata<T> {
 
@@ -31,7 +31,7 @@ public class JsonPersonalMetadata<T> implements PersonalMetadata<T> {
     public T swapToEncrypted(Encryptor encryptor, T decryptedInstance) {
         // Create a copy of the business object for mutation
         @SuppressWarnings("unchecked")
-        // TODO sort out a proper way, maybe a unified deep copier
+        // Note: Direct instance mutation for simplicity in current implementation
         T encryptingInstance = decryptedInstance;
 
         CompletableFuture<Void>[] futures = personalDataFields
@@ -47,8 +47,7 @@ public class JsonPersonalMetadata<T> implements PersonalMetadata<T> {
     @Override
     public T swapToDecrypted(Decryptor decryptor, T encryptedInstance) {
         // Create a copy of the business object for mutation
-
-        // TODO sort out a proper way, maybe a unified deep copier
+        // Note: Direct instance mutation for simplicity in current implementation
         T decryptingInstance = encryptedInstance;
 
         CompletableFuture<Void>[] futures = personalDataFields

@@ -1,201 +1,118 @@
 package pi2schema.schema.providers.jsonschema.integration;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import pi2schema.schema.providers.jsonschema.personaldata.JsonSchemaPersonalMetadataProvider;
+
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
 /**
  * Integration test demonstrating end-to-end JSON Schema PII handling.
+ * Tests the simplified implementation that supports direct field annotation only.
  */
 class JsonSchemaIntegrationTest {
-    //    @Mock
-    //    private Encryptor encryptor;
-    //
-    //    @Mock
-    //    private Decryptor decryptor;
-    //
-    //    private JsonSchemaPersonalMetadataProvider provider;
-    //
-    //    @BeforeEach
-    //    void setUp() {
-    //        MockitoAnnotations.openMocks(this);
-    //        provider = new JsonSchemaPersonalMetadataProvider();
-    //    }
-    //
-    //    @Test
-    //    void shouldEncryptAndDecryptPiiFieldsInJsonObject() {
-    //        // Given: JSON Schema with PII annotations
-    //        String schema =
-    //            """
-    //            {
-    //              "type": "object",
-    //              "properties": {
-    //                "userId": {
-    //                  "type": "string",
-    //                  "pi2schema-subject-identifier": true
-    //                },
-    //                "email": {
-    //                  "oneOf": [
-    //                    {
-    //                      "type": "string",
-    //                      "pi2schema-personal-data": true
-    //                    },
-    //                    {
-    //                      "$ref": "#/$defs/EncryptedPersonalData"
-    //                    }
-    //                  ]
-    //                },
-    //                "name": {
-    //                  "type": "string"
-    //                }
-    //              },
-    //              "$defs": {
-    //                "EncryptedPersonalData": {
-    //                  "type": "object",
-    //                  "properties": {
-    //                    "subjectId": {"type": "string"},
-    //                    "data": {"type": "string"},
-    //                    "personalDataFieldNumber": {"type": "string"},
-    //                    "usedTransformation": {"type": "string"},
-    //                    "initializationVector": {"type": "string"},
-    //                    "kmsId": {"type": "string"}
-    //                  }
-    //                }
-    //              }
-    //            }
-    //            """;
-    //
-    //        // Mock encryption
-    //        EncryptedData mockEncryptedData = new EncryptedData(
-    //            ByteBuffer.wrap("encrypted_data".getBytes()),
-    //            "AES/GCM/NoPadding",
-    //            new IvParameterSpec("1234567890123456".getBytes())
-    //        );
-    //        when(encryptor.encrypt(eq("user-123"), any(ByteBuffer.class)))
-    //            .thenReturn(CompletableFuture.completedFuture(mockEncryptedData));
-    //
-    //        // Mock decryption
-    //        ByteBuffer decryptedBuffer = ByteBuffer.wrap("john@example.com".getBytes(StandardCharsets.UTF_8));
-    //        when(decryptor.decrypt(eq("user-123"), any(EncryptedData.class)))
-    //            .thenReturn(CompletableFuture.completedFuture(decryptedBuffer));
-    //
-    //        // JSON object with PII data
-    //        Map<String, Object> userData = new HashMap<>();
-    //        userData.put("userId", "user-123");
-    //        userData.put("email", "john@example.com");
-    //        userData.put("name", "John Doe");
-    //
-    //        // When: Encrypt the data
-    //        var metadata = provider.forSchema(schema);
-    //        var encryptedData = metadata.swapToEncrypted(encryptor, userData);
-    //
-    //        // Then: Email should be encrypted, other fields unchanged
-    //        assertThat(encryptedData.get("userId")).isEqualTo("user-123");
-    //        assertThat(encryptedData.get("name")).isEqualTo("John Doe");
-    //        assertThat(encryptedData.get("email")).isInstanceOf(Map.class);
-    //
-    //        @SuppressWarnings("unchecked")
-    //        Map<String, Object> encryptedEmail = (Map<String, Object>) encryptedData.get("email");
-    //        assertThat(encryptedEmail.get("subjectId")).isEqualTo("user-123");
-    //        assertThat(encryptedEmail.get("usedTransformation")).isEqualTo("AES/GCM/NoPadding");
-    //
-    //        // When: Decrypt the data
-    //        var decryptedData = metadata.swapToDecrypted(decryptor, encryptedData);
-    //
-    //        // Then: Original data should be restored
-    //        assertThat(decryptedData.get("userId")).isEqualTo("user-123");
-    //        assertThat(decryptedData.get("email")).isEqualTo("john@example.com");
-    //        assertThat(decryptedData.get("name")).isEqualTo("John Doe");
-    //    }
-    //
-    //    @Test
-    //    @Disabled
-    //    void shouldHandleNestedPiiFields() {
-    //        // Given: Schema with nested PII field
-    //        String schema =
-    //            """
-    //            {
-    //              "type": "object",
-    //              "properties": {
-    //                "userId": {
-    //                  "type": "string",
-    //                  "pi2schema-subject-identifier": true
-    //                },
-    //                "user": {
-    //                  "type": "object",
-    //                  "properties": {
-    //                    "profile": {
-    //                      "type": "object",
-    //                      "properties": {
-    //                        "email": {
-    //                          "type": "string",
-    //                          "pi2schema-personal-data": true
-    //                        }
-    //                      }
-    //                    }
-    //                  }
-    //                }
-    //              }
-    //            }
-    //            """;
-    //
-    //        // Mock encryption/decryption
-    //        EncryptedData mockEncryptedData = new EncryptedData(
-    //            ByteBuffer.wrap("encrypted_data".getBytes()),
-    //            "AES/GCM/NoPadding",
-    //            new IvParameterSpec("1234567890123456".getBytes())
-    //        );
-    //        when(encryptor.encrypt(eq("user-123"), any(ByteBuffer.class)))
-    //            .thenReturn(CompletableFuture.completedFuture(mockEncryptedData));
-    //
-    //        ByteBuffer decryptedBuffer = ByteBuffer.wrap("nested@example.com".getBytes(StandardCharsets.UTF_8));
-    //        when(decryptor.decrypt(eq("user-123"), any(EncryptedData.class)))
-    //            .thenReturn(CompletableFuture.completedFuture(decryptedBuffer));
-    //
-    //        // Nested JSON object
-    //        Map<String, Object> userData = new HashMap<>();
-    //        userData.put("userId", "user-123");
-    //        userData.put("user", Map.of("profile", Map.of("email", "nested@example.com")));
-    //
-    //        // When: Process the data
-    //        var metadata = provider.forSchema(schema);
-    //        var encryptedData = metadata.swapToEncrypted(encryptor, userData);
-    //        var decryptedData = metadata.swapToDecrypted(decryptor, encryptedData);
-    //
-    //        // Then: Nested email should be handled correctly
-    //        assertThat(decryptedData.get("userId")).isEqualTo("user-123");
-    //
-    //        @SuppressWarnings("unchecked")
-    //        Map<String, Object> user = (Map<String, Object>) decryptedData.get("user");
-    //        @SuppressWarnings("unchecked")
-    //        Map<String, Object> profile = (Map<String, Object>) user.get("profile");
-    //        assertThat(profile.get("email")).isEqualTo("nested@example.com");
-    //    }
-    //
-    //    @Test
-    //    void shouldNotRequireEncryptionForSchemaWithoutPiiFields() {
-    //        // Given: Schema without PII fields
-    //        String schema =
-    //            """
-    //            {
-    //              "type": "object",
-    //              "properties": {
-    //                "name": {"type": "string"},
-    //                "age": {"type": "number"}
-    //              }
-    //            }
-    //            """;
-    //
-    //        // When: Analyze schema
-    //        var metadata = provider.forSchema(schema);
-    //
-    //        // Then: No encryption should be required
-    //        assertThat(metadata.requiresEncryption()).isFalse();
-    //
-    //        // Given: Simple data object
-    //        Map<String, Object> userData = Map.of("name", "John Doe", "age", 30);
-    //
-    //        // When: Process data (should be no-op)
-    //        var processedData = metadata.swapToEncrypted(encryptor, userData);
-    //
-    //        // Then: Data should remain unchanged
-    //        assertThat(processedData).isEqualTo(userData);
-    //        assertThat(processedData).isNotSameAs(userData); // Should still create a copy
-    //    }
+
+    private JsonSchemaPersonalMetadataProvider<Map<String, Object>> provider;
+    private ObjectMapper objectMapper;
+
+    @BeforeEach
+    void setUp() {
+        provider = new JsonSchemaPersonalMetadataProvider<>();
+        objectMapper = new ObjectMapper();
+    }
+
+    @Test
+    void shouldIdentifyPiiFieldsInSimpleSchema() throws Exception {
+        // Given: JSON Schema with direct PII annotations
+        String schema = """
+            {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "type": "string",
+                  "pi2schema-subject-identifier": true
+                },
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "pi2schema-personal-data": true
+                },
+                "name": {
+                  "type": "string"
+                }
+              }
+            }
+            """;
+
+        // When: Analyze schema
+        var metadata = provider.forSchema(objectMapper.readTree(schema));
+
+        // Then: Should require encryption and identify PII field
+        assertThat(metadata.requiresEncryption()).isTrue();
+        assertThat(metadata.getPersonalDataFields()).hasSize(1);
+        assertThat(metadata.getPersonalDataFields().get(0).getFieldPath()).isEqualTo("email");
+    }
+
+    @Test
+    void shouldNotRequireEncryptionForSchemaWithoutPiiFields() throws Exception {
+        // Given: Schema without PII fields
+        String schema = """
+            {
+              "type": "object",
+              "properties": {
+                "name": {"type": "string"},
+                "age": {"type": "number"}
+              }
+            }
+            """;
+
+        // When: Analyze schema
+        var metadata = provider.forSchema(objectMapper.readTree(schema));
+
+        // Then: No encryption should be required
+        assertThat(metadata.requiresEncryption()).isFalse();
+        assertThat(metadata.getPersonalDataFields()).isEmpty();
+    }
+
+    @Test
+    void shouldHandleMultiplePiiFields() throws Exception {
+        // Given: Schema with multiple PII fields
+        String schema = """
+            {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "type": "string",
+                  "pi2schema-subject-identifier": true
+                },
+                "email": {
+                  "type": "string",
+                  "pi2schema-personal-data": true
+                },
+                "phone": {
+                  "type": "string",
+                  "pi2schema-personal-data": true
+                },
+                "name": {
+                  "type": "string"
+                }
+              }
+            }
+            """;
+
+        // When: Analyze schema
+        var metadata = provider.forSchema(objectMapper.readTree(schema));
+
+        // Then: Should identify both PII fields
+        assertThat(metadata.requiresEncryption()).isTrue();
+        assertThat(metadata.getPersonalDataFields()).hasSize(2);
+        
+        var fieldPaths = metadata.getPersonalDataFields().stream()
+            .map(field -> field.getFieldPath())
+            .toList();
+        assertThat(fieldPaths).containsExactlyInAnyOrder("email", "phone");
+    }
 }
