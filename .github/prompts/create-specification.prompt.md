@@ -1,0 +1,1 @@
+../../.instructions-ai/prompts/create-specification.prompt.md
