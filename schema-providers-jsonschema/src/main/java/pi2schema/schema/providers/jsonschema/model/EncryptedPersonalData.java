@@ -14,7 +14,7 @@ public class EncryptedPersonalData {
     private String subjectId;
 
     @JsonProperty("data")
-    private String data; // Base64 encoded
+    private byte[] data; // Base64 encoded
 
     @JsonProperty("personalDataFieldNumber")
     private String personalDataFieldNumber;
@@ -34,7 +34,7 @@ public class EncryptedPersonalData {
 
     public EncryptedPersonalData(
         String subjectId,
-        String data,
+        byte[] data,
         String personalDataFieldNumber,
         String usedTransformation,
         String initializationVector,
@@ -56,11 +56,11 @@ public class EncryptedPersonalData {
         this.subjectId = subjectId;
     }
 
-    public String getData() {
+    public byte[] getData() {
         return data;
     }
 
-    public void setData(String data) {
+    public void setData(byte[] data) {
         this.data = data;
     }
 
@@ -103,7 +103,7 @@ public class EncryptedPersonalData {
         EncryptedPersonalData that = (EncryptedPersonalData) o;
         return (
             Objects.equals(subjectId, that.subjectId) &&
-            Objects.equals(data, that.data) &&
+            java.util.Arrays.equals(data, that.data) &&
             Objects.equals(personalDataFieldNumber, that.personalDataFieldNumber) &&
             Objects.equals(usedTransformation, that.usedTransformation) &&
             Objects.equals(initializationVector, that.initializationVector) &&
@@ -113,7 +113,9 @@ public class EncryptedPersonalData {
 
     @Override
     public int hashCode() {
-        return Objects.hash(subjectId, data, personalDataFieldNumber, usedTransformation, initializationVector, kmsId);
+        int result = Objects.hash(subjectId, personalDataFieldNumber, usedTransformation, initializationVector, kmsId);
+        result = 31 * result + java.util.Arrays.hashCode(data);
+        return result;
     }
 
     @Override

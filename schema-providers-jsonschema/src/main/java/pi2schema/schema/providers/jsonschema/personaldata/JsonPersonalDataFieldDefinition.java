@@ -1,14 +1,22 @@
 package pi2schema.schema.providers.jsonschema.personaldata;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.beanutils.PropertyUtils;
 import pi2schema.crypto.Decryptor;
+import pi2schema.crypto.EncryptedData;
 import pi2schema.crypto.Encryptor;
+import pi2schema.schema.personaldata.InvalidEncryptedMessageException;
 import pi2schema.schema.personaldata.PersonalDataFieldDefinition;
+import pi2schema.schema.providers.jsonschema.model.EncryptedPersonalData;
 import pi2schema.schema.providers.jsonschema.subject.JsonSubjectIdentifierFieldDefinition;
 
 import java.nio.ByteBuffer;
-import java.util.Map;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
+
+import javax.crypto.spec.IvParameterSpec;
 
 /**
  * Implementation of PersonalDataFieldDefinition for JSON Schema.
@@ -21,7 +29,8 @@ public class JsonPersonalDataFieldDefinition<T> implements PersonalDataFieldDefi
 
     private final String fieldPath;
     private final JsonNode fieldSchema;
-    private final JsonSubjectIdentifierFieldDefinition subjectIdentifier;
+    private final JsonSubjectIdentifierFieldDefinition jsonSubjectIdentifierFieldDefinition;
+    private final ObjectMapper objectMapper;
 
     public JsonPersonalDataFieldDefinition(
         String fieldPath,
@@ -29,7 +38,8 @@ public class JsonPersonalDataFieldDefinition<T> implements PersonalDataFieldDefi
     ) {
         this.fieldPath = fieldPath;
         this.fieldSchema = null;
-        this.subjectIdentifier = jsonSubjectIdentifierFieldDefinition;
+        this.jsonSubjectIdentifierFieldDefinition = jsonSubjectIdentifierFieldDefinition;
+        objectMapper = new ObjectMapper();
     }
 
     static boolean hasPersonalData(JsonNode field) {
@@ -37,119 +47,91 @@ public class JsonPersonalDataFieldDefinition<T> implements PersonalDataFieldDefi
     }
 
     @Override
-    public CompletableFuture<Void> swapToEncrypted(Encryptor encryptor, T decryptedInstance) {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                //                @SuppressWarnings("unchecked")
-                //                Map<String, Object> objectMap = objectMapper.convertValue(decryptedInstance, Map.class);
-                //
-                //                Object personalData = getFieldValue(objectMap, fieldPath);
-                //                if (personalData == null) {
-                //                    return decryptedInstance;
-                //                }
-                //
-                //                String subjectId = subjectIdentifierFinder.findSubjectIdentifier(decryptedInstance, subjectIdentifierFields);
-                //
-                //                EncryptedData encryptedData = encryptor.encrypt(
-                //                        subjectId,
-                //                        personalData.toString().getBytes(StandardCharsets.UTF_8)
-                //                );
-                //
-                //                EncryptedPersonalData encryptedPersonalData = new EncryptedPersonalData(
-                //                    Base64.getEncoder().encodeToString(encryptedData.getData()),
-                //                    Base64.getEncoder().encodeToString(encryptedData.getIv().getIV()),
-                //                    encryptedData.getKeyId()
-                //                );
-                //
-                //                setFieldValue(objectMap, fieldPath, encryptedPersonalData);
-                //
-                //                return objectMapper.convertValue(objectMap, (Class<T>) decryptedInstance.getClass());
-                return null;
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to encrypt field: " + fieldPath, e);
-            }
-        });
+    public CompletableFuture<Void> swapToEncrypted(Encryptor encryptor, T encryptingInstance) {
+        var personalData = valueFrom(encryptingInstance);
+        if (personalData == null || !personalData.hasRemaining()) { //nothing to encrypt
+            return CompletableFuture.allOf();
+        }
+
+        var subjectId = jsonSubjectIdentifierFieldDefinition.subjectFrom(encryptingInstance);
+
+        return encryptor
+            .encrypt(subjectId, personalData)
+            .thenAccept(encrypted -> {
+                try {
+                    PropertyUtils.setProperty(
+                        encryptingInstance,
+                        fieldPath,
+                        toEncryptedPersonalDataJson(subjectId, encrypted)
+                    );
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
     }
 
     @Override
     public CompletableFuture<Void> swapToDecrypted(Decryptor decryptor, T encryptedInstance) {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                //                @SuppressWarnings("unchecked")
-                //                Map<String, Object> objectMap = objectMapper.convertValue(encryptedInstance, Map.class);
-                //
-                //                Object encryptedField = getFieldValue(objectMap, fieldPath);
-                //                if (encryptedField == null) {
-                //                    return encryptedInstance;
-                //                }
-                //
-                //                EncryptedPersonalData encryptedPersonalData;
-                //                if (encryptedField instanceof Map) {
-                //                    encryptedPersonalData = objectMapper.convertValue(encryptedField, EncryptedPersonalData.class);
-                //                } else {
-                //                    throw new UnsupportedEncryptedFieldFormatException(
-                //                        "Unsupported encrypted field format for field: " + fieldPath
-                //                    );
-                //                }
-                //
-                //                String subjectId = subjectIdentifierFinder.findSubjectIdentifier(encryptedInstance, subjectIdentifierFields);
-                //
-                //                EncryptedData encryptedData = new EncryptedData(
-                //                    Base64.getDecoder().decode(encryptedPersonalData.getData()),
-                //                    new IvParameterSpec(Base64.getDecoder().decode(encryptedPersonalData.getIv())),
-                //                    encryptedPersonalData.getKeyId()
-                //                );
-                //
-                //                byte[] decryptedBytes = decryptor.decrypt(encryptedData, subjectId);
-                //                String decryptedValue = new String(decryptedBytes, StandardCharsets.UTF_8);
-                //
-                //                setFieldValue(objectMap, fieldPath, decryptedValue);
-                //
-                //                return objectMapper.convertValue(objectMap, (Class<T>) encryptedInstance.getClass());
-                return null;
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to decrypt field: " + fieldPath, e);
+        try {
+            Object encryptedField = PropertyUtils.getProperty(encryptedInstance, fieldPath);
+            if (encryptedField == null) {
+                return CompletableFuture.allOf(); // nothing to decrypt
             }
-        });
+
+            var encryptedPersonalData = objectMapper.readValue((String) encryptedField, EncryptedPersonalData.class);
+            var encryptedData = toEncryptedData(encryptedPersonalData);
+
+            return decryptor
+                .decrypt(encryptedPersonalData.getSubjectId(), encryptedData)
+                .thenAccept(decryptedBytes -> {
+                    String decryptedValue = new String(decryptedBytes.array(), StandardCharsets.UTF_8);
+                    try {
+                        PropertyUtils.setProperty(encryptedInstance, fieldPath, decryptedValue);
+                    } catch (Exception e) {
+                        throw new InvalidEncryptedMessageException(e);
+                    }
+                });
+        } catch (Exception e) {
+            return CompletableFuture.failedFuture(e);
+        }
     }
 
     @Override
     public ByteBuffer valueFrom(T instance) {
-        throw new UnsupportedOperationException("Nested field paths are not supported in this version: " + fieldPath);
-    }
-
-    private Object getFieldValue(Map<String, Object> objectMap, String fieldPath) {
-        String[] pathParts = fieldPath.split("\\.");
-        Object current = objectMap;
-
-        for (String part : pathParts) {
-            if (current instanceof Map) {
-                current = ((Map<?, ?>) current).get(part);
-            } else {
-                return null;
+        try {
+            var property = PropertyUtils.getProperty(instance, fieldPath);
+            if (property instanceof String s) {
+                return ByteBuffer.wrap(s.getBytes(StandardCharsets.UTF_8));
             }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
 
-        return current;
+        throw new UnsupportedOperationException("The type of the field %s is not supported".formatted(fieldPath));
     }
 
-    private void setFieldValue(Map<String, Object> objectMap, String fieldPath, Object value) {
-        String[] pathParts = fieldPath.split("\\.");
-        Map<String, Object> current = objectMap;
-
-        for (int i = 0; i < pathParts.length - 1; i++) {
-            String part = pathParts[i];
-            Object next = current.get(part);
-            if (!(next instanceof Map)) {
-                next = new java.util.HashMap<String, Object>();
-                current.put(part, next);
-            }
-            @SuppressWarnings("unchecked")
-            Map<String, Object> nextMap = (Map<String, Object>) next;
-            current = nextMap;
+    private String toEncryptedPersonalDataJson(String subjectId, EncryptedData encryptedData) {
+        EncryptedPersonalData encryptedPersonalData = new EncryptedPersonalData(
+            subjectId,
+            encryptedData.data().array(),
+            fieldPath,
+            encryptedData.usedTransformation(),
+            new String(encryptedData.initializationVector().getIV()),
+            null
+        );
+        try {
+            return objectMapper.writeValueAsString(encryptedPersonalData);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
         }
+    }
 
-        current.put(pathParts[pathParts.length - 1], value);
+    private EncryptedData toEncryptedData(EncryptedPersonalData encryptedPersonalData) {
+        return new EncryptedData(
+            ByteBuffer.wrap(encryptedPersonalData.getData()).asReadOnlyBuffer(),
+            encryptedPersonalData.getUsedTransformation(),
+            new IvParameterSpec(encryptedPersonalData.getInitializationVector().getBytes(StandardCharsets.UTF_8))
+        );
     }
 
     public String getFieldPath() {
