@@ -9,6 +9,7 @@ import pi2schema.crypto.EncryptedData;
 import pi2schema.crypto.Encryptor;
 import pi2schema.schema.personaldata.InvalidEncryptedMessageException;
 import pi2schema.schema.personaldata.PersonalDataFieldDefinition;
+import pi2schema.schema.personaldata.UnsupportedPersonalDataFieldFormatException;
 import pi2schema.schema.providers.jsonschema.model.EncryptedPersonalData;
 import pi2schema.schema.providers.jsonschema.subject.JsonSubjectIdentifierFieldDefinition;
 
@@ -63,7 +64,7 @@ public class JsonPersonalDataFieldDefinition<T> implements PersonalDataFieldDefi
                         toEncryptedPersonalDataJson(subjectId, encrypted)
                     );
                 } catch (Exception e) {
-                    throw new RuntimeException(e);
+                    throw new InvalidEncryptedMessageException(e);
                 }
             });
     }
@@ -105,7 +106,7 @@ public class JsonPersonalDataFieldDefinition<T> implements PersonalDataFieldDefi
                 return ByteBuffer.wrap(new byte[0]); // Handle null values
             }
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new UnsupportedPersonalDataFieldFormatException(fieldPath);
         }
 
         throw new UnsupportedOperationException("The type of the field %s is not supported".formatted(fieldPath));
