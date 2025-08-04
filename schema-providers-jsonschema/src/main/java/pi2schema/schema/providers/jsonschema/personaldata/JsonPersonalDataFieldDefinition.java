@@ -103,6 +103,9 @@ public class JsonPersonalDataFieldDefinition<T> implements PersonalDataFieldDefi
             if (property instanceof String s) {
                 return ByteBuffer.wrap(s.getBytes(StandardCharsets.UTF_8));
             }
+            if (property == null) {
+                return ByteBuffer.wrap(new byte[0]); // Handle null values
+            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -111,9 +114,19 @@ public class JsonPersonalDataFieldDefinition<T> implements PersonalDataFieldDefi
     }
 
     private String toEncryptedPersonalDataJson(String subjectId, EncryptedData encryptedData) {
+        // Convert ByteBuffer to byte array safely
+        ByteBuffer dataBuffer = encryptedData.data();
+        byte[] dataBytes;
+        if (dataBuffer.hasArray() && !dataBuffer.isReadOnly()) {
+            dataBytes = dataBuffer.array();
+        } else {
+            dataBytes = new byte[dataBuffer.remaining()];
+            dataBuffer.get(dataBytes);
+        }
+
         EncryptedPersonalData encryptedPersonalData = new EncryptedPersonalData(
             subjectId,
-            encryptedData.data().array(),
+            dataBytes,
             fieldPath,
             encryptedData.usedTransformation(),
             new String(encryptedData.initializationVector().getIV()),
@@ -140,5 +153,9 @@ public class JsonPersonalDataFieldDefinition<T> implements PersonalDataFieldDefi
 
     public JsonNode getFieldSchema() {
         return fieldSchema;
+    }
+
+    public JsonSubjectIdentifierFieldDefinition getSubjectIdentifierDefinition() {
+        return jsonSubjectIdentifierFieldDefinition;
     }
 }

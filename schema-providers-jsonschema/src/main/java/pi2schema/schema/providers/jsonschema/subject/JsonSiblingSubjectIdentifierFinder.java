@@ -18,7 +18,7 @@ public class JsonSiblingSubjectIdentifierFinder implements SubjectIdentifierFind
             .properties()
             .stream()
             .filter(e -> isSubjectIdentifier(e.getValue()))
-            .map(field::child)
+            .map(e -> new JsonField(e.getKey(), e.getValue(), field.parent(), "")) // Create sibling at same level
             .map(JsonField::absolutPath)
             .findFirst()
             .map(JsonSubjectIdentifierFieldDefinition::new)
