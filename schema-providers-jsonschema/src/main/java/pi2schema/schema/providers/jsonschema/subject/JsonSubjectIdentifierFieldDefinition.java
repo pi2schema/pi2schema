@@ -22,7 +22,15 @@ public class JsonSubjectIdentifierFieldDefinition implements SubjectIdentifierFi
     @Override
     public String subjectFrom(Object instance) {
         try {
-            return PropertyUtils.getProperty(instance, identifierFieldPath).toString();
+            Object propertyValue = PropertyUtils.getProperty(instance, identifierFieldPath);
+            if (propertyValue == null) {
+                throw new SubjectIdentifierRetrievalException(
+                    instance, 
+                    identifierFieldPath, 
+                    new IllegalStateException("Subject identifier field '" + identifierFieldPath + "' is null")
+                );
+            }
+            return propertyValue.toString();
         } catch (Exception e) {
             throw new SubjectIdentifierRetrievalException(instance, identifierFieldPath, e);
         }
