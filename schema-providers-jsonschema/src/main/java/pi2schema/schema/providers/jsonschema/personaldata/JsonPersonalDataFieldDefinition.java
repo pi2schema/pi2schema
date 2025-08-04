@@ -28,7 +28,6 @@ public class JsonPersonalDataFieldDefinition<T> implements PersonalDataFieldDefi
     public static final String PERSONAL_DATA_EXTENSION = "pi2schema-personal-data";
 
     private final String fieldPath;
-    private final JsonNode fieldSchema;
     private final JsonSubjectIdentifierFieldDefinition jsonSubjectIdentifierFieldDefinition;
     private final ObjectMapper objectMapper;
 
@@ -37,7 +36,6 @@ public class JsonPersonalDataFieldDefinition<T> implements PersonalDataFieldDefi
         JsonSubjectIdentifierFieldDefinition jsonSubjectIdentifierFieldDefinition
     ) {
         this.fieldPath = fieldPath;
-        this.fieldSchema = null;
         this.jsonSubjectIdentifierFieldDefinition = jsonSubjectIdentifierFieldDefinition;
         objectMapper = new ObjectMapper();
     }
@@ -149,10 +147,6 @@ public class JsonPersonalDataFieldDefinition<T> implements PersonalDataFieldDefi
 
     public String getFieldPath() {
         return fieldPath;
-    }
-
-    public JsonNode getFieldSchema() {
-        return fieldSchema;
     }
 
     public JsonSubjectIdentifierFieldDefinition getSubjectIdentifierDefinition() {
