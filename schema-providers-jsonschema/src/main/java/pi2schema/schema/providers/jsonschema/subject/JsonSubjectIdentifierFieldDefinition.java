@@ -25,8 +25,8 @@ public class JsonSubjectIdentifierFieldDefinition implements SubjectIdentifierFi
             Object propertyValue = PropertyUtils.getProperty(instance, identifierFieldPath);
             if (propertyValue == null) {
                 throw new SubjectIdentifierRetrievalException(
-                    instance, 
-                    identifierFieldPath, 
+                    instance,
+                    identifierFieldPath,
                     new IllegalStateException("Subject identifier field '" + identifierFieldPath + "' is null")
                 );
             }
