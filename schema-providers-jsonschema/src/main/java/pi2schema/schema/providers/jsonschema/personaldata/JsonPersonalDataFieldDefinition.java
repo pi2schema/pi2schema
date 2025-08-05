@@ -134,7 +134,7 @@ public class JsonPersonalDataFieldDefinition<T> implements PersonalDataFieldDefi
         try {
             return objectMapper.writeValueAsString(encryptedPersonalData);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            throw new InvalidEncryptedMessageException(e);
         }
     }
 
