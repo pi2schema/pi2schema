@@ -48,12 +48,6 @@ The provider uses custom extensions to annotate JSON Schema fields:
     }
   }
 }
-        "kmsId": {"type": "string"}
-      },
-      "required": ["subjectId", "data", "usedTransformation", "initializationVector"]
-    }
-  }
-}
 ```
 
 ### Java Code
@@ -122,7 +116,6 @@ The current implementation has the following explicit limitations:
 - **No union types**: Union type handling is not supported
 
 This simplified approach provides a solid foundation focused on essential PII protection capabilities.
-```
 
 ## Error Handling
 
