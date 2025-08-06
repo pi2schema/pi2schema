@@ -88,7 +88,7 @@ The following terms are used throughout this specification:
 - **GUD-002**: Follow the existing package structure pattern: `pi2schema.schema.providers.jsonschema`
 - **GUD-003**: Implement caching for parsed schema metadata
 - **GUD-004**: Use Jackson or similar JSON processing library for business object to JSON conversion
-- **GUD-005**: Provide clear error messages for schema validation failures
+- **GUD-005**: Provide clear error messages for schema parsing failures
 
 ### Implementation Patterns
 
@@ -220,12 +220,10 @@ The JSON Schema provider fills a critical gap in the pi2schema ecosystem, enabli
 ## 8. Dependencies & External Integrations
 
 ### External Systems
-- **EXT-001**: JSON Schema validation libraries - Required for schema parsing and validation
-- **EXT-002**: Kafka Schema Registry - Integration for schema management and evolution
+- **EXT-001**: Kafka Schema Registry - Integration for schema management and evolution
 
 ### Third-Party Services  
 - **SVC-001**: Jackson JSON Library - JSON processing and object mapping capabilities
-- **SVC-002**: Everit JSON Schema - JSON Schema validation and processing
 
 ### Infrastructure Dependencies
 - **INF-001**: pi2schema crypto-spi - Cryptographic operations interface

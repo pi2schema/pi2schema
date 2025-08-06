@@ -122,10 +122,11 @@ This simplified approach provides a solid foundation focused on essential PII pr
 The provider implements consistent error handling patterns:
 
 - `SubjectIdentifierNotFoundException`: When no subject identifier is found
+- `SubjectIdentifierRetrievalException`: When subject identifier extraction fails
+- `InvalidEncryptedMessageException`: When encryption/decryption operations fail
+- `UnsupportedPersonalDataFieldFormatException`: When field format is not supported
 - `TooManySubjectIdentifiersException`: When multiple subject identifiers are found
 - `UnsupportedEncryptedFieldFormatException`: When encrypted data format is invalid
-- `JsonSchemaAnalysisException`: When schema analysis fails
-- `JsonSchemaValidationException`: When JSON validation fails
 
 ## Performance
 
@@ -136,7 +137,6 @@ The provider implements consistent error handling patterns:
 ## Dependencies
 
 - Jackson: JSON processing and object mapping
-- Everit JSON Schema: JSON Schema validation
 - pi2schema crypto-spi: Cryptographic operations
 - pi2schema schema-spi: Core schema provider interfaces
 
