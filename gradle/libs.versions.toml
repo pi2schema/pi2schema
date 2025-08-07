@@ -3,9 +3,6 @@
 gradle-release = "3.0.2"
 spotbugs = "6.0.28"
 spotless = "6.23.3"
-kotlin = "1.9.25"
-spring-dependency-management = "1.1.7"
-spring-boot = "3.1.12"
 avro-gradle-plugin = "1.9.1"
 protobuf-gradle-plugin = "0.9.5"
 jsonschema2pojo = "1.2.2"
@@ -37,10 +34,6 @@ instancio-junit = "5.5.0"
 # Logging
 logback = "1.4.14"
 
-# Spring (for examples)
-reactor-kotlin-extensions = "1.2.3"
-kotlinx-coroutines-reactor = "1.8.1"
-
 [libraries]
 # Build plugins (for buildscript dependencies)
 protobuf-gradle-plugin = { module = "com.google.protobuf:protobuf-gradle-plugin", version.ref = "protobuf-gradle-plugin" }
@@ -64,7 +57,6 @@ confluent-kafka-schema-serializer = { module = "io.confluent:kafka-schema-serial
 jackson-core = { module = "com.fasterxml.jackson.core:jackson-core", version.ref = "jackson" }
 jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
 jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "jackson" }
-jackson-module-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin" }
 commons-beanutils = { module = "commons-beanutils:commons-beanutils", version.ref = "commons-beanutils" }
 
 # Logging
@@ -83,26 +75,10 @@ testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter", ve
 testcontainers-redpanda = { module = "org.testcontainers:redpanda", version.ref = "testcontainers" }
 instancio-junit = { module = "org.instancio:instancio-junit", version.ref = "instancio-junit" }
 
-# Spring and Kotlin (for examples)
-spring-boot-starter-webflux = { module = "org.springframework.boot:spring-boot-starter-webflux" }
-spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
-spring-boot-testcontainers = { module = "org.springframework.boot:spring-boot-testcontainers" }
-spring-kafka = { module = "org.springframework.kafka:spring-kafka" }
-spring-kafka-test = { module = "org.springframework.kafka:spring-kafka-test" }
-reactor-kotlin-extensions = { module = "io.projectreactor.kotlin:reactor-kotlin-extensions", version.ref = "reactor-kotlin-extensions" }
-reactor-test = { module = "io.projectreactor:reactor-test" }
-kotlinx-coroutines-reactor = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactor", version.ref = "kotlinx-coroutines-reactor" }
-kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect" }
-kotlin-stdlib-jdk8 = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8" }
-
 [plugins]
 release = { id = "net.researchgate.release", version.ref = "gradle-release" }
 spotbugs = { id = "com.github.spotbugs", version.ref = "spotbugs" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
-kotlin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
-spring-dependency-management = { id = "io.spring.dependency-management", version.ref = "spring-dependency-management" }
-spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
 avro = { id = "com.github.davidmc24.gradle.plugin.avro", version.ref = "avro-gradle-plugin" }
 protobuf = { id = "com.google.protobuf", version.ref = "protobuf-gradle-plugin" }
 jsonschema2pojo = { id = "org.jsonschema2pojo", version.ref = "jsonschema2pojo" }

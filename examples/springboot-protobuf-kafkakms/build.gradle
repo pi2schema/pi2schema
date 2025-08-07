@@ -6,10 +6,10 @@ buildscript {
 
 
 plugins {
-	alias(libs.plugins.spring.dependency.management)
-	alias(libs.plugins.spring.boot)
-	alias(libs.plugins.kotlin.jvm)
-	alias(libs.plugins.kotlin.spring)
+	alias(exampleLibs.plugins.spring.dependency.management)
+	alias(exampleLibs.plugins.spring.boot)
+	alias(exampleLibs.plugins.kotlin.jvm)
+	alias(exampleLibs.plugins.kotlin.spring)
 	alias(libs.plugins.protobuf)
 }
 
@@ -38,22 +38,22 @@ dependencies {
 
 	implementation libs.confluent.kafka.protobuf.serializer
 
-	implementation libs.spring.boot.starter.webflux
-	implementation libs.jackson.module.kotlin
-	implementation libs.reactor.kotlin.extensions
+	implementation exampleLibs.spring.boot.starter.webflux
+	implementation exampleLibs.jackson.module.kotlin
+	implementation exampleLibs.reactor.kotlin.extensions
 	implementation libs.kafka.streams
-	implementation libs.kotlin.reflect
-	implementation libs.kotlin.stdlib.jdk8
-	implementation libs.kotlinx.coroutines.reactor
-	implementation libs.spring.kafka
+	implementation exampleLibs.kotlin.reflect
+	implementation exampleLibs.kotlin.stdlib.jdk8
+	implementation exampleLibs.kotlinx.coroutines.reactor
+	implementation exampleLibs.spring.kafka
 
-	testImplementation(libs.spring.boot.starter.test) {
+	testImplementation(exampleLibs.spring.boot.starter.test) {
 		exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
 	}
-	testImplementation libs.reactor.test
-	testImplementation libs.spring.kafka.test
+	testImplementation exampleLibs.reactor.test
+	testImplementation exampleLibs.spring.kafka.test
 
-	testImplementation libs.spring.boot.testcontainers
+	testImplementation exampleLibs.spring.boot.testcontainers
 
 	testImplementation libs.bundles.testcontainers
 }

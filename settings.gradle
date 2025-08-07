@@ -1,4 +1,13 @@
 rootProject.name = 'pi2schema'
+
+dependencyResolutionManagement {
+    versionCatalogs {
+        exampleLibs {
+            from(files("examples/libs.versions.toml"))
+        }
+    }
+}
+
 include 'crypto-spi'
 include 'crypto-providers-kafkakms'
 include 'crypto-providers-vault'
