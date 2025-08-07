@@ -1,16 +1,16 @@
 buildscript {
     dependencies {
-        classpath "com.google.protobuf:protobuf-gradle-plugin:${rootProject.ext.versions.protobufGradlePlugin}"
+        classpath libs.protobuf.gradle.plugin
     }
 }
 
 plugins {
-    id 'com.google.protobuf' version '0.9.5'
+    alias(libs.plugins.protobuf)
 }
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:${rootProject.ext.versions.protoc}"
+        artifact = "com.google.protobuf:protoc:${libs.versions.protoc.get()}"
     }
 }
 
@@ -40,14 +40,12 @@ dependencies {
 
     implementation project(':crypto-spi')
 
-    implementation 'org.apache.kafka:kafka-streams:3.2.3'
-    implementation "io.confluent:kafka-streams-protobuf-serde:${rootProject.ext.versions.confluent}"
+    implementation libs.kafka.streams
+    implementation libs.confluent.kafka.streams.protobuf.serde
 
-    implementation "com.google.protobuf:protobuf-java:${rootProject.ext.versions.protobufJava}"
+    implementation libs.protobuf.java
 
-    implementation 'org.awaitility:awaitility:4.2.2'
+    implementation libs.awaitility
 
-    testImplementation "org.testcontainers:testcontainers:1.20.6"
-    testImplementation "org.testcontainers:junit-jupiter:1.20.6"
-    testImplementation "org.testcontainers:redpanda:1.20.6"
+    testImplementation libs.bundles.testcontainers
 }

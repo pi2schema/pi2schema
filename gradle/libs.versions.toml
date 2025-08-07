@@ -1,0 +1,141 @@
+[versions]
+# Build tools and plugins
+gradle-release = "3.0.2"
+spotbugs = "6.0.28"
+spotless = "6.23.3"
+kotlin = "1.9.25"
+spring-dependency-management = "1.1.7"
+spring-boot = "3.1.12"
+avro-gradle-plugin = "1.9.1"
+protobuf-gradle-plugin = "0.9.5"
+jsonschema2pojo = "1.2.2"
+
+# Core dependencies
+protobuf-java = "3.25.1"
+protoc = "3.25.1"
+avro = "1.11.4"
+kryo = "5.6.2"
+
+# Kafka and Confluent
+kafka-streams = "3.2.3"
+kafka-clients = "3.2.3"
+confluent = "7.5.8"
+
+# JSON processing
+jackson = "2.18.4"
+commons-beanutils = "1.11.0"
+
+# Testing
+junit-jupiter = "5.10.5"
+assertj = "3.24.2"
+commons-lang3 = "3.14.0"
+awaitility = "4.2.2"
+mockito = "5.8.0"
+testcontainers = "1.20.6"
+instancio-junit = "5.5.0"
+
+# Logging
+logback = "1.4.14"
+
+# Spring (for examples)
+reactor-kotlin-extensions = "1.2.3"
+kotlinx-coroutines-reactor = "1.8.1"
+
+[libraries]
+# Build plugins (for buildscript dependencies)
+protobuf-gradle-plugin = { module = "com.google.protobuf:protobuf-gradle-plugin", version.ref = "protobuf-gradle-plugin" }
+
+# Core libraries
+protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf-java" }
+avro = { module = "org.apache.avro:avro", version.ref = "avro" }
+kryo = { module = "com.esotericsoftware:kryo", version.ref = "kryo" }
+
+# Kafka and Confluent
+kafka-streams = { module = "org.apache.kafka:kafka-streams", version.ref = "kafka-streams" }
+kafka-clients = { module = "org.apache.kafka:kafka-clients", version.ref = "kafka-clients" }
+confluent-kafka-avro-serializer = { module = "io.confluent:kafka-avro-serializer", version.ref = "confluent" }
+confluent-kafka-protobuf-serializer = { module = "io.confluent:kafka-protobuf-serializer", version.ref = "confluent" }
+confluent-kafka-streams-protobuf-serde = { module = "io.confluent:kafka-streams-protobuf-serde", version.ref = "confluent" }
+confluent-kafka-schema-registry-client = { module = "io.confluent:kafka-schema-registry-client", version.ref = "confluent" }
+confluent-kafka-json-schema-provider = { module = "io.confluent:kafka-json-schema-provider", version.ref = "confluent" }
+confluent-kafka-schema-serializer = { module = "io.confluent:kafka-schema-serializer", version.ref = "confluent" }
+
+# JSON processing
+jackson-core = { module = "com.fasterxml.jackson.core:jackson-core", version.ref = "jackson" }
+jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
+jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "jackson" }
+jackson-module-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin" }
+commons-beanutils = { module = "commons-beanutils:commons-beanutils", version.ref = "commons-beanutils" }
+
+# Logging
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+
+# Testing
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit-jupiter" }
+junit-jupiter-params = { module = "org.junit.jupiter:junit-jupiter-params", version.ref = "junit-jupiter" }
+assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertj" }
+commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "commons-lang3" }
+awaitility = { module = "org.awaitility:awaitility", version.ref = "awaitility" }
+mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
+mockito-junit-jupiter = { module = "org.mockito:mockito-junit-jupiter", version.ref = "mockito" }
+testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
+testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
+testcontainers-redpanda = { module = "org.testcontainers:redpanda", version.ref = "testcontainers" }
+instancio-junit = { module = "org.instancio:instancio-junit", version.ref = "instancio-junit" }
+
+# Spring and Kotlin (for examples)
+spring-boot-starter-webflux = { module = "org.springframework.boot:spring-boot-starter-webflux" }
+spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+spring-boot-testcontainers = { module = "org.springframework.boot:spring-boot-testcontainers" }
+spring-kafka = { module = "org.springframework.kafka:spring-kafka" }
+spring-kafka-test = { module = "org.springframework.kafka:spring-kafka-test" }
+reactor-kotlin-extensions = { module = "io.projectreactor.kotlin:reactor-kotlin-extensions", version.ref = "reactor-kotlin-extensions" }
+reactor-test = { module = "io.projectreactor:reactor-test" }
+kotlinx-coroutines-reactor = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactor", version.ref = "kotlinx-coroutines-reactor" }
+kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect" }
+kotlin-stdlib-jdk8 = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8" }
+
+[plugins]
+release = { id = "net.researchgate.release", version.ref = "gradle-release" }
+spotbugs = { id = "com.github.spotbugs", version.ref = "spotbugs" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
+spring-dependency-management = { id = "io.spring.dependency-management", version.ref = "spring-dependency-management" }
+spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
+avro = { id = "com.github.davidmc24.gradle.plugin.avro", version.ref = "avro-gradle-plugin" }
+protobuf = { id = "com.google.protobuf", version.ref = "protobuf-gradle-plugin" }
+jsonschema2pojo = { id = "org.jsonschema2pojo", version.ref = "jsonschema2pojo" }
+
+[bundles]
+# Common testing dependencies
+testing = [
+    "junit-jupiter",
+    "junit-jupiter-params",
+    "assertj-core",
+    "commons-lang3",
+    "awaitility",
+    "mockito-core",
+    "mockito-junit-jupiter"
+]
+
+# Testcontainers bundle
+testcontainers = [
+    "testcontainers",
+    "testcontainers-junit-jupiter",
+    "testcontainers-redpanda"
+]
+
+# Jackson bundle
+jackson = [
+    "jackson-core",
+    "jackson-databind",
+    "jackson-annotations"
+]
+
+# Confluent bundle
+confluent = [
+    "confluent-kafka-schema-registry-client",
+    "confluent-kafka-json-schema-provider",
+    "confluent-kafka-schema-serializer"
+]

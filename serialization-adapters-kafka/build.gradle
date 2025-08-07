@@ -5,18 +5,14 @@ dependencies {
     implementation project(':crypto-providers-kafkakms') //todo service locator / dynamic factory
     implementation project(':schema-providers-jsonschema')
 
-    implementation 'org.apache.kafka:kafka-clients:3.2.3'
-    implementation "io.confluent:kafka-schema-registry-client:${rootProject.ext.versions.confluent}"
-    implementation "io.confluent:kafka-json-schema-provider:${rootProject.ext.versions.confluent}"
-    implementation "io.confluent:kafka-schema-serializer:${rootProject.ext.versions.confluent}"
+    implementation libs.kafka.clients
+    implementation libs.bundles.confluent
 
-    testImplementation "org.testcontainers:testcontainers:1.20.6"
-    testImplementation "org.testcontainers:junit-jupiter:1.20.6"
-    testImplementation "org.testcontainers:redpanda:1.20.6"
+    testImplementation libs.bundles.testcontainers
 
     // To fully test the dynamic class instantiation, we test against all available schema providers
-    testImplementation "com.google.protobuf:protobuf-java:${rootProject.ext.versions.protobufJava}"
-    testImplementation "org.apache.avro:avro:1.11.4"
+    testImplementation libs.protobuf.java
+    testImplementation libs.avro
 
     // TODO: Adopt test features in a way it includes generated source code
     // ref.: for further reading

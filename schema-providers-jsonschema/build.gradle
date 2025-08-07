@@ -1,6 +1,6 @@
 plugins {
     id 'java-test-fixtures'
-    id 'org.jsonschema2pojo' version "1.2.2"
+    alias(libs.plugins.jsonschema2pojo)
 
 }
 
@@ -14,17 +14,15 @@ dependencies {
     implementation project(':schema-spi')
     
     // JSON processing dependencies
-    implementation 'com.fasterxml.jackson.core:jackson-core:2.18.4'
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.18.4'
-    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.18.4'
-    implementation 'commons-beanutils:commons-beanutils:1.11.0'
+    implementation libs.bundles.jackson
+    implementation libs.commons.beanutils
     
     // Testing dependencies
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
-    testImplementation 'org.assertj:assertj-core:3.25.3'
-    testImplementation 'org.mockito:mockito-core:5.14.2'
-    testImplementation 'org.mockito:mockito-junit-jupiter:5.14.2'
-    testImplementation 'org.instancio:instancio-junit:5.5.0'
+    testImplementation libs.junit.jupiter
+    testImplementation libs.assertj.core
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.junit.jupiter
+    testImplementation libs.instancio.junit
 }
 
 jsonSchema2Pojo {

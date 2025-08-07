@@ -1,7 +1,7 @@
 
 plugins {
     id 'java-test-fixtures'
-    id "com.github.davidmc24.gradle.plugin.avro" version "1.9.1"
+    alias(libs.plugins.avro)
 
 }
 
@@ -13,6 +13,6 @@ spotbugs {
 dependencies {
     implementation project(':crypto-spi')
     implementation project(':schema-spi')
-    implementation 'org.apache.avro:avro:1.11.4'
-    implementation 'com.esotericsoftware:kryo:5.6.2'
+    implementation libs.avro
+    implementation libs.kryo
 }
