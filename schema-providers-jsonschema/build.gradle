@@ -14,9 +14,9 @@ dependencies {
     implementation project(':schema-spi')
     
     // JSON processing dependencies
-    implementation 'com.fasterxml.jackson.core:jackson-core:2.18.2'
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.18.2'
-    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.18.2'
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.18.4'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.18.4'
+    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.18.4'
     implementation 'commons-beanutils:commons-beanutils:1.11.0'
     
     // Testing dependencies
