@@ -26,6 +26,15 @@ dependencies {
 }
 
 jsonSchema2Pojo {
-    source = files("src/test/resources/jsonschema")
-    targetPackage = 'com.acme'
+    source = files("src/main/resources/jsonschema", "src/test/resources/jsonschema")
+    targetPackage = 'pi2schema.schema.providers.jsonschema.generated'
+    generateBuilders = true
+    includeAdditionalProperties = false
+    includeConstructors = true
+    includeToString = true
+    includeHashcodeAndEquals = true
+    serializable = false
+    useBigDecimals = false
+    useJodaDates = false
+    useCommonsLang3 = true
 }
