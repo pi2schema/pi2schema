@@ -1,17 +1,17 @@
 buildscript {
     dependencies {
-        classpath "com.google.protobuf:protobuf-gradle-plugin:${rootProject.ext.versions.protobufGradlePlugin}"
+        classpath libs.protobuf.gradle.plugin
     }
 }
 
 plugins {
     id 'java-test-fixtures'
-    id 'com.google.protobuf' version '0.9.5'
+    alias(libs.plugins.protobuf)
 }
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:${rootProject.ext.versions.protoc}"
+        artifact = "com.google.protobuf:protoc:${libs.versions.protoc.get()}"
     }
 }
 
@@ -31,5 +31,5 @@ spotbugs {
 dependencies {
     implementation project(':crypto-spi')
     implementation project(':schema-spi')
-    implementation "com.google.protobuf:protobuf-java:${rootProject.ext.versions.protobufJava}"
+    implementation libs.protobuf.java
 }

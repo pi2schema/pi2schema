@@ -1,9 +1,9 @@
 plugins {
-	id "io.spring.dependency-management"
-	id "org.springframework.boot"
-	id "org.jetbrains.kotlin.jvm"
-	id "org.jetbrains.kotlin.plugin.spring"
-	id "com.github.davidmc24.gradle.plugin.avro"
+	alias(exampleLibs.plugins.spring.dependency.management)
+	alias(exampleLibs.plugins.spring.boot)
+	alias(exampleLibs.plugins.kotlin.jvm)
+	alias(exampleLibs.plugins.kotlin.spring)
+	alias(libs.plugins.avro)
 }
 
 
@@ -21,28 +21,26 @@ dependencies {
 	implementation(project(":schema-providers-avro"))
 	implementation(project(":serialization-adapters-kafka"))
 
-	implementation("io.confluent:kafka-avro-serializer:${rootProject.ext.versions.confluent}")
-	implementation 'org.apache.avro:avro:1.11.4'
-	implementation("org.springframework.boot:spring-boot-starter-webflux")
-	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
-	implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
-	implementation("org.apache.kafka:kafka-streams")
-	implementation("org.jetbrains.kotlin:kotlin-reflect")
-	implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-	implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
-	implementation("org.springframework.kafka:spring-kafka")
+	implementation libs.confluent.kafka.avro.serializer
+	implementation libs.avro
+	implementation exampleLibs.spring.boot.starter.webflux
+	implementation exampleLibs.jackson.module.kotlin
+	implementation exampleLibs.reactor.kotlin.extensions
+	implementation libs.kafka.streams
+	implementation exampleLibs.kotlin.reflect
+	implementation exampleLibs.kotlin.stdlib.jdk8
+	implementation exampleLibs.kotlinx.coroutines.reactor
+	implementation exampleLibs.spring.kafka
 
-	testImplementation("org.springframework.boot:spring-boot-starter-test") {
+	testImplementation(exampleLibs.spring.boot.starter.test) {
 		exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
 	}
-	testImplementation("io.projectreactor:reactor-test")
-	testImplementation("org.springframework.kafka:spring-kafka-test")
+	testImplementation exampleLibs.reactor.test
+	testImplementation exampleLibs.spring.kafka.test
 
-	testImplementation("org.springframework.boot:spring-boot-testcontainers")
+	testImplementation exampleLibs.spring.boot.testcontainers
 
-	testImplementation("org.testcontainers:testcontainers:1.20.6")
-	testImplementation("org.testcontainers:junit-jupiter:1.20.6")
-	testImplementation ("org.testcontainers:redpanda:1.20.6")
+	testImplementation libs.bundles.testcontainers
 }
 
 
