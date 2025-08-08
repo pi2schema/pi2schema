@@ -114,7 +114,6 @@ public class JsonPersonalDataFieldDefinition<T> implements PersonalDataFieldDefi
     }
 
     private String toEncryptedPersonalDataJson(String subjectId, EncryptedData encryptedData) {
-        // Convert ByteBuffer to byte array safely
         ByteBuffer dataBuffer = encryptedData.data();
         byte[] dataBytes;
         if (dataBuffer.hasArray() && !dataBuffer.isReadOnly()) {
@@ -124,7 +123,6 @@ public class JsonPersonalDataFieldDefinition<T> implements PersonalDataFieldDefi
             dataBuffer.get(dataBytes);
         }
 
-        // Base64 encode the binary data and IV for safe string representation
         String dataBase64 = Base64.getEncoder().encodeToString(dataBytes);
         String ivBase64 = Base64.getEncoder().encodeToString(encryptedData.initializationVector().getIV());
 
