@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://pi2schema.dev/schemas/encrypted_personal_data.json",
+  "title": "EncryptedPersonalData",
+  "description": "Represents encrypted personal data structure compatible with other pi2schema providers",
+  "type": "object",
+  "properties": {
+    "subjectId": {
+      "type": "string",
+      "description": "The subject identifier for whom the data belongs"
+    },
+    "data": {
+      "type": "string",
+      "description": "Base64 encoded encrypted data",
+      "contentEncoding": "base64"
+    },
+    "personalDataFieldNumber": {
+      "type": "string",
+      "description": "The field identifier for the personal data"
+    },
+    "usedTransformation": {
+      "type": "string",
+      "description": "The cryptographic transformation used for encryption (format: algorithm/mode/padding)"
+    },
+    "initializationVector": {
+      "type": "string",
+      "description": "Base64 encoded initialization vector used for encryption",
+      "contentEncoding": "base64"
+    },
+    "kmsId": {
+      "type": ["string", "null"],
+      "description": "Key Management Service identifier (optional)"
+    }
+  },
+  "required": [
+    "subjectId",
+    "data",
+    "personalDataFieldNumber",
+    "usedTransformation",
+    "initializationVector"
+  ],
+  "additionalProperties": false
+}
