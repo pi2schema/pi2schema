@@ -45,7 +45,6 @@ dependencies {
 
 
 compileKotlin {
-	dependsOn(":examples:springboot-avro-kafkakms:generateAvroJava")
 	dependsOn(":examples:springboot-avro-kafkakms:generateTestAvroJava")
 	kotlinOptions.freeCompilerArgs = ["-Xjsr305=strict"]
 	kotlinOptions.jvmTarget = "17"
