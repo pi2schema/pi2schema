@@ -18,7 +18,7 @@ public final class KafkaGdprAwareProducerInterceptor<K, V> implements ProducerIn
     private EncryptingMaterialsProvider materialsProvider;
     private LocalEncryptor localEncryptor;
 
-    private PersonalMetadataProvider<V> metadataProvider;
+    private PersonalMetadataProvider<V, ?> metadataProvider;
 
     @Override
     public ProducerRecord<K, V> onSend(ProducerRecord<K, V> record) {

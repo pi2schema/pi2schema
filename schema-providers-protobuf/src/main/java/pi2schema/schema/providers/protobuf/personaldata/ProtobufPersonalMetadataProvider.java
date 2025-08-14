@@ -12,18 +12,14 @@ import java.util.Collections;
 import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toList;
 
-public class ProtobufPersonalMetadataProvider<T extends Message> implements PersonalMetadataProvider<T> {
+public class ProtobufPersonalMetadataProvider<T extends Message> implements PersonalMetadataProvider<T, Descriptor> {
 
     private final SiblingSubjectIdentifierFinder subjectIdentifierFinder = new SiblingSubjectIdentifierFinder();
 
     @Override
-    public PersonalMetadata<T> forType(T originalObject) {
-        return forDescriptor(originalObject.getDescriptorForType());
-    }
-
-    public ProtobufPersonalMetadata<T> forDescriptor(Descriptor descriptorForType) {
+    public PersonalMetadata<T> forSchema(Descriptor schema) {
         //protobuf oneOf strategy
-        var personalDataFieldDefinitions = descriptorForType
+        var personalDataFieldDefinitions = schema
             .getOneofs()
             .stream()
             .filter(OneOfPersonalDataFieldDefinition::hasPersonalData)
@@ -31,6 +27,11 @@ public class ProtobufPersonalMetadataProvider<T extends Message> implements Pers
             .collect(collectingAndThen(toList(), Collections::unmodifiableList));
 
         return new ProtobufPersonalMetadata<>(personalDataFieldDefinitions);
+    }
+
+    @Override
+    public PersonalMetadata<T> forType(T originalObject) {
+        return forSchema(originalObject.getDescriptorForType());
     }
 
     private OneOfPersonalDataFieldDefinition createFieldDefinition(Descriptors.OneofDescriptor descriptor) {

@@ -21,7 +21,7 @@ class ProtobufProtobufPersonalMetadataProviderTest {
     void givenADescriptorWithoutOneOfThenOptionalEmpty() {
         var descriptorWithoutOneOf = FruitFixture.waterMelon().build().getDescriptorForType();
 
-        var metadata = protobufPersonalMetadataProvider.forDescriptor(descriptorWithoutOneOf);
+        var metadata = protobufPersonalMetadataProvider.forSchema(descriptorWithoutOneOf);
 
         assertThat(metadata.requiresEncryption()).isFalse();
     }
@@ -34,7 +34,7 @@ class ProtobufProtobufPersonalMetadataProviderTest {
             .build()
             .getDescriptorForType();
 
-        var metadata = protobufPersonalMetadataProvider.forDescriptor(descriptorWithOneOf);
+        var metadata = protobufPersonalMetadataProvider.forSchema(descriptorWithOneOf);
 
         assertThat(metadata.requiresEncryption()).isFalse();
     }
@@ -43,7 +43,7 @@ class ProtobufProtobufPersonalMetadataProviderTest {
     void givenADescriptorWithOneOfWithPersonalDataAsSiblingThenPersonalMetadata() {
         var descriptor = FarmerRegisteredEventFixture.johnDoe().build().getDescriptorForType();
 
-        var metadata = protobufPersonalMetadataProvider.forDescriptor(descriptor);
+        var metadata = protobufPersonalMetadataProvider.forSchema(descriptor);
 
         assertThat(metadata.requiresEncryption()).isTrue();
     }

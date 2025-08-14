@@ -1,5 +1,6 @@
 package pi2schema.schema.providers.avro.personaldata;
 
+import org.apache.avro.Schema;
 import org.apache.avro.specific.SpecificRecordBase;
 import pi2schema.schema.personaldata.PersonalMetadata;
 import pi2schema.schema.personaldata.PersonalMetadataProvider;
@@ -9,12 +10,11 @@ import java.util.Collections;
 import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toList;
 
-public class AvroPersonalMetadataProvider<T extends SpecificRecordBase> implements PersonalMetadataProvider<T> {
+public class AvroPersonalMetadataProvider<T extends SpecificRecordBase> implements PersonalMetadataProvider<T, Schema> {
 
     @Override
-    public PersonalMetadata<T> forType(T originalObject) {
+    public PersonalMetadata<T> forSchema(Schema schema) {
         //avro union strategy
-        var schema = originalObject.getSchema();
         var personalDataFieldDefinitions = schema
             .getFields()
             .stream()
@@ -23,5 +23,11 @@ public class AvroPersonalMetadataProvider<T extends SpecificRecordBase> implemen
             .collect(collectingAndThen(toList(), Collections::unmodifiableList));
 
         return new AvroPersonalMetadata<>(personalDataFieldDefinitions);
+    }
+
+    @Override
+    @Deprecated
+    public PersonalMetadata<T> forType(T originalObject) {
+        return forSchema(originalObject.getSchema());
     }
 }
