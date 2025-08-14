@@ -51,8 +51,6 @@ compileKotlin {
 }
 
 
-// Disable SpotBugs for this example due to compatibility issues with SpotBugs 6.0.28 and commons-lang3
-// The example code is simple and doesn't require static analysis
-spotbugsMain {
-	enabled = false
+spotbugs {
+	onlyAnalyze = ['com.acme.sample.*']
 }
