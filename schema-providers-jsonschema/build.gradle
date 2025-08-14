@@ -27,7 +27,7 @@ dependencies {
 
 jsonSchema2Pojo {
     source = files("src/main/resources/jsonschema", "src/test/resources/jsonschema")
-    targetPackage = 'pi2schema.schema.providers.jsonschema.generated'
+    targetPackage = 'pi2schema.schema.providers.jsonschema.model'
     generateBuilders = true
     includeAdditionalProperties = false
     includeConstructors = true

@@ -3,7 +3,7 @@ package pi2schema.schema.providers.jsonschema.personaldata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import pi2schema.crypto.EncryptedData;
-import pi2schema.schema.providers.jsonschema.generated.EncryptedPersonalData;
+import pi2schema.schema.providers.jsonschema.model.EncryptedPersonalData;
 
 import java.nio.ByteBuffer;
 import java.util.Base64;

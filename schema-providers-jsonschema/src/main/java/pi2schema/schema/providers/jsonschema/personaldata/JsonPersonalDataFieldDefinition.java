@@ -10,7 +10,7 @@ import pi2schema.crypto.Encryptor;
 import pi2schema.schema.personaldata.InvalidEncryptedMessageException;
 import pi2schema.schema.personaldata.PersonalDataFieldDefinition;
 import pi2schema.schema.personaldata.UnsupportedPersonalDataFieldFormatException;
-import pi2schema.schema.providers.jsonschema.generated.EncryptedPersonalData;
+import pi2schema.schema.providers.jsonschema.model.EncryptedPersonalData;
 import pi2schema.schema.providers.jsonschema.subject.JsonSubjectIdentifierFieldDefinition;
 
 import java.nio.ByteBuffer;
