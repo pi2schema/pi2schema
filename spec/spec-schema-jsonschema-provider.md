@@ -1,25 +1,25 @@
 ---
-title: JSON Schema Provider Implementation for PII Data Handling
-version: 1.1
+title: JSON Schema Personal Metadata Provider Implementation for PII Data Handling
+version: 2.0
 date_created: 2025-07-20
-last_updated: 2025-07-23
+last_updated: 2025-08-08
 owner: pi2schema
-tags: [schema, json-schema, pii, encryption, provider, infrastructure]
+tags: [schema, json-schema, pii, encryption, metadata, provider]
 ---
 
-# JSON Schema Provider Implementation for PII Data Handling
+# JSON Schema Personal Metadata Provider Implementation for PII Data Handling
 
-A specification for implementing JSON Schema support within the pi2schema framework, enabling PII data identification, encryption, and handling capabilities compatible with existing Avro and Protobuf implementations.
+A specification for implementing JSON Schema personal metadata analysis within the pi2schema framework, enabling PII data identification and encryption capabilities by analyzing provided JSON Schema definitions. This specification focuses on PII metadata extraction and is designed to work with separate Schema Definition Providers.
 
 ## 1. Purpose & Scope
 
-This specification defines the requirements for implementing a JSON Schema provider that integrates with the pi2schema framework to handle Personal Identifiable Information (PII) data encryption and decryption. The implementation must be compatible with the existing SPI interfaces and provide feature parity with the current Avro and Protobuf schema providers.
+This specification defines the requirements for implementing a JSON Schema personal metadata provider that analyzes JSON Schema definitions to identify PII fields and provide encryption/decryption capabilities. The implementation must work with schemas provided by JsonSchemaProvider implementations and maintain compatibility with the existing SPI interfaces.
 
-**Intended Audience**: Java developers implementing schema providers for the pi2schema framework.
+**Intended Audience**: Java developers implementing personal metadata providers for the pi2schema framework.
 
 **Assumptions**: 
 - Familiarity with JSON Schema Draft 7 or later
-- Understanding of the pi2schema SPI architecture
+- Understanding of the pi2schema SPI architecture and separation between schema discovery and metadata analysis
 - Knowledge of Java cryptographic operations
 - Understanding of Kafka serialization patterns
 
@@ -50,17 +50,17 @@ The following terms are used throughout this specification:
 
 ### Core Requirements
 
-- **REQ-001**: The JSON Schema provider SHALL implement `PersonalMetadataProvider<T>` interface
+- **REQ-001**: The provider SHALL implement `PersonalMetadataProvider<T>` interface with `forSchema(JsonNode)` method
 - **REQ-002**: The provider SHALL implement `PersonalDataFieldDefinition<T>` interface  
 - **REQ-003**: The provider SHALL implement `SubjectIdentifierFinder<T>` interface
 - **REQ-004**: The provider SHALL implement `SubjectIdentifierFieldDefinition<T>` interface
-- **REQ-005**: The provider SHALL support any business object as the primary data structure
+- **REQ-005**: The provider SHALL accept JSON Schema definitions as input parameter
 - **REQ-006**: The provider SHALL identify PII fields through custom JSON Schema extensions
 - **REQ-007**: The provider SHALL identify subject identifier fields through custom JSON Schema extensions
 - **REQ-008**: The provider SHALL support encryption/decryption operations on identified PII fields
 - **REQ-009**: The provider SHALL maintain compatibility with Kafka serialization adapters
-- **REQ-010**: The provider SHALL implement `JsonSchemaProvider` interface for schema discovery
-- **REQ-011**: The provider SHALL support schema discovery via `SchemaProvider<JsonSchema>` SPI interface
+- **REQ-010**: The provider SHALL work with schemas provided by JsonSchemaProvider implementations
+- **REQ-011**: The provider SHALL support any business object type that corresponds to the provided schema
 
 ### Security Requirements
 
@@ -71,7 +71,7 @@ The following terms are used throughout this specification:
 
 ### Performance Requirements
 
-- **PER-001**: Schema analysis SHALL be cacheable to avoid repeated parsing
+- **PER-001**: Schema analysis SHALL be optimized for runtime performance
 - **PER-002**: Field lookups SHALL be optimized for runtime performance
 - **PER-003**: Memory allocation during encryption/decryption SHALL be minimized
 
@@ -84,11 +84,12 @@ The following terms are used throughout this specification:
 
 ### Design Guidelines
 
-- **GUD-001**: Use JSON Schema custom extensions for metadata annotation
-- **GUD-002**: Follow the existing package structure pattern: `pi2schema.schema.providers.jsonschema`
+- **GUD-001**: Focus on PII metadata analysis rather than schema discovery
+- **GUD-002**: Follow the existing package structure pattern: `pi2schema.schema.providers.jsonschema.personaldata`
 - **GUD-003**: Implement caching for parsed schema metadata
-- **GUD-004**: Use Jackson or similar JSON processing library for business object to JSON conversion
+- **GUD-004**: Use Jackson for business object to JSON conversion and field access
 - **GUD-005**: Provide clear error messages for schema parsing failures
+- **GUD-006**: Accept JsonNode schema definitions as primary input method
 
 ### Implementation Patterns
 
@@ -96,6 +97,7 @@ The following terms are used throughout this specification:
 - **PAT-002**: Follow the sibling subject identifier finder pattern from Avro implementation
 - **PAT-003**: Implement deep copying for business object mutation during encryption/decryption
 - **PAT-004**: Use Jackson ObjectMapper for business object to JSON conversion and field access
+- **PAT-005**: Implement `forSchema(JsonNode schema)` as the primary method for metadata creation
 
 ## 4. Interfaces & Data Contracts
 
@@ -129,10 +131,16 @@ The provider SHALL use custom JSON Schema extensions to identify PII and subject
 
 ### SPI Interface Implementations
 
-#### PersonalMetadataProvider Implementation
+#### Enhanced PersonalMetadataProvider Implementation
 ```java
 public class JsonSchemaPersonalMetadataProvider<T> implements PersonalMetadataProvider<T> {
-    PersonalMetadata<T> forType(T originalObject);
+    /**
+     * Creates PersonalMetadata for a given JSON Schema definition.
+     * This is the primary method for JSON Schema-based PII analysis.
+     * @param schema The JSON Schema definition to analyze for PII fields
+     * @return PersonalMetadata containing identified PII field definitions
+     */
+    PersonalMetadata<T> forSchema(JsonNode schema);
 }
 ```
 
@@ -203,6 +211,8 @@ public class JsonSchemaPersonalDataFieldDefinition<T> implements PersonalDataFie
 
 ### Design Decisions
 
+**Separation of Schema Discovery and PII Analysis**: This architectural separation allows better testability, maintainability, and reusability. Schema definitions can be shared and reused across multiple PII operations, and different schema discovery strategies can be plugged in without affecting PII analysis logic.
+
 **JSON Schema Extensions**: Custom extensions provide explicit metadata without altering the core JSON Schema specification. This approach mirrors the annotation-based strategies used in Avro and Protobuf implementations.
 
 **Direct Field Annotation**: Using direct `pi2schema-personal-data` annotation provides a simple and clear way to mark PII fields without complex schema patterns. This simplified approach focuses on essential functionality.
@@ -211,7 +221,15 @@ public class JsonSchemaPersonalDataFieldDefinition<T> implements PersonalDataFie
 
 **Business Object Flexibility**: Using any business object type provides maximum flexibility while internally converting to JSON representation for processing. This maintains compatibility with JSON processing libraries and allows for type-safe business object usage.
 
-**Sibling Subject Identifier Strategy**: Following the same strategy as Avro ensures consistency across providers and leverages proven patterns.
+**forSchema() Primary Method**: Making `forSchema(JsonNode)` the primary method enforces the architectural separation and provides better control over schema caching and validation.
+
+### Migration Strategy
+
+The transition from the current combined approach to separated concerns will involve:
+1. Implement `forSchema(JsonNode)` method as the sole method for metadata creation
+2. Update adapters to use JsonSchemaProvider + PersonalMetadataProvider pattern
+3. Remove any existing `forType()` implementations in favor of the new architecture
+4. Update documentation and examples to reflect the clean separation of concerns
 
 ### Context for Requirements
 
@@ -219,19 +237,16 @@ The JSON Schema provider fills a critical gap in the pi2schema ecosystem, enabli
 
 ## 8. Dependencies & External Integrations
 
-### External Systems
-- **EXT-001**: Kafka Schema Registry - Integration for schema management and evolution
+### Infrastructure Dependencies
+- **INF-001**: pi2schema crypto-spi - Cryptographic operations interface
+- **INF-002**: pi2schema schema-spi - Core PersonalMetadataProvider interface
+- **INF-003**: pi2schema schema-providers-jsonschema - JsonSchemaProvider for schema discovery
 
 ### Third-Party Services  
 - **SVC-001**: Jackson JSON Library - JSON processing and object mapping capabilities
 
-### Infrastructure Dependencies
-- **INF-001**: pi2schema crypto-spi - Cryptographic operations interface
-- **INF-002**: pi2schema schema-spi - Core schema provider interfaces
-- **INF-003**: Apache Kafka - Message serialization and deserialization
-
 ### Data Dependencies
-- **DAT-001**: JSON Schema definitions - Schema metadata for PII field identification
+- **DAT-001**: JSON Schema definitions - Provided by JsonSchemaProvider implementations
 - **DAT-002**: Encrypted data format - Compatibility with existing encrypted data structures
 
 ### Technology Platform Dependencies
@@ -246,55 +261,96 @@ The JSON Schema provider fills a critical gap in the pi2schema ecosystem, enabli
 
 ### Basic Usage Example
 ```java
+// Step 1: Schema discovery (handled by JsonSchemaProvider)
+JsonSchemaProvider schemaProvider = new JsonSchemaProvider(discoveryStrategies);
+JsonNode schema = schemaProvider.schemaFor(businessObject);
+
+// Step 2: PII metadata analysis (handled by this provider)
+JsonSchemaPersonalMetadataProvider<UserData> metadataProvider = 
+    new JsonSchemaPersonalMetadataProvider<>();
+PersonalMetadata<UserData> metadata = metadataProvider.forSchema(schema);
+
+// Step 3: Encryption
+UserData userData = new UserData("user-123", "john@example.com");
+UserData encryptedData = metadata.swapToEncrypted(encryptor, userData);
+```
+
+### Schema-Based Example
+```java
 // JSON Schema with PII annotations
-String schema = """
+JsonNode schema = objectMapper.readTree("""
 {
   "type": "object",
   "properties": {
     "userId": {
-      "type": "string", 
+      "type": "string",
       "pi2schema-subject-identifier": true
     },
     "email": {
-      "oneOf": [
-        {"type": "string", "pi2schema-personal-data": true},
-        {"$ref": "#/$defs/EncryptedPersonalData"}
-      ]
+      "type": "string",
+      "format": "email",
+      "pi2schema-personal-data": true
+    },
+    "name": {
+      "type": "string"
     }
   }
 }
-""";
+""");
 
-// Usage with business object
-public class UserData {
-    private String userId;
-    private String email;
+// Direct schema-based usage
+JsonSchemaPersonalMetadataProvider<Map<String, Object>> metadataProvider = 
+    new JsonSchemaPersonalMetadataProvider<>();
+PersonalMetadata<Map<String, Object>> metadata = metadataProvider.forSchema(schema);
+
+// Process dynamic data
+Map<String, Object> userData = Map.of(
+    "userId", "user-123",
+    "email", "john@example.com",
+    "name", "John Doe"
+);
+Map<String, Object> encryptedData = metadata.swapToEncrypted(encryptor, userData);
+```
+
+### Adapter Integration Example
+```java
+// Kafka adapter using separated concerns
+public class KafkaGdprAwareProducerInterceptor<K, V> {
+    private JsonSchemaProvider schemaProvider;
+    private JsonSchemaPersonalMetadataProvider<V> metadataProvider;
     
-    public UserData() {}
-    public UserData(String userId, String email) {
-        this.userId = userId;
-        this.email = email;
+    @Override
+    public ProducerRecord<K, V> onSend(ProducerRecord<K, V> record) {
+        if (record.value() == null) return record;
+        
+        // Schema discovery
+        JsonNode schema = schemaProvider.schemaFor(record.value());
+        
+        // PII analysis
+        PersonalMetadata<V> metadata = metadataProvider.forSchema(schema);
+        
+        // Encryption
+        V encryptedValue = metadata.swapToEncrypted(encryptor, record.value());
+        
+        return new ProducerRecord<>(/*...*/);
     }
-    // getters/setters...
 }
-
-var provider = new JsonSchemaPersonalMetadataProvider<UserData>();
-var userData = new UserData("user-123", "john@example.com");
-
-var metadata = provider.forSchema(schema);
-var encryptedData = metadata.swapToEncrypted(encryptor, userData);
-
-// Alternative usage with Map (for dynamic scenarios)
-var mapProvider = new JsonSchemaPersonalMetadataProvider<Map<String, Object>>();
-var userMap = Map.of("userId", "user-123", "email", "john@example.com");
-
-var mapMetadata = mapProvider.forSchema(schema);
-var encryptedMap = mapMetadata.swapToEncrypted(encryptor, userMap);
 ```
 
 ### Edge Cases
+- **Null Schema**: Provider should handle null schema gracefully with clear error message
+- **Invalid Schema Format**: Provider should validate JSON Schema structure
+- **Missing PII Extensions**: Provider should handle schemas without pi2schema extensions
+- **Complex Data Types**: Provider should handle arrays, objects, and null values in business objects
 
-## 9. Current Limitations and Future Enhancements
+## 10. Current Limitations and Future Enhancements
+
+### Supported Features (Current Implementation)
+
+- Top-level field encryption with pi2schema extensions
+- Subject identifier discovery using sibling field pattern
+- Business object flexibility (POJOs, Maps, etc.)
+- Jackson-based JSON conversion and field access
 
 ### Unsupported Features (Current Implementation)
 
@@ -373,8 +429,12 @@ This simplified approach provides a clear foundation for PII field identificatio
 - **VAL-013**: Cryptographic operations use secure implementations
 - **VAL-014**: Key material handling follows security best practices
 
-## 11. Related Specifications / Further Reading
+## 12. Related Specifications / Further Reading
 
+- [Schema Definition Provider Architecture](spec-schema-definition-provider.md)
+- [JSON Schema Definition Provider](spec-schema-definition-provider-jsonschema.md)
+- [Protobuf Schema Definition Provider](spec-schema-definition-provider-protobuf.md)
+- [Avro Schema Definition Provider](spec-schema-definition-provider-avro.md)
 - [pi2schema Avro Provider Implementation](../schema-providers-avro/README.md)
 - [pi2schema Protobuf Provider Implementation](../schema-providers-protobuf/README.md)
 - [JSON Schema Specification](https://json-schema.org/specification.html)

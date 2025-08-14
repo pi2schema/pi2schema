@@ -19,7 +19,45 @@ The specification file must define the requirements, constraints, and interfaces
 - Include examples and edge cases where applicable.
 - Ensure the document is self-contained and does not rely on external context.
 
-The specification should be saved in the [/spec/](/spec/) directory and named according to the following convention: `spec-[a-z0-9-]+.md`, where the name should be descriptive of the specification's content and starting with the highlevel purpose, which is one of [schema, tool, data, infrastructure, process, architecture, or design].
+## File Naming Convention
+
+**IMPORTANT**: The specification(s) MUST be saved in the [/spec/](/spec/) directory and named according to the following convention: 
+
+`spec-[a-z0-9-]+.md`
+
+Where the name should be descriptive of the specification's content and starting with the highlevel purpose, which is one of [schema, tool, data, infrastructure, process, architecture, or design].
+
+**Examples of correct naming:**
+- `spec-schema-definition-provider.md` (for interface/contract specs)
+- `spec-schema-definition-provider-protobuf.md` (for implementation specs)
+- `spec-tool-migration-utility.md`
+- `spec-data-encryption-format.md`
+
+**Always use the `spec-` prefix - this is mandatory!**
+
+## Specification Architecture Best Practices
+
+When creating specifications, consider separating concerns into multiple focused documents:
+
+### Interface/Contract Specifications
+Create specifications that define generic interfaces, contracts, and abstractions:
+- Focus on defining clear contracts and SPI (Service Provider Interface) patterns
+- Include generic requirements that apply across all implementations
+- Define data contracts and integration patterns
+- Specify architectural principles and separation of concerns
+
+### Implementation Specifications  
+Create separate specifications for concrete implementations:
+- Focus on technology-specific implementation details
+- Reference the interface specifications they implement
+- Include implementation-specific constraints and requirements
+- Provide technology-specific examples and edge cases
+
+### Benefits of Separation
+- **Maintainability**: Changes to implementations don't affect interface contracts
+- **Clarity**: Developers can focus on either interface design or implementation details
+- **Reusability**: Interface specifications can guide multiple implementations
+- **Testability**: Clear separation enables better testing strategies
 
 The specification file must be formatted in well formed Markdown.
 
@@ -125,3 +163,7 @@ tags: [Optional: List of relevant tags or categories, e.g., `infrastructure`, `p
 [Link to relevant external documentation]
 
 ```
+
+---
+
+**REMINDER**: Ensure all created specification files use the mandatory `spec-` prefix (e.g., `spec-schema-provider.md`, NOT `schema-provider.md`)!
