@@ -21,7 +21,7 @@ import static pi2schema.schema.providers.jsonschema.personaldata.JsonPersonalDat
  * Provides PII metadata for business objects based on schema analysis.
  * Simplified to directly handle schema analysis and field definition creation.
  */
-public class JsonSchemaPersonalMetadataProvider<T> implements PersonalMetadataProvider<T> {
+public class JsonSchemaPersonalMetadataProvider<T> implements PersonalMetadataProvider<T, JsonNode> {
 
     private final Map<String, JsonPersonalMetadata<T>> metadataCache;
     private final JsonSiblingSubjectIdentifierFinder subjectIdentifierFinder = new JsonSiblingSubjectIdentifierFinder();
