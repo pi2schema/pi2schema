@@ -15,6 +15,7 @@ import pi2schema.schema.providers.jsonschema.subject.JsonSubjectIdentifierFieldD
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.concurrent.CompletableFuture;
 
 import javax.crypto.spec.IvParameterSpec;
@@ -113,7 +114,6 @@ public class JsonPersonalDataFieldDefinition<T> implements PersonalDataFieldDefi
     }
 
     private String toEncryptedPersonalDataJson(String subjectId, EncryptedData encryptedData) {
-        // Convert ByteBuffer to byte array safely
         ByteBuffer dataBuffer = encryptedData.data();
         byte[] dataBytes;
         if (dataBuffer.hasArray() && !dataBuffer.isReadOnly()) {
@@ -123,12 +123,15 @@ public class JsonPersonalDataFieldDefinition<T> implements PersonalDataFieldDefi
             dataBuffer.get(dataBytes);
         }
 
+        String dataBase64 = Base64.getEncoder().encodeToString(dataBytes);
+        String ivBase64 = Base64.getEncoder().encodeToString(encryptedData.initializationVector().getIV());
+
         EncryptedPersonalData encryptedPersonalData = new EncryptedPersonalData(
             subjectId,
-            dataBytes,
+            dataBase64,
             fieldPath,
             encryptedData.usedTransformation(),
-            new String(encryptedData.initializationVector().getIV()),
+            ivBase64,
             null
         );
         try {
@@ -139,10 +142,13 @@ public class JsonPersonalDataFieldDefinition<T> implements PersonalDataFieldDefi
     }
 
     private EncryptedData toEncryptedData(EncryptedPersonalData encryptedPersonalData) {
+        byte[] dataBytes = Base64.getDecoder().decode(encryptedPersonalData.getData());
+        byte[] ivBytes = Base64.getDecoder().decode(encryptedPersonalData.getInitializationVector());
+
         return new EncryptedData(
-            ByteBuffer.wrap(encryptedPersonalData.getData()).asReadOnlyBuffer(),
+            ByteBuffer.wrap(dataBytes).asReadOnlyBuffer(),
             encryptedPersonalData.getUsedTransformation(),
-            new IvParameterSpec(encryptedPersonalData.getInitializationVector().getBytes(StandardCharsets.UTF_8))
+            new IvParameterSpec(ivBytes)
         );
     }
 

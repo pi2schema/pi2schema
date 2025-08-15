@@ -1,11 +1,11 @@
 package pi2schema.schema.providers.jsonschema.subject;
 
-import com.acme.FarmerRegisteredEvent;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import pi2schema.schema.providers.jsonschema.model.FarmerRegisteredEvent;
 import pi2schema.schema.subject.SubjectIdentifierRetrievalException;
 
 import java.util.HashMap;
