@@ -20,7 +20,7 @@ public final class KafkaGdprAwareConsumerInterceptor<K, V> implements ConsumerIn
 
     private DecryptingMaterialsProvider materialsProvider;
     private LocalDecryptor decryptor;
-    private PersonalMetadataProvider<V> metadataProvider;
+    private PersonalMetadataProvider<V, ?> metadataProvider;
 
     @Override
     public ConsumerRecords<K, V> onConsume(ConsumerRecords<K, V> records) {
