@@ -225,8 +225,14 @@ public class KafkaGdprAwareProducerInterceptor<K, V> implements ProducerIntercep
         if (record == null || record.value() == null) return record;
         
         // Step 1: Discover schema definition
-        Object schema = schemaProvider.schemaFor(record.value());
+        // Pass supplier for consumer case (extract schema id from headers); supplier may return Optional.empty() in producer case
+        Object schema = schemaProvider.schemaFor(
+            record.value(),
+            schemaIdSupplierFromHeaders(record.headers())
+        );
         
+        // … rest of method …
+    }
         // Step 2: Analyze schema for PII metadata
         PersonalMetadata<V> metadata = metadataProvider.forSchema(schema);
         
