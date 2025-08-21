@@ -3,6 +3,7 @@
   "$id": "https://acme.com/schemas/farmer_registered_event.json",
   "title": "FarmerRegisteredEvent",
   "type": "object",
+  "javaType": "com.acme.FarmerRegisteredEvent",
   "properties": {
     "uuid": {
       "type": "string",
