@@ -38,3 +38,11 @@ jsonSchema2Pojo {
     useJodaDates = false
     useCommonsLang3 = true
 }
+
+
+// Unfortunately, the jsonschema2pojo plugin does not support multiple target destinations mixing up src/main and src/test.
+// So we have to exclude the generated classes from the jar file in order to avoid publishing test classes.
+// https://groups.google.com/g/jsonschema2pojo-users/c/snoN4Jz5qDk
+jar {
+    exclude 'com/acme/**'
+}
