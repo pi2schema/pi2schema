@@ -36,7 +36,6 @@ jsonSchema2Pojo {
     serializable = false
     useBigDecimals = false
     useJodaDates = false
-    useCommonsLang3 = true
 }
 
 
@@ -45,4 +44,17 @@ jsonSchema2Pojo {
 // https://groups.google.com/g/jsonschema2pojo-users/c/snoN4Jz5qDk
 jar {
     exclude 'com/acme/**'
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir "${buildDir}/generated-sources/js2p"
+        }
+    }
+    test {
+        java {
+            srcDir "${buildDir}/generated-sources/js2p"
+        }
+    }
 }
