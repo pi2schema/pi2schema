@@ -26,6 +26,35 @@ dependencies {
 }
 
 jsonSchema2Pojo {
-    source = files("src/test/resources/jsonschema")
-    targetPackage = 'com.acme'
+    source = files("src/main/resources/jsonschema", "src/test/resources/jsonschema")
+    targetPackage = 'pi2schema.schema.providers.jsonschema.model'
+    generateBuilders = true
+    includeAdditionalProperties = false
+    includeConstructors = true
+    includeToString = true
+    includeHashcodeAndEquals = true
+    serializable = false
+    useBigDecimals = false
+    useJodaDates = false
+}
+
+
+// Unfortunately, the jsonschema2pojo plugin does not support multiple target destinations mixing up src/main and src/test.
+// So we have to exclude the generated classes from the jar file in order to avoid publishing test classes.
+// https://groups.google.com/g/jsonschema2pojo-users/c/snoN4Jz5qDk
+jar {
+    exclude 'com/acme/**'
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir "${buildDir}/generated-sources/js2p"
+        }
+    }
+    test {
+        java {
+            srcDir "${buildDir}/generated-sources/js2p"
+        }
+    }
 }
