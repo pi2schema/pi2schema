@@ -56,8 +56,7 @@ public class LocalAvroSchemaProvider implements AvroSchemaProvider {
             return genericRecord.getSchema();
         } else {
             throw new SchemaNotFoundException(
-                "Object is not an Avro record (SpecificRecord or GenericRecord): " +
-                businessObject.getClass().getName()
+                "Object is not an Avro record (SpecificRecord or GenericRecord): " + businessObject.getClass().getName()
             );
         }
     }

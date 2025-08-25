@@ -35,10 +35,7 @@ class LocalProtobufSchemaProviderIntegrationTest {
         LocalProtobufSchemaProvider provider = new LocalProtobufSchemaProvider();
 
         // When & Then
-        SchemaNotFoundException exception = assertThrows(
-            SchemaNotFoundException.class,
-            () -> provider.schemaFor(null)
-        );
+        SchemaNotFoundException exception = assertThrows(SchemaNotFoundException.class, () -> provider.schemaFor(null));
 
         assertEquals("Business object cannot be null", exception.getMessage());
     }

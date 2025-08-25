@@ -6,16 +6,16 @@ import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import pi2schema.schema.SchemaNotFoundException;
 
 import java.util.Optional;
-import java.util.function.Supplier;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -33,7 +33,9 @@ class LocalAvroSchemaProviderIntegrationTest {
     }
 
     @Test
-    @DisplayName("AC-001: Given an Avro SpecificRecord object, When schemaFor() is called, Then it returns the correct Schema from getSchema()")
+    @DisplayName(
+        "AC-001: Given an Avro SpecificRecord object, When schemaFor() is called, Then it returns the correct Schema from getSchema()"
+    )
     void shouldReturnCorrectSchemaFromSpecificRecord() {
         // Given
         UserValid userRecord = UserValidFixture.johnDoe().build();
@@ -50,7 +52,9 @@ class LocalAvroSchemaProviderIntegrationTest {
     }
 
     @Test
-    @DisplayName("AC-002: Given an Avro GenericRecord object, When schemaFor() is called, Then it returns the correct Schema from getSchema()")
+    @DisplayName(
+        "AC-002: Given an Avro GenericRecord object, When schemaFor() is called, Then it returns the correct Schema from getSchema()"
+    )
     void shouldReturnCorrectSchemaFromGenericRecord() {
         // Given
         UserValid specificRecord = UserValidFixture.johnDoe().build();
@@ -73,7 +77,9 @@ class LocalAvroSchemaProviderIntegrationTest {
     }
 
     @Test
-    @DisplayName("AC-003: Given a schema ID supplier parameter, When schemaFor() is called, Then it ignores the schema ID and uses local extraction")
+    @DisplayName(
+        "AC-003: Given a schema ID supplier parameter, When schemaFor() is called, Then it ignores the schema ID and uses local extraction"
+    )
     void shouldIgnoreSchemaIdSupplierAndUseLocalExtraction() {
         // Given
         UserValid userRecord = UserValidFixture.johnDoe().build();
@@ -92,7 +98,9 @@ class LocalAvroSchemaProviderIntegrationTest {
     }
 
     @Test
-    @DisplayName("AC-004: Given a non-Avro object, When schemaFor() is called, Then it throws SchemaNotFoundException with clear error message")
+    @DisplayName(
+        "AC-004: Given a non-Avro object, When schemaFor() is called, Then it throws SchemaNotFoundException with clear error message"
+    )
     void shouldThrowSchemaNotFoundExceptionForNonAvroObject() {
         // Given
         String nonAvroObject = "This is not an Avro record";
@@ -109,7 +117,9 @@ class LocalAvroSchemaProviderIntegrationTest {
     }
 
     @Test
-    @DisplayName("AC-005: Given a null business object, When schemaFor() is called, Then it throws SchemaNotFoundException gracefully")
+    @DisplayName(
+        "AC-005: Given a null business object, When schemaFor() is called, Then it throws SchemaNotFoundException gracefully"
+    )
     void shouldThrowSchemaNotFoundExceptionForNullObject() {
         // Given
         Object nullObject = null;
@@ -136,13 +146,17 @@ class LocalAvroSchemaProviderIntegrationTest {
         CompletableFuture<Void>[] futures = new CompletableFuture[numberOfThreads];
 
         for (int i = 0; i < numberOfThreads; i++) {
-            futures[i] = CompletableFuture.runAsync(() -> {
-                for (int j = 0; j < operationsPerThread; j++) {
-                    Schema result = provider.schemaFor(userRecord, null);
-                    assertNotNull(result);
-                    assertEquals(userRecord.getSchema(), result);
-                }
-            }, executor);
+            futures[i] =
+                CompletableFuture.runAsync(
+                    () -> {
+                        for (int j = 0; j < operationsPerThread; j++) {
+                            Schema result = provider.schemaFor(userRecord, null);
+                            assertNotNull(result);
+                            assertEquals(userRecord.getSchema(), result);
+                        }
+                    },
+                    executor
+                );
         }
 
         // Then
@@ -159,7 +173,8 @@ class LocalAvroSchemaProviderIntegrationTest {
     void shouldHandleVariousSpecificRecordTypes() {
         // Given
         UserValid userRecord1 = UserValidFixture.johnDoe().build();
-        UserValid userRecord2 = UserValid.newBuilder()
+        UserValid userRecord2 = UserValid
+            .newBuilder()
             .setUuid("another-uuid")
             .setFavoriteNumber(100)
             .setEmail("another@email.com")

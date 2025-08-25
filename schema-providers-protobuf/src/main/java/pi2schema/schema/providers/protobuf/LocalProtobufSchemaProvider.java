@@ -1,4 +1,4 @@
-    package pi2schema.schema.providers.protobuf;
+package pi2schema.schema.providers.protobuf;
 
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Message;
