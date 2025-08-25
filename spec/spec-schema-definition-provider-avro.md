@@ -119,35 +119,6 @@ public class LocalAvroSchemaProvider implements SchemaProvider<Schema> {
 }
 ```
 
-### Schema Utility Methods
-
-```java
-/**
- * Utility methods for Avro schema operations.
- */
-public class AvroSchemaUtils {
-    
-    /**
-     * Validates that the schema is suitable for PII analysis.
-     */
-    public static void validateSchemaForPiiAnalysis(Schema schema) {
-        if (schema.getType() != Schema.Type.RECORD) {
-            throw new IllegalArgumentException("Schema must be a RECORD type for PII analysis");
-        }
-    }
-    
-    /**
-     * Extracts field schemas for union type analysis.
-     */
-    public static List<Schema> extractUnionSchemas(Schema.Field field) {
-        if (field.schema().getType() == Schema.Type.UNION) {
-            return field.schema().getTypes();
-        }
-        return Collections.singletonList(field.schema());
-    }
-}
-```
-
 ### Data Contracts
 
 #### Input Requirements
@@ -159,7 +130,6 @@ public class AvroSchemaUtils {
 - Returns `org.apache.avro.Schema` instance
 - Schema MUST contain complete field metadata
 - Schema MUST be suitable for PII analysis by PersonalMetadataProvider
-- Schema MUST include union type information where applicable
 
 ## 5. Acceptance Criteria
 
