@@ -13,7 +13,7 @@ A specification for implementing JSON Schema definition discovery within the pi2
 
 ## 1. Purpose & Scope
 
-This specification defines the requirements for implementing a JSON Schema provider that discovers schema definitions for business objects exclusively through Confluent Schema Registry integration. JSON objects do not have inherent schema information like Protobuf and Avro records, making Schema Registry the only viable source for schema discovery.
+This specification defines the requirements for implementing a JSON Schema provider that discovers schema definitions for business objects through Confluent Schema Registry integration using multiple registry-based discovery strategies. JSON objects do not have inherent schema information like Protobuf and Avro records, making Schema Registry the only viable source for schema discovery. When all registry-based strategies fail, the provider SHALL throw SchemaNotFoundException to maintain compliance with lookup-only patterns.
 
 **Intended Audience**: Java developers implementing JSON Schema providers for the pi2schema framework with Kafka/Confluent integration.
 
@@ -21,7 +21,7 @@ This specification defines the requirements for implementing a JSON Schema provi
 - Familiarity with JSON Schema specification (Draft 7 or later)
 - Understanding of Confluent Schema Registry and Kafka serialization patterns
 - Knowledge of the pi2schema SPI architecture
-- Understanding that JSON objects require external schema discovery
+- Understanding that JSON objects require external schema discovery through registry-based strategies only
 
 ## 2. Definitions
 
@@ -76,7 +76,7 @@ This specification defines the requirements for implementing a JSON Schema provi
 - **GUD-002**: Provide clear error messages indicating which strategies were attempted
 - **GUD-003**: Handle null business objects gracefully
 - **GUD-004**: Log appropriate debugging information for troubleshooting
-- **GUD-005**: Support fallback to schema inference as last resort
+- **GUD-005**: Attempt multiple registry-based discovery strategies, then throw SchemaNotFoundException on failure (consistent with REQ-013 lookup-only patterns)
 
 ## 4. Interfaces & Data Contracts
 
