@@ -2,6 +2,7 @@ package pi2schema.serialization.kafka;
 
 import com.acme.FarmerRegisteredEventFixture;
 import com.acme.FarmerRegisteredEventOuterClass.FarmerRegisteredEvent;
+import com.google.protobuf.Descriptors.Descriptor;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -19,8 +20,8 @@ import static pi2schema.serialization.kafka.KafkaTestConfigs.configsForPotobuffe
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class KafkaGdprAwareProtobufInterceptorsTest {
 
-    private KafkaGdprAwareProducerInterceptor<String, FarmerRegisteredEvent> producerInterceptor;
-    private KafkaGdprAwareConsumerInterceptor<String, FarmerRegisteredEvent> consumerInterceptor;
+    private KafkaGdprAwareProducerInterceptor<String, FarmerRegisteredEvent, Descriptor> producerInterceptor;
+    private KafkaGdprAwareConsumerInterceptor<String, FarmerRegisteredEvent, Descriptor> consumerInterceptor;
 
     @BeforeAll
     void getStringFarmerRegisteredEventKafkaGdprAwareProducerInterceptor() {

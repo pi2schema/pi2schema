@@ -84,7 +84,15 @@ public class JsonPersonalDataFieldDefinition<T> implements PersonalDataFieldDefi
             return decryptor
                 .decrypt(encryptedPersonalData.getSubjectId(), encryptedData)
                 .thenAccept(decryptedBytes -> {
-                    String decryptedValue = new String(decryptedBytes.array(), StandardCharsets.UTF_8);
+                    // Handle both read-only and writable ByteBuffers
+                    byte[] bytes;
+                    if (decryptedBytes.hasArray() && !decryptedBytes.isReadOnly()) {
+                        bytes = decryptedBytes.array();
+                    } else {
+                        bytes = new byte[decryptedBytes.remaining()];
+                        decryptedBytes.get(bytes);
+                    }
+                    String decryptedValue = new String(bytes, StandardCharsets.UTF_8);
                     try {
                         PropertyUtils.setProperty(encryptedInstance, fieldPath, decryptedValue);
                     } catch (Exception e) {
