@@ -26,7 +26,8 @@ public class TestJsonSchemaProvider implements JsonSchemaProvider {
         if (businessObject instanceof Map) {
             try {
                 // Return a test schema for user data with PII fields
-                String schemaJson = """
+                String schemaJson =
+                    """
                     {
                       "$schema": "http://json-schema.org/draft-07/schema#",
                       "type": "object",

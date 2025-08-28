@@ -1,7 +1,6 @@
 package pi2schema.schema.providers.jsonschema.personaldata;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import pi2schema.schema.personaldata.PersonalMetadata;
 import pi2schema.schema.personaldata.PersonalMetadataProvider;
 import pi2schema.schema.providers.jsonschema.json.JsonField;
 import pi2schema.schema.providers.jsonschema.subject.JsonSiblingSubjectIdentifierFinder;
@@ -28,13 +27,6 @@ public class JsonSchemaPersonalMetadataProvider<T> implements PersonalMetadataPr
 
     public JsonSchemaPersonalMetadataProvider() {
         this.metadataCache = new ConcurrentHashMap<>();
-    }
-
-    @Override
-    public PersonalMetadata<T> forType(T originalObject) {
-        throw new UnsupportedOperationException(
-            "forType() is not supported for JSON Schema provider. Use forSchema() instead."
-        );
     }
 
     /**

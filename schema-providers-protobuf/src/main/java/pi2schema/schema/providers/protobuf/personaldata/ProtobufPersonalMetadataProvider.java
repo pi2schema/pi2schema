@@ -29,11 +29,6 @@ public class ProtobufPersonalMetadataProvider<T extends Message> implements Pers
         return new ProtobufPersonalMetadata<>(personalDataFieldDefinitions);
     }
 
-    @Override
-    public PersonalMetadata<T> forType(T originalObject) {
-        return forSchema(originalObject.getDescriptorForType());
-    }
-
     private OneOfPersonalDataFieldDefinition createFieldDefinition(Descriptors.OneofDescriptor descriptor) {
         return new OneOfPersonalDataFieldDefinition(descriptor, subjectIdentifierFinder.find(descriptor));
     }

@@ -8,17 +8,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class AvroPersonalMetadataProviderTest {
 
-    AvroPersonalMetadataProvider personalMetadataProvider;
+    AvroPersonalMetadataProvider<InvalidUserWithoutSubjectIdentifier> personalMetadataProvider;
 
     @BeforeEach
     public void setUp() {
-        this.personalMetadataProvider = new AvroPersonalMetadataProvider();
+        this.personalMetadataProvider = new AvroPersonalMetadataProvider<>();
     }
 
     @Test
     void givenADescriptorWithoutOneOfThenOptionalEmpty() {
         var without = InvalidUserWithoutSubjectIdentifierFixture.johnDoe().build();
-        var metadata = personalMetadataProvider.forType(without);
+        var metadata = personalMetadataProvider.forSchema(without.getSchema());
 
         assertThat(metadata.requiresEncryption()).isFalse();
     }
@@ -26,7 +26,7 @@ public class AvroPersonalMetadataProviderTest {
     @Test
     void givenADescriptorWithUnionWithoutPersonalDataSiblingThenNoEncryptionRequired() {
         var doubleIdentifiers = InvalidUserWithMultipleSubjectIdentifiersFixture.johnDoe().build();
-        var metadata = personalMetadataProvider.forType(doubleIdentifiers);
+        var metadata = personalMetadataProvider.forSchema(doubleIdentifiers.getSchema());
 
         assertThat(metadata.requiresEncryption()).isFalse();
     }
@@ -34,7 +34,7 @@ public class AvroPersonalMetadataProviderTest {
     @Test
     void givenADescriptorWithPersonalDataAsSiblingInUnionType() {
         var valid = UserValidFixture.johnDoe().build();
-        var metadata = personalMetadataProvider.forType(valid);
+        var metadata = personalMetadataProvider.forSchema(valid.getSchema());
 
         assertThat(metadata.requiresEncryption()).isTrue();
     }

@@ -15,10 +15,4 @@ public interface PersonalMetadataProvider<T, S> {
      * @return PersonalMetadata containing PII field definitions
      */
     PersonalMetadata<T> forSchema(S schema);
-
-    /**
-     * @deprecated Use {@link #forSchema(Object)} instead. This method will be removed in future versions.
-     */
-    @Deprecated
-    PersonalMetadata<T> forType(T originalObject);
 }

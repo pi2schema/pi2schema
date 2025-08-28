@@ -24,10 +24,4 @@ public class AvroPersonalMetadataProvider<T extends SpecificRecordBase> implemen
 
         return new AvroPersonalMetadata<>(personalDataFieldDefinitions);
     }
-
-    @Override
-    @Deprecated
-    public PersonalMetadata<T> forType(T originalObject) {
-        return forSchema(originalObject.getSchema());
-    }
 }
