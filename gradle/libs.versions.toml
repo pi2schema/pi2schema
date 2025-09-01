@@ -51,6 +51,7 @@ confluent-kafka-protobuf-serializer = { module = "io.confluent:kafka-protobuf-se
 confluent-kafka-streams-protobuf-serde = { module = "io.confluent:kafka-streams-protobuf-serde", version.ref = "confluent" }
 confluent-kafka-schema-registry-client = { module = "io.confluent:kafka-schema-registry-client", version.ref = "confluent" }
 confluent-kafka-json-schema-provider = { module = "io.confluent:kafka-json-schema-provider", version.ref = "confluent" }
+confluent-kafka-json-schema-serializer = { module = "io.confluent:kafka-json-schema-serializer", version.ref = "confluent" }
 confluent-kafka-schema-serializer = { module = "io.confluent:kafka-schema-serializer", version.ref = "confluent" }
 
 # JSON processing
@@ -113,5 +114,6 @@ jackson = [
 confluent = [
     "confluent-kafka-schema-registry-client",
     "confluent-kafka-json-schema-provider",
+    "confluent-kafka-json-schema-serializer",
     "confluent-kafka-schema-serializer"
 ]

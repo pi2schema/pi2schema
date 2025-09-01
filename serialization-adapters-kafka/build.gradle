@@ -2,11 +2,11 @@ dependencies {
 
     implementation project(':crypto-spi')
     implementation project(':schema-spi')
-    implementation project(':crypto-providers-kafkakms') //todo service locator / dynamic factory
-    implementation project(':schema-providers-jsonschema')
+    compileOnly project(':crypto-providers-kafkakms') //todo service locator / dynamic factory
 
     implementation libs.kafka.clients
     implementation libs.bundles.confluent
+    compileOnly project(':schema-providers-jsonschema') //todo: probably this should be another package
 
     testImplementation libs.bundles.testcontainers
 
@@ -24,4 +24,6 @@ dependencies {
     testImplementation project(':schema-providers-protobuf')
     testImplementation project(':schema-providers-avro').sourceSets.test.output
     testImplementation project(':schema-providers-avro')
+
+    testImplementation project(':schema-providers-jsonschema')
 }

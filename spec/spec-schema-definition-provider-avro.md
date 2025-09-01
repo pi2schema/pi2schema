@@ -39,7 +39,7 @@ This specification defines the requirements for implementing a local-only Avro s
 - **REQ-002**: The provider SHALL extract Schema from Avro SpecificRecord objects using `getSchema()`
 - **REQ-003**: The provider SHALL support GenericRecord objects with runtime schema access
 - **REQ-004**: The provider SHALL operate in local-only mode without external dependencies
-- **REQ-005**: The provider SHALL ignore schema ID supplier parameters to maintain local behavior
+- **REQ-005**: The provider SHALL ignore context parameters to maintain local behavior
 - **REQ-006**: The provider SHALL handle unknown record types gracefully
 - **REQ-007**: The provider SHALL be thread-safe for concurrent access
 
@@ -95,8 +95,8 @@ import java.util.function.Supplier;
 public class LocalAvroSchemaProvider implements SchemaProvider<Schema> {
     
     @Override
-    public Schema schemaFor(Object businessObject, Supplier<Optional<Integer>> schemaIdSupplier) {
-        // Local-only implementation - schema ID supplier is ignored
+    public Schema schemaFor(Object businessObject, Object context) {
+        // Local-only implementation - context is ignored
         return extractSchemaFromRecord(businessObject);
     }
     
@@ -135,7 +135,7 @@ public class LocalAvroSchemaProvider implements SchemaProvider<Schema> {
 
 - **AC-001**: Given an Avro SpecificRecord object, When schemaFor() is called, Then it returns the correct Schema from getSchema()
 - **AC-002**: Given an Avro GenericRecord object, When schemaFor() is called, Then it returns the correct Schema from getSchema()
-- **AC-003**: Given a schema ID supplier parameter, When schemaFor() is called, Then it ignores the schema ID and uses local extraction
+- **AC-003**: Given a context parameter, When schemaFor() is called, Then it ignores the context and uses local extraction
 - **AC-004**: Given a non-Avro object, When schemaFor() is called, Then it throws SchemaNotFoundException with clear error message
 - **AC-005**: Given a null business object, When schemaFor() is called, Then it throws SchemaNotFoundException gracefully
 - **AC-006**: Given an AvroPersonalMetadataProvider, When it receives a Schema from this provider, Then it successfully analyzes PII fields

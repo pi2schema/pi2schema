@@ -34,7 +34,7 @@ public final class KafkaGdprAwareConsumerInterceptor<K, V, S> implements Consume
                     .records(partition)
                     .stream()
                     .map(record -> {
-                        S schema = schemaProvider.schemaFor(record.value(), null);
+                        S schema = schemaProvider.schemaFor(record.value(), record);
                         return new ConsumerRecord<>(
                             record.topic(),
                             record.partition(),

@@ -37,7 +37,7 @@ This specification defines the requirements for implementing a local-only Protob
 - **REQ-001**: The provider SHALL implement `SchemaProvider<Descriptor>` interface
 - **REQ-002**: The provider SHALL extract Descriptor from Protobuf Message objects using `getDescriptorForType()`
 - **REQ-003**: The provider SHALL operate in local-only mode without external dependencies
-- **REQ-004**: The provider SHALL ignore schema ID supplier parameters to maintain local behavior
+- **REQ-004**: The provider SHALL ignore context parameters to maintain local behavior
 - **REQ-005**: The provider SHALL handle unknown message types gracefully
 - **REQ-006**: The provider SHALL be thread-safe for concurrent access
 
@@ -91,8 +91,8 @@ import java.util.function.Supplier;
 public class LocalProtobufSchemaProvider implements SchemaProvider<Descriptor> {
     
     @Override
-    public Descriptor schemaFor(Object businessObject, Supplier<Optional<Integer>> schemaIdSupplier) {
-        // Local-only implementation - schema ID supplier is ignored
+    public Descriptor schemaFor(Object businessObject, Object context) {
+        // Local-only implementation - context is ignored
         return extractDescriptorFromMessage(businessObject);
     }
     
@@ -128,7 +128,7 @@ public class LocalProtobufSchemaProvider implements SchemaProvider<Descriptor> {
 ## 5. Acceptance Criteria
 
 - **AC-001**: Given a Protobuf Message object, When schemaFor() is called, Then it returns the correct Descriptor from getDescriptorForType()
-- **AC-002**: Given a schema ID supplier parameter, When schemaFor() is called, Then it ignores the schema ID and uses local extraction
+- **AC-002**: Given a context parameter, When schemaFor() is called, Then it ignores the context and uses local extraction
 - **AC-003**: Given a non-Protobuf object, When schemaFor() is called, Then it throws SchemaNotFoundException with clear error message
 - **AC-004**: Given a null business object, When schemaFor() is called, Then it throws SchemaNotFoundException gracefully
 - **AC-005**: Given a ProtobufPersonalMetadataProvider, When it receives a Descriptor from this provider, Then it successfully analyzes PII fields

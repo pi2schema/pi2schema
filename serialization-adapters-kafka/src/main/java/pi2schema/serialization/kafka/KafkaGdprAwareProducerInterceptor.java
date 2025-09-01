@@ -26,7 +26,7 @@ public final class KafkaGdprAwareProducerInterceptor<K, V, S> implements Produce
     public ProducerRecord<K, V> onSend(ProducerRecord<K, V> record) {
         if (record == null || record.value() == null) return record;
 
-        S schema = schemaProvider.schemaFor(record.value());
+        S schema = schemaProvider.schemaFor(record.value(), record);
 
         return new ProducerRecord<>(
             record.topic(),

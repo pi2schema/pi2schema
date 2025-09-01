@@ -47,7 +47,7 @@ This specification defines the requirements for implementing a clear separation 
 
 ### Method Signature Requirements
 
-- **REQ-008**: `SchemaProvider.schemaFor(Object, Supplier<Optional<Integer>>)` SHALL return schema definition
+- **REQ-008**: `SchemaProvider.schemaFor(Object, Object)` SHALL return schema definition
 - **REQ-009**: `PersonalMetadataProvider.forSchema(S schema)` SHALL accept schema definition parameter
 - **REQ-010**: Schema providers SHALL handle schema registry integration when applicable
 
@@ -80,13 +80,15 @@ This specification defines the requirements for implementing a clear separation 
 ```java
 public interface SchemaProvider<S> {
     /**
-     * Discovers the schema for a given business object using optional schema identifier.
+     * Discovers the schema for a given business object using optional context information.
      * @param businessObject The object to find schema for
-     * @param schemaIdSupplier Optional supplier providing schema ID (e.g., from Kafka headers)
+     * @param context Optional context that provides additional information for schema discovery.
+     *                Different adapters can provide different context types (e.g., ConsumerRecord for Kafka,
+     *                SQS Message for AWS, etc.)
      * @return The schema definition instance
      * @throws SchemaNotFoundException if no schema can be found
      */
-    S schemaFor(Object businessObject, Supplier<Optional<Integer>> schemaIdSupplier);
+    S schemaFor(Object businessObject, Object context);
     
     /**
      * Discovers the schema for a given business object without additional context.
