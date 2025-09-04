@@ -116,12 +116,11 @@ The application uses Confluent's JSON Schema serializers with pi2schema intercep
 ```properties
 # Producer configuration
 spring.kafka.producer.value-serializer=io.confluent.kafka.serializers.json.KafkaJsonSchemaSerializer
-spring.kafka.producer.properties.interceptor.classes=pi2schema.serialization.kafka.KafkaGdprAwareJsonSchemaProducerInterceptor
+spring.kafka.producer.properties.interceptor.classes=pi2schema.serialization.kafka.KafkaGdprAwareProducerInterceptor
 
 # Consumer configuration  
 spring.kafka.consumer.value-deserializer=io.confluent.kafka.serializers.json.KafkaJsonSchemaDeserializer
-spring.kafka.consumer.properties.interceptor.classes=pi2schema.serialization.kafka.KafkaGdprAwareJsonSchemaConsumerInterceptor
-
+spring.kafka.consumer.properties.interceptor.classes=pi2schema.serialization.kafka.KafkaGdprAwareConsumerInterceptor
 # Schema Registry configuration
 spring.kafka.properties.schema.registry.url=http://localhost:8081/
 spring.kafka.properties.json.value.type=com.acme.model.FarmerRegisteredEvent
