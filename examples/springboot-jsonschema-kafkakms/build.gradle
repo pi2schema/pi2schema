@@ -1,0 +1,68 @@
+plugins {
+	alias(exampleLibs.plugins.spring.dependency.management)
+	alias(exampleLibs.plugins.spring.boot)
+	alias(exampleLibs.plugins.kotlin.jvm)
+	alias(exampleLibs.plugins.kotlin.spring)
+	alias(libs.plugins.jsonschema2pojo)
+}
+
+group = "com.acme"
+version = "0.0.1-SNAPSHOT"
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
+
+dependencies {
+	implementation(project(":schema-providers-jsonschema"))
+	implementation(project(":serialization-adapters-kafka"))
+    implementation(project(":crypto-providers-kafkakms"))
+
+	implementation libs.confluent.kafka.json.schema.serializer
+	implementation libs.bundles.jackson
+
+	implementation exampleLibs.spring.boot.starter.webflux
+	implementation exampleLibs.jackson.module.kotlin
+	implementation exampleLibs.reactor.kotlin.extensions
+	implementation libs.kafka.streams
+	implementation exampleLibs.kotlin.reflect
+	implementation exampleLibs.kotlin.stdlib.jdk8
+	implementation exampleLibs.kotlinx.coroutines.reactor
+	implementation exampleLibs.spring.kafka
+
+	testImplementation(exampleLibs.spring.boot.starter.test) {
+		exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+	}
+	testImplementation exampleLibs.reactor.test
+	testImplementation exampleLibs.spring.kafka.test
+
+	testImplementation exampleLibs.spring.boot.testcontainers
+
+	testImplementation libs.bundles.testcontainers
+}
+
+compileKotlin {
+	dependsOn(":examples:springboot-jsonschema-kafkakms:generateJsonSchema2Pojo")
+	kotlinOptions.freeCompilerArgs = ["-Xjsr305=strict"]
+	kotlinOptions.jvmTarget = "17"
+}
+
+compileTestKotlin {
+	kotlinOptions.freeCompilerArgs = ["-Xjsr305=strict"]
+	kotlinOptions.jvmTarget = "17"
+}
+
+jsonSchema2Pojo {
+	source = files("src/main/resources/jsonschema")
+	targetPackage = 'com.acme.model'
+	generateBuilders = true
+	includeJsr303Annotations = false
+	useLongIntegers = true
+	includeConstructors = true
+}
+
+tasks.withType(Test) {
+	useJUnitPlatform()
+}

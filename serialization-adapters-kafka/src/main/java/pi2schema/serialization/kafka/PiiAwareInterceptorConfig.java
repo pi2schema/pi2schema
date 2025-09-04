@@ -2,7 +2,7 @@ package pi2schema.serialization.kafka;
 
 import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;
-import pi2schema.serialization.kafka.materials.MaterialsProviderFactory;
+import pi2schema.serialization.kafka.materials.KafkaMaterialsProvider;
 
 import java.util.Map;
 
@@ -42,7 +42,7 @@ public class PiiAwareInterceptorConfig extends AbstractConfig {
                 .define(
                     MATERIALS_PROVIDER_CONFIG,
                     ConfigDef.Type.CLASS,
-                    MaterialsProviderFactory.class,
+                    KafkaMaterialsProvider.class,
                     ConfigDef.Importance.MEDIUM,
                     MATERIALS_PROVIDER_CONFIG_DOC
                 );
