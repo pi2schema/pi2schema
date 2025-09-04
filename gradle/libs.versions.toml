@@ -8,15 +8,15 @@ protobuf-gradle-plugin = "0.9.5"
 jsonschema2pojo = "1.2.2"
 
 # Core dependencies
-protobuf-java = "3.25.8"
-protoc = "3.25.1"
+protobuf-java = "4.32.0"
+protoc = "4.32.0"
 avro = "1.11.4"
 kryo = "5.6.2"
 
 # Kafka and Confluent
 kafka-streams = "3.2.3"
 kafka-clients = "3.2.3"
-confluent = "7.5.9"
+confluent = "8.0.0"
 
 # JSON processing
 jackson = "2.18.4"
@@ -51,6 +51,7 @@ confluent-kafka-protobuf-serializer = { module = "io.confluent:kafka-protobuf-se
 confluent-kafka-streams-protobuf-serde = { module = "io.confluent:kafka-streams-protobuf-serde", version.ref = "confluent" }
 confluent-kafka-schema-registry-client = { module = "io.confluent:kafka-schema-registry-client", version.ref = "confluent" }
 confluent-kafka-json-schema-provider = { module = "io.confluent:kafka-json-schema-provider", version.ref = "confluent" }
+confluent-kafka-json-schema-serializer = { module = "io.confluent:kafka-json-schema-serializer", version.ref = "confluent" }
 confluent-kafka-schema-serializer = { module = "io.confluent:kafka-schema-serializer", version.ref = "confluent" }
 
 # JSON processing
@@ -113,5 +114,6 @@ jackson = [
 confluent = [
     "confluent-kafka-schema-registry-client",
     "confluent-kafka-json-schema-provider",
+    "confluent-kafka-json-schema-serializer",
     "confluent-kafka-schema-serializer"
 ]

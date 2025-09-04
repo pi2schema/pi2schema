@@ -31,9 +31,11 @@ public class InMemoryKms implements EncryptingMaterialsProvider, DecryptingMater
 
     @Override
     public CompletableFuture<SymmetricMaterial> encryptionKeysFor(String subjectId) {
-        return CompletableFuture.completedFuture(
-            keyStore.computeIfAbsent(subjectId, missingKey -> new SymmetricMaterial(keyGenerator.generateKey()))
-        );
+        synchronized (this) {
+            return CompletableFuture.completedFuture(
+                keyStore.computeIfAbsent(subjectId, missingKey -> new SymmetricMaterial(keyGenerator.generateKey()))
+            );
+        }
     }
 
     @Override

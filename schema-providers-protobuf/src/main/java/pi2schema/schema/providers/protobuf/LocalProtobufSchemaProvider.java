@@ -4,9 +4,6 @@ import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Message;
 import pi2schema.schema.SchemaNotFoundException;
 
-import java.util.Optional;
-import java.util.function.Supplier;
-
 /**
  * Local Protobuf schema provider that extracts Descriptor information
  * from Protobuf Message objects using only local reflection capabilities.
@@ -17,23 +14,23 @@ import java.util.function.Supplier;
  * directly from the business object using the standard Protobuf Message
  * interface {@code getDescriptorForType()} method.</p>
  *
- * <p>Schema ID supplier parameters are ignored to maintain local behavior
+ * <p>Context parameters are ignored to maintain local behavior
  * and backward compatibility with existing implementations.</p>
  */
 public class LocalProtobufSchemaProvider implements ProtobufSchemaProvider {
 
     /**
      * Discovers the schema for a given Protobuf Message object using local extraction.
-     * The schema ID supplier parameter is ignored as this provider operates in local-only mode.
+     * The context parameter is ignored as this provider operates in local-only mode.
      *
      * @param businessObject The Protobuf Message object to extract schema from
-     * @param schemaIdSupplier Optional supplier that provides schema ID (ignored for local operation)
+     * @param context Optional context that provides additional information (ignored for local operation)
      * @return The Descriptor instance extracted from the Message
      * @throws SchemaNotFoundException if the business object is null or not a Protobuf Message
      */
     @Override
-    public Descriptor schemaFor(Object businessObject, Supplier<Optional<Integer>> schemaIdSupplier) {
-        // Local-only implementation - schema ID supplier is ignored
+    public Descriptor schemaFor(Object businessObject, Object context) {
+        // Local-only implementation - context is ignored
         return extractDescriptorFromMessage(businessObject);
     }
 

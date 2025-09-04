@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.beanutils.PropertyUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pi2schema.crypto.Decryptor;
 import pi2schema.crypto.EncryptedData;
 import pi2schema.crypto.Encryptor;
@@ -26,6 +28,8 @@ import javax.crypto.spec.IvParameterSpec;
  * Simplified to work directly with field path and schema information.
  */
 public class JsonPersonalDataFieldDefinition<T> implements PersonalDataFieldDefinition<T> {
+
+    private static final Logger log = LoggerFactory.getLogger(JsonPersonalDataFieldDefinition.class);
 
     public static final String PERSONAL_DATA_EXTENSION = "pi2schema-personal-data";
 
@@ -84,7 +88,15 @@ public class JsonPersonalDataFieldDefinition<T> implements PersonalDataFieldDefi
             return decryptor
                 .decrypt(encryptedPersonalData.getSubjectId(), encryptedData)
                 .thenAccept(decryptedBytes -> {
-                    String decryptedValue = new String(decryptedBytes.array(), StandardCharsets.UTF_8);
+                    // Handle both read-only and writable ByteBuffers
+                    byte[] bytes;
+                    if (decryptedBytes.hasArray() && !decryptedBytes.isReadOnly()) {
+                        bytes = decryptedBytes.array();
+                    } else {
+                        bytes = new byte[decryptedBytes.remaining()];
+                        decryptedBytes.get(bytes);
+                    }
+                    String decryptedValue = new String(bytes, StandardCharsets.UTF_8);
                     try {
                         PropertyUtils.setProperty(encryptedInstance, fieldPath, decryptedValue);
                     } catch (Exception e) {
@@ -107,6 +119,7 @@ public class JsonPersonalDataFieldDefinition<T> implements PersonalDataFieldDefi
                 return ByteBuffer.wrap(new byte[0]); // Handle null values
             }
         } catch (Exception e) {
+            log.error("error reading instance", e);
             throw new UnsupportedPersonalDataFieldFormatException(fieldPath);
         }
 

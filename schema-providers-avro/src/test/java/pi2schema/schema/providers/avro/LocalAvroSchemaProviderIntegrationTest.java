@@ -10,12 +10,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import pi2schema.schema.SchemaNotFoundException;
 
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -78,15 +76,15 @@ class LocalAvroSchemaProviderIntegrationTest {
 
     @Test
     @DisplayName(
-        "AC-003: Given a schema ID supplier parameter, When schemaFor() is called, Then it ignores the schema ID and uses local extraction"
+        "AC-003: Given a context parameter, When schemaFor() is called, Then it ignores the context and uses local extraction"
     )
-    void shouldIgnoreSchemaIdSupplierAndUseLocalExtraction() {
+    void shouldIgnoreContextAndUseLocalExtraction() {
         // Given
         UserValid userRecord = UserValidFixture.johnDoe().build();
-        Supplier<Optional<Integer>> schemaIdSupplier = () -> Optional.of(456);
+        Object context = "some context object";
 
         // When
-        Schema result1 = provider.schemaFor(userRecord, schemaIdSupplier);
+        Schema result1 = provider.schemaFor(userRecord, context);
         Schema result2 = provider.schemaFor(userRecord, null);
 
         // Then

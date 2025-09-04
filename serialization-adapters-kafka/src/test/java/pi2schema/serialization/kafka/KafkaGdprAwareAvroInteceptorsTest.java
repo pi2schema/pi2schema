@@ -1,6 +1,7 @@
 package pi2schema.serialization.kafka;
 
 import com.acme.UserValid;
+import org.apache.avro.Schema;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -20,8 +21,8 @@ import static pi2schema.serialization.kafka.KafkaTestConfigs.configsForAvro;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class KafkaGdprAwareAvroInteceptorsTest {
 
-    private KafkaGdprAwareProducerInterceptor<String, UserValid> producerInterceptor;
-    private KafkaGdprAwareConsumerInterceptor<String, UserValid> consumerInterceptor;
+    private KafkaGdprAwareProducerInterceptor<String, UserValid, Schema> producerInterceptor;
+    private KafkaGdprAwareConsumerInterceptor<String, UserValid, Schema> consumerInterceptor;
 
     @BeforeAll
     void getStringFarmerRegisteredEventKafkaGdprAwareProducerInterceptor() {

@@ -7,6 +7,7 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import pi2schema.crypto.LocalDecryptor;
 import pi2schema.crypto.providers.DecryptingMaterialsProvider;
+import pi2schema.schema.SchemaProvider;
 import pi2schema.schema.personaldata.PersonalMetadataProvider;
 import pi2schema.serialization.kafka.materials.MaterialsProviderFactory;
 
@@ -16,11 +17,12 @@ import java.util.stream.Collectors;
 import static pi2schema.serialization.kafka.PiiAwareInterceptorConfig.MATERIALS_PROVIDER_CONFIG;
 import static pi2schema.serialization.kafka.PiiAwareInterceptorConfig.PERSONAL_METADATA_PROVIDER_CONFIG;
 
-public final class KafkaGdprAwareConsumerInterceptor<K, V> implements ConsumerInterceptor<K, V> {
+public final class KafkaGdprAwareConsumerInterceptor<K, V, S> implements ConsumerInterceptor<K, V> {
 
+    private SchemaProvider<S> schemaProvider;
     private DecryptingMaterialsProvider materialsProvider;
     private LocalDecryptor decryptor;
-    private PersonalMetadataProvider<V, ?> metadataProvider;
+    private PersonalMetadataProvider<V, S> metadataProvider;
 
     @Override
     public ConsumerRecords<K, V> onConsume(ConsumerRecords<K, V> records) {
@@ -31,8 +33,9 @@ public final class KafkaGdprAwareConsumerInterceptor<K, V> implements ConsumerIn
                 var decrypted = records
                     .records(partition)
                     .stream()
-                    .map(record ->
-                        new ConsumerRecord<>(
+                    .map(record -> {
+                        S schema = schemaProvider.schemaFor(record.value(), record);
+                        return new ConsumerRecord<>(
                             record.topic(),
                             record.partition(),
                             record.offset(),
@@ -41,11 +44,11 @@ public final class KafkaGdprAwareConsumerInterceptor<K, V> implements ConsumerIn
                             record.serializedKeySize(),
                             record.serializedValueSize(),
                             record.key(),
-                            metadataProvider.forType(record.value()).swapToDecrypted(decryptor, record.value()),
+                            metadataProvider.forSchema(schema).swapToDecrypted(decryptor, record.value()),
                             record.headers(),
                             record.leaderEpoch()
-                        )
-                    )
+                        );
+                    })
                     .collect(Collectors.toList());
                 return Map.of(partition, decrypted);
             })
@@ -68,6 +71,12 @@ public final class KafkaGdprAwareConsumerInterceptor<K, V> implements ConsumerIn
     @Override
     public void configure(Map<String, ?> configs) {
         var piiAwareInterceptorConfig = new PiiAwareInterceptorConfig(configs);
+
+        schemaProvider =
+            piiAwareInterceptorConfig.getConfiguredInstance(
+                PiiAwareInterceptorConfig.SCHEMA_DEFINITION_PROVIDER_CONFIG,
+                SchemaProvider.class
+            );
 
         metadataProvider =
             piiAwareInterceptorConfig.getConfiguredInstance(
