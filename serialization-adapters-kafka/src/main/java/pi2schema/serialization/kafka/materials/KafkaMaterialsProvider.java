@@ -6,7 +6,7 @@ import pi2schema.crypto.support.KeyGen;
 
 import java.util.Map;
 
-class KafkaMaterialsProvider implements MaterialsProviderFactory {
+public class KafkaMaterialsProvider implements MaterialsProviderFactory {
 
     @Override
     public Object create(Map<String, ?> configs) {

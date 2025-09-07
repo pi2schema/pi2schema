@@ -1,47 +1,55 @@
-# to access the kafka: PLAINTEXT, which should have the minikube ip associated
----
-version: '2'
+version: '3.7'
+name: redpanda-owl-shop
+networks:
+  redpanda_network:
+    driver: bridge
+
 services:
-  zookeeper:
-    image: confluentinc/cp-zookeeper:5.5.2-2-ubi8
-    hostname: zookeeper
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v25.2.2
+    command:
+      - redpanda start
+      - --smp 1
+      - --mode dev-container
+      - --kafka-addr PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
+      - --advertise-kafka-addr PLAINTEXT://redpanda:29092,OUTSIDE://localhost:9092
+      - --pandaproxy-addr 0.0.0.0:8082
+      - --advertise-pandaproxy-addr localhost:8082
     ports:
-      - '32181:32181'
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 32181
-      ZOOKEEPER_TICK_TIME: 2000
-    extra_hosts:
-      - "moby:127.0.0.1"
+      - 8081:8081
+      - 8082:8082
+      - 9092:9092
+      - 9644:9644
+      - 29092:29092
+    networks:
+      - redpanda_network
+    healthcheck:
+      test: [ "CMD-SHELL", "rpk cluster health | grep -E 'Healthy:.+true' || exit 1" ]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
 
-  kafka:
-    image: confluentinc/cp-kafka:5.5.2-2-ubi8
-    hostname: kafka
-    ports:
-      - '9092:9092'
-      - '29092:29092'
-    depends_on:
-      - zookeeper
+  console:
+    image: docker.redpanda.com/redpandadata/console:v3.2.1
+    entrypoint: /bin/sh
+    command: -c "echo \"$$CONSOLE_CONFIG_FILE\" > /tmp/config.yml; /app/console"
     environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:32181
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
-    extra_hosts:
-      - "moby:127.0.0.1"
+      CONFIG_FILEPATH: /tmp/config.yml
+      CONSOLE_CONFIG_FILE: |
+        kafka:
+          brokers: ["redpanda:29092"]
+        schemaRegistry:
+          enabled: true
+          urls: ["http://redpanda:8081"]
+        redpanda:
+          adminApi:
+            enabled: true
+            urls: ["http://redpanda:9644"]
 
-  schema-registry:
-    image: confluentinc/cp-schema-registry:7.5.1
-    hostname: schema-registry
-    depends_on:
-      - zookeeper
-      - kafka
     ports:
-      - '8081:8081'
-    environment:
-      SCHEMA_REGISTRY_HOST_NAME: schema-registry
-      SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: zookeeper:32181
-      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: kafka:29092
-    extra_hosts:
-      - "moby:127.0.0.1"
+      - 9080:8080
+    networks:
+      - redpanda_network
+    depends_on:
+      - redpanda
