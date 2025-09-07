@@ -124,6 +124,13 @@ spring.kafka.consumer.properties.interceptor.classes=pi2schema.serialization.kaf
 # Schema Registry configuration
 spring.kafka.properties.schema.registry.url=http://localhost:8081/
 spring.kafka.properties.json.value.type=com.acme.model.FarmerRegisteredEvent
+
+# pi2schema provider configuration (required)
+spring.kafka.properties.pi2schema.schema.definition.provider=pi2schema.serialization.kafka.jsonschema.KafkaJsonSchemaProvider
+spring.kafka.properties.pi2schema.personal.metadata.provider=pi2schema.schema.providers.jsonschema.personaldata.JsonSchemaPersonalMetadataProvider
+
+# pi2schema materials provider configuration (optional - allows overriding with custom implementation)
+# spring.kafka.properties.pi2schema.personal.materials.provider=<fully-qualified-implementation-class-name>
 ```
 
 ## Running the Services
