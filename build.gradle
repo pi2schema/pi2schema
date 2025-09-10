@@ -118,3 +118,25 @@ subprojects {
 //}
 
 //check.dependsOn codeCoverageReport
+
+task julesTest(type: Test) {
+    description = "Runs tests that do not require a Docker environment."
+    group = "verification"
+
+    def testSourceSets = subprojects.sourceSets.test
+    testClassesDirs = files(testSourceSets.output.classesDirs)
+    classpath = files(testSourceSets.runtimeClasspath)
+
+    useJUnitPlatform()
+
+    filter {
+        excludeTestsMatching "pi2schema.crypto.providers.kafkakms.KafkaSecretKeyStoreTest"
+        excludeTestsMatching "com.acme.sample.SampleApplicationTests"
+        excludeTestsMatching "pi2schema.serialization.kafka.*"
+        excludeTestsMatching "com.acme.sample.SampleJsonSchemaApplicationTests"
+    }
+
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
+}

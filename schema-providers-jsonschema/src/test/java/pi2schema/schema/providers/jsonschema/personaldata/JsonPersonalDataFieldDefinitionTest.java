@@ -16,8 +16,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-import javax.crypto.spec.IvParameterSpec;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -61,9 +59,7 @@ class JsonPersonalDataFieldDefinitionTest {
 
         // Mock encryption response
         EncryptedData mockEncryptedData = new EncryptedData(
-            ByteBuffer.wrap("encrypted_data".getBytes()),
-            "AES/GCM/NoPadding",
-            new IvParameterSpec("1234567890123456".getBytes())
+            ByteBuffer.wrap("encrypted_data".getBytes())
         );
         when(encryptor.encrypt(eq("user-123"), any(ByteBuffer.class)))
             .thenReturn(CompletableFuture.completedFuture(mockEncryptedData));
@@ -80,9 +76,7 @@ class JsonPersonalDataFieldDefinitionTest {
         String encryptedJson = (String) businessObject.get("email");
         var encryptedObject = objectMapper.readTree(encryptedJson);
         assertThat(encryptedObject.get("subjectId").asText()).isEqualTo("user-123");
-        assertThat(encryptedObject.get("usedTransformation").asText()).isEqualTo("AES/GCM/NoPadding");
         assertThat(encryptedObject.has("data")).isTrue();
-        assertThat(encryptedObject.has("initializationVector")).isTrue();
     }
 
     @Test
@@ -97,16 +91,14 @@ class JsonPersonalDataFieldDefinitionTest {
             {
               "subjectId": "user-123",
               "data": "ZW5jcnlwdGVkX2RhdGE=",
-              "personalDataFieldNumber": "email",
-              "usedTransformation": "AES/GCM/NoPadding",
-              "initializationVector": "MTIzNDU2Nzg5MDEyMzQ1Ng=="
+              "personalDataFieldNumber": "email"
             }
             """;
         businessObject.put("email", encryptedJson);
 
         // Mock decryption response
         ByteBuffer decryptedData = ByteBuffer.wrap("john@example.com".getBytes(StandardCharsets.UTF_8));
-        when(decryptor.decrypt(eq("user-123"), any(EncryptedData.class)))
+        when(decryptor.decrypt(any(EncryptedData.class)))
             .thenReturn(CompletableFuture.completedFuture(decryptedData));
 
         // When: Decrypt the field
@@ -226,15 +218,13 @@ class JsonPersonalDataFieldDefinitionTest {
             {
               "subjectId": "user-123",
               "data": "ZW5jcnlwdGVkX2RhdGE=",
-              "personalDataFieldNumber": "email",
-              "usedTransformation": "AES/GCM/NoPadding",
-              "initializationVector": "MTIzNDU2Nzg5MDEyMzQ1Ng=="
+              "personalDataFieldNumber": "email"
             }
             """;
         businessObject.put("email", encryptedJson);
 
         // Mock decryption failure
-        when(decryptor.decrypt(eq("user-123"), any(EncryptedData.class)))
+        when(decryptor.decrypt(any(EncryptedData.class)))
             .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Decryption failed")));
 
         // When/Then: Should handle decryption failure gracefully

@@ -19,8 +19,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import javax.crypto.spec.IvParameterSpec;
-
 public class OneOfPersonalDataFieldDefinition implements PersonalDataFieldDefinition<Message.Builder> {
 
     private static final Logger log = LoggerFactory.getLogger(OneOfPersonalDataFieldDefinition.class);
@@ -86,8 +84,8 @@ public class OneOfPersonalDataFieldDefinition implements PersonalDataFieldDefini
                         .setSubjectId(subjectId)
                         .setData(ByteString.copyFrom(encrypted.data())) //TODO input/output stream
                         .setPersonalDataFieldNumber(sourceFieldNumber)
-                        .setUsedTransformation(encrypted.usedTransformation())
-                        .setInitializationVector(ByteString.copyFrom(encrypted.initializationVector().getIV()))
+                        .setUsedTransformation("") // Obsolete
+                        .setInitializationVector(ByteString.EMPTY) // Obsolete
                         .build()
                 );
             });
@@ -106,13 +104,11 @@ public class OneOfPersonalDataFieldDefinition implements PersonalDataFieldDefini
         var encryptedPersonalData = (EncryptedPersonalData) encryptedValue;
 
         var encryptedData = new EncryptedData(
-            encryptedPersonalData.getData().asReadOnlyByteBuffer(),
-            encryptedPersonalData.getUsedTransformation(),
-            new IvParameterSpec(encryptedPersonalData.getInitializationVector().toByteArray())
+            encryptedPersonalData.getData().asReadOnlyByteBuffer()
         );
 
         return decryptor
-            .decrypt(encryptedPersonalData.getSubjectId(), encryptedData)
+            .decrypt(encryptedData)
             .thenAccept(decrypted -> {
                 decryptingInstance.clearOneof(containerOneOfDescriptor);
                 var personalDataUnencryptedField = containerOneOfDescriptor

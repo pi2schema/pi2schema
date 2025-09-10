@@ -4,4 +4,5 @@ import javax.crypto.SecretKey;
 
 public interface DecryptingMaterial {
     SecretKey getDecryptionKey();
+    String subjectId();
 }

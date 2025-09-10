@@ -41,8 +41,9 @@ public class MostRecentMaterialsProvider implements EncryptingMaterialsProvider,
         var latestVersion = materials.getMaterialsList().get(latestKeyIndex);
 
         var latestKey = latestVersion.getSymmetricKey().toByteArray();
+        var subjectId = latestVersion.getSubject().getId();
 
-        return new SymmetricMaterial(new SecretKeySpec(latestKey, latestVersion.getAlgorithm()));
+        return new SymmetricMaterial(new SecretKeySpec(latestKey, latestVersion.getAlgorithm()), subjectId);
     }
 
     @Override

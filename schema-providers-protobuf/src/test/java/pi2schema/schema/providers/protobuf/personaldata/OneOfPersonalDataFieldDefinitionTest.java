@@ -117,7 +117,7 @@ class OneOfPersonalDataFieldDefinitionTest {
 
         var personalDataFieldDef = FarmerRegisteredEventFixture.personalDataFieldDefinition();
 
-        Decryptor decryptor = (key, data) -> CompletableFuture.completedFuture(decrypted.asReadOnlyByteBuffer());
+        Decryptor decryptor = (data) -> CompletableFuture.completedFuture(decrypted.asReadOnlyByteBuffer());
 
         //when
         personalDataFieldDef.swapToDecrypted(decryptor, encryptedEvent);

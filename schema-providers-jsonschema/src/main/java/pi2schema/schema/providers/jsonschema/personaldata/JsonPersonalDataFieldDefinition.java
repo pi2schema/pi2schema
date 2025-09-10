@@ -20,8 +20,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.concurrent.CompletableFuture;
 
-import javax.crypto.spec.IvParameterSpec;
-
 /**
  * Implementation of PersonalDataFieldDefinition for JSON Schema.
  * Handles encryption and decryption of PII fields in business objects.
@@ -86,7 +84,7 @@ public class JsonPersonalDataFieldDefinition<T> implements PersonalDataFieldDefi
             var encryptedData = toEncryptedData(encryptedPersonalData);
 
             return decryptor
-                .decrypt(encryptedPersonalData.getSubjectId(), encryptedData)
+                .decrypt(encryptedData)
                 .thenAccept(decryptedBytes -> {
                     // Handle both read-only and writable ByteBuffers
                     byte[] bytes;
@@ -137,14 +135,13 @@ public class JsonPersonalDataFieldDefinition<T> implements PersonalDataFieldDefi
         }
 
         String dataBase64 = Base64.getEncoder().encodeToString(dataBytes);
-        String ivBase64 = Base64.getEncoder().encodeToString(encryptedData.initializationVector().getIV());
 
         EncryptedPersonalData encryptedPersonalData = new EncryptedPersonalData(
             subjectId,
             dataBase64,
             fieldPath,
-            encryptedData.usedTransformation(),
-            ivBase64,
+            "", // Obsolete
+            "", // Obsolete
             null
         );
         try {
@@ -156,12 +153,9 @@ public class JsonPersonalDataFieldDefinition<T> implements PersonalDataFieldDefi
 
     private EncryptedData toEncryptedData(EncryptedPersonalData encryptedPersonalData) {
         byte[] dataBytes = Base64.getDecoder().decode(encryptedPersonalData.getData());
-        byte[] ivBytes = Base64.getDecoder().decode(encryptedPersonalData.getInitializationVector());
 
         return new EncryptedData(
-            ByteBuffer.wrap(dataBytes).asReadOnlyBuffer(),
-            encryptedPersonalData.getUsedTransformation(),
-            new IvParameterSpec(ivBytes)
+            ByteBuffer.wrap(dataBytes).asReadOnlyBuffer()
         );
     }
 

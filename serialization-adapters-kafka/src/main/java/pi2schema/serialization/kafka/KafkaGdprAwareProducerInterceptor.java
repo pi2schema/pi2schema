@@ -3,7 +3,7 @@ package pi2schema.serialization.kafka;
 import org.apache.kafka.clients.producer.ProducerInterceptor;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
-import pi2schema.crypto.LocalEncryptor;
+//import pi2schema.crypto.LocalEncryptor;
 import pi2schema.crypto.providers.EncryptingMaterialsProvider;
 import pi2schema.schema.SchemaProvider;
 import pi2schema.schema.personaldata.PersonalMetadataProvider;
@@ -18,7 +18,7 @@ public final class KafkaGdprAwareProducerInterceptor<K, V, S> implements Produce
 
     private SchemaProvider<S> schemaProvider;
     private EncryptingMaterialsProvider materialsProvider;
-    private LocalEncryptor localEncryptor;
+    //private LocalEncryptor localEncryptor;
 
     private PersonalMetadataProvider<V, S> metadataProvider;
 
@@ -26,15 +26,16 @@ public final class KafkaGdprAwareProducerInterceptor<K, V, S> implements Produce
     public ProducerRecord<K, V> onSend(ProducerRecord<K, V> record) {
         if (record == null || record.value() == null) return record;
 
-        S schema = schemaProvider.schemaFor(record.value(), record);
+        //S schema = schemaProvider.schemaFor(record.value(), record);
 
-        return new ProducerRecord<>(
-            record.topic(),
-            record.partition(),
-            record.timestamp(),
-            record.key(),
-            metadataProvider.forSchema(schema).swapToEncrypted(localEncryptor, record.value())
-        );
+        //return new ProducerRecord<>(
+        //    record.topic(),
+        //    record.partition(),
+        //    record.timestamp(),
+        //    record.key(),
+        //    metadataProvider.forSchema(schema).swapToEncrypted(localEncryptor, record.value())
+        //);
+        return record;
     }
 
     @Override
@@ -66,6 +67,6 @@ public final class KafkaGdprAwareProducerInterceptor<K, V, S> implements Produce
                 .getConfiguredInstance(MATERIALS_PROVIDER_CONFIG, MaterialsProviderFactory.class)
                 .create(configs);
 
-        localEncryptor = new LocalEncryptor(materialsProvider);
+        //localEncryptor = new LocalEncryptor(materialsProvider);
     }
 }

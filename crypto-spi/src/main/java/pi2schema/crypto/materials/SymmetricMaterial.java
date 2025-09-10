@@ -5,9 +5,11 @@ import javax.crypto.SecretKey;
 public class SymmetricMaterial implements EncryptingMaterial, DecryptingMaterial {
 
     private final SecretKey cryptoKey;
+    private final String subjectId;
 
-    public SymmetricMaterial(SecretKey encryptionKey) {
+    public SymmetricMaterial(SecretKey encryptionKey, String subjectId) {
         this.cryptoKey = encryptionKey;
+        this.subjectId = subjectId;
     }
 
     @Override
@@ -18,5 +20,10 @@ public class SymmetricMaterial implements EncryptingMaterial, DecryptingMaterial
     @Override
     public SecretKey getDecryptionKey() {
         return cryptoKey;
+    }
+
+    @Override
+    public String subjectId() {
+        return subjectId;
     }
 }

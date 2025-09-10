@@ -4,5 +4,5 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 
 public interface Decryptor {
-    CompletableFuture<ByteBuffer> decrypt(String key, EncryptedData data);
+    CompletableFuture<ByteBuffer> decrypt(EncryptedData data);
 }

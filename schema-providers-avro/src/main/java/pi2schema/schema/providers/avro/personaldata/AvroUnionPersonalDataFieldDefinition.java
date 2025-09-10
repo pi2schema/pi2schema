@@ -52,8 +52,8 @@ public class AvroUnionPersonalDataFieldDefinition implements PersonalDataFieldDe
                         .setSubjectId(subjectIdentifier)
                         .setData(cloneByteBuffer(encrypted.data())) //TODO input/output stream
                         .setPersonalDataFieldNumber("0")
-                        .setUsedTransformation(encrypted.usedTransformation())
-                        .setInitializationVector(ByteBuffer.wrap(encrypted.initializationVector().getIV()))
+                        .setUsedTransformation("") // Obsolete
+                        .setInitializationVector(ByteBuffer.wrap(new byte[0])) // Obsolete
                         .setKmsId("unused-kafkaKms") //TODO
                         .build()
                 );
@@ -73,16 +73,10 @@ public class AvroUnionPersonalDataFieldDefinition implements PersonalDataFieldDe
         }
         var encryptedPersonalData = (EncryptedPersonalData) encryptedValue;
 
-        var subjectIdentifier = encryptedPersonalData.getSubjectId();
-
-        var encryptedData = new EncryptedData(
-            encryptedPersonalData.getData(),
-            encryptedPersonalData.getUsedTransformation(),
-            new IvParameterSpec(encryptedPersonalData.getInitializationVector().array())
-        );
+        var encryptedData = new EncryptedData(encryptedPersonalData.getData());
 
         return decryptor
-            .decrypt(subjectIdentifier, encryptedData)
+            .decrypt(encryptedData)
             .thenAccept(decryptedData -> decryptingInstance.put(personalField.name(), decodeAvro(decryptedData)));
     }
 

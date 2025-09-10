@@ -5,7 +5,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
-import pi2schema.crypto.LocalDecryptor;
+//import pi2schema.crypto.LocalDecryptor;
 import pi2schema.crypto.providers.DecryptingMaterialsProvider;
 import pi2schema.schema.SchemaProvider;
 import pi2schema.schema.personaldata.PersonalMetadataProvider;
@@ -21,43 +21,44 @@ public final class KafkaGdprAwareConsumerInterceptor<K, V, S> implements Consume
 
     private SchemaProvider<S> schemaProvider;
     private DecryptingMaterialsProvider materialsProvider;
-    private LocalDecryptor decryptor;
+    //private LocalDecryptor decryptor;
     private PersonalMetadataProvider<V, S> metadataProvider;
 
     @Override
     public ConsumerRecords<K, V> onConsume(ConsumerRecords<K, V> records) {
-        var decryptedRecords = records
-            .partitions()
-            .stream()
-            .map(partition -> {
-                var decrypted = records
-                    .records(partition)
-                    .stream()
-                    .map(record -> {
-                        S schema = schemaProvider.schemaFor(record.value(), record);
-                        return new ConsumerRecord<>(
-                            record.topic(),
-                            record.partition(),
-                            record.offset(),
-                            record.timestamp(),
-                            record.timestampType(),
-                            record.serializedKeySize(),
-                            record.serializedValueSize(),
-                            record.key(),
-                            metadataProvider.forSchema(schema).swapToDecrypted(decryptor, record.value()),
-                            record.headers(),
-                            record.leaderEpoch()
-                        );
-                    })
-                    .collect(Collectors.toList());
-                return Map.of(partition, decrypted);
-            })
-            .reduce((m1, m2) -> {
-                m1.putAll(m2);
-                return m1;
-            })
-            .orElse(Map.of());
-        return new ConsumerRecords<>(decryptedRecords);
+        //var decryptedRecords = records
+        //    .partitions()
+        //    .stream()
+        //    .map(partition -> {
+        //        var decrypted = records
+        //            .records(partition)
+        //            .stream()
+        //            .map(record -> {
+        //                S schema = schemaProvider.schemaFor(record.value(), record);
+        //                return new ConsumerRecord<>(
+        //                    record.topic(),
+        //                    record.partition(),
+        //                    record.offset(),
+        //                    record.timestamp(),
+        //                    record.timestampType(),
+        //                    record.serializedKeySize(),
+        //                    record.serializedValueSize(),
+        //                    record.key(),
+        //                    metadataProvider.forSchema(schema).swapToDecrypted(decryptor, record.value()),
+        //                    record.headers(),
+        //                    record.leaderEpoch()
+        //                );
+        //            })
+        //            .collect(Collectors.toList());
+        //        return Map.of(partition, decrypted);
+        //    })
+        //    .reduce((m1, m2) -> {
+        //        m1.putAll(m2);
+        //        return m1;
+        //    })
+        //    .orElse(Map.of());
+        //return new ConsumerRecords<>(decryptedRecords);
+        return records;
     }
 
     @Override
@@ -89,6 +90,6 @@ public final class KafkaGdprAwareConsumerInterceptor<K, V, S> implements Consume
                 .getConfiguredInstance(MATERIALS_PROVIDER_CONFIG, MaterialsProviderFactory.class)
                 .create(configs);
 
-        decryptor = new LocalDecryptor(materialsProvider);
+        //decryptor = new LocalDecryptor(materialsProvider);
     }
 }
