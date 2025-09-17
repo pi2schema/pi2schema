@@ -13,6 +13,9 @@ protoc = "4.32.0"
 avro = "1.11.4"
 kryo = "5.6.2"
 
+# Cryptography
+tink = "1.18.0"
+
 # Kafka and Confluent
 kafka-streams = "3.2.3"
 kafka-clients = "3.2.3"
@@ -42,6 +45,9 @@ protobuf-gradle-plugin = { module = "com.google.protobuf:protobuf-gradle-plugin"
 protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf-java" }
 avro = { module = "org.apache.avro:avro", version.ref = "avro" }
 kryo = { module = "com.esotericsoftware:kryo", version.ref = "kryo" }
+
+# Cryptography
+tink = { module = "com.google.crypto.tink:tink", version.ref = "tink" }
 
 # Kafka and Confluent
 kafka-streams = { module = "org.apache.kafka:kafka-streams", version.ref = "kafka-streams" }
