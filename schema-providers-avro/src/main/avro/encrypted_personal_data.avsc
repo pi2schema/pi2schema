@@ -13,22 +13,15 @@
     },
     {
       "name": "data",
-      "type": [
-        "null",
-        "bytes"
-      ]
+      "type": "bytes"
+    },
+    {
+      "name": "encrypted_data_key",
+      "type": "bytes"
     },
     {
       "name": "personal_data_field_number",
       "type": "string"
-    },
-    {
-      "name": "usedTransformation",
-      "type": "string"
-    },
-    {
-      "name": "initializationVector",
-      "type": "bytes"
     }
   ]
 }

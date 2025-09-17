@@ -9,7 +9,6 @@ dependencyResolutionManagement {
 }
 
 include 'crypto-spi'
-include 'crypto-providers-kafkakms'
 include 'crypto-providers-vault'
 include 'schema-spi'
 include 'schema-providers-protobuf'

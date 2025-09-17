@@ -20,8 +20,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.concurrent.CompletableFuture;
 
-import javax.crypto.spec.IvParameterSpec;
-
 /**
  * Implementation of PersonalDataFieldDefinition for JSON Schema.
  * Handles encryption and decryption of PII fields in business objects.
@@ -127,24 +125,11 @@ public class JsonPersonalDataFieldDefinition<T> implements PersonalDataFieldDefi
     }
 
     private String toEncryptedPersonalDataJson(String subjectId, EncryptedData encryptedData) {
-        ByteBuffer dataBuffer = encryptedData.data();
-        byte[] dataBytes;
-        if (dataBuffer.hasArray() && !dataBuffer.isReadOnly()) {
-            dataBytes = dataBuffer.array();
-        } else {
-            dataBytes = new byte[dataBuffer.remaining()];
-            dataBuffer.get(dataBytes);
-        }
-
-        String dataBase64 = Base64.getEncoder().encodeToString(dataBytes);
-        String ivBase64 = Base64.getEncoder().encodeToString(encryptedData.initializationVector().getIV());
-
         EncryptedPersonalData encryptedPersonalData = new EncryptedPersonalData(
             subjectId,
-            dataBase64,
+            encode(encryptedData.data()),
+            encode(encryptedData.encryptedDataKey()),
             fieldPath,
-            encryptedData.usedTransformation(),
-            ivBase64,
             null
         );
         try {
@@ -154,15 +139,30 @@ public class JsonPersonalDataFieldDefinition<T> implements PersonalDataFieldDefi
         }
     }
 
-    private EncryptedData toEncryptedData(EncryptedPersonalData encryptedPersonalData) {
-        byte[] dataBytes = Base64.getDecoder().decode(encryptedPersonalData.getData());
-        byte[] ivBytes = Base64.getDecoder().decode(encryptedPersonalData.getInitializationVector());
+    private static String encode(ByteBuffer dataBuffer) {
+        byte[] dataBytes;
+        if (dataBuffer.hasArray() && !dataBuffer.isReadOnly()) {
+            dataBytes = dataBuffer.array();
+        } else {
+            dataBytes = new byte[dataBuffer.remaining()];
+            dataBuffer.get(dataBytes);
+        }
 
+        return Base64.getEncoder().encodeToString(dataBytes);
+    }
+
+    private EncryptedData toEncryptedData(EncryptedPersonalData encryptedPersonalData) {
         return new EncryptedData(
-            ByteBuffer.wrap(dataBytes).asReadOnlyBuffer(),
-            encryptedPersonalData.getUsedTransformation(),
-            new IvParameterSpec(ivBytes)
+            decode(encryptedPersonalData.getData()),
+            decode(encryptedPersonalData.getEncryptedDataKey()),
+            encryptedPersonalData.getSubjectId()
         );
+    }
+
+    private static ByteBuffer decode(String data) {
+        byte[] dataBytes = Base64.getDecoder().decode(data);
+
+        return ByteBuffer.wrap(dataBytes).asReadOnlyBuffer();
     }
 
     public String getFieldPath() {

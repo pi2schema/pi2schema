@@ -18,7 +18,7 @@ java {
 dependencies {
 	implementation(project(":schema-providers-jsonschema"))
 	implementation(project(":serialization-adapters-kafka"))
-    implementation(project(":crypto-providers-kafkakms"))
+	implementation(project(":crypto-spi"))
 
 	implementation libs.confluent.kafka.json.schema.serializer
 	implementation libs.bundles.jackson

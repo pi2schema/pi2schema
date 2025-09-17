@@ -15,8 +15,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 
-import javax.crypto.spec.IvParameterSpec;
-
 public class AvroUnionPersonalDataFieldDefinition implements PersonalDataFieldDefinition<SpecificRecordBase> {
 
     private final Field personalField;
@@ -51,9 +49,8 @@ public class AvroUnionPersonalDataFieldDefinition implements PersonalDataFieldDe
                         .newBuilder()
                         .setSubjectId(subjectIdentifier)
                         .setData(cloneByteBuffer(encrypted.data())) //TODO input/output stream
+                        .setEncryptedDataKey(cloneByteBuffer(encrypted.encryptedDataKey()))
                         .setPersonalDataFieldNumber("0")
-                        .setUsedTransformation(encrypted.usedTransformation())
-                        .setInitializationVector(ByteBuffer.wrap(encrypted.initializationVector().getIV()))
                         .setKmsId("unused-kafkaKms") //TODO
                         .build()
                 );
@@ -64,21 +61,20 @@ public class AvroUnionPersonalDataFieldDefinition implements PersonalDataFieldDe
     public CompletableFuture<Void> swapToDecrypted(Decryptor decryptor, SpecificRecordBase decryptingInstance) {
         var encryptedValue = decryptingInstance.get(personalField.name());
 
-        if (!(encryptedValue instanceof EncryptedPersonalData)) {
+        if (!(encryptedValue instanceof EncryptedPersonalData encryptedPersonalData)) {
             throw new UnsupportedEncryptedFieldFormatException(
                 EncryptedPersonalData.class.getName(),
                 personalField.name(),
                 encryptedValue.getClass()
             );
         }
-        var encryptedPersonalData = (EncryptedPersonalData) encryptedValue;
 
         var subjectIdentifier = encryptedPersonalData.getSubjectId();
 
         var encryptedData = new EncryptedData(
             encryptedPersonalData.getData(),
-            encryptedPersonalData.getUsedTransformation(),
-            new IvParameterSpec(encryptedPersonalData.getInitializationVector().array())
+            encryptedPersonalData.getEncryptedDataKey(),
+            encryptedPersonalData.getSubjectId()
         );
 
         return decryptor

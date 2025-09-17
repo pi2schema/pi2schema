@@ -17,9 +17,6 @@ import pi2schema.schema.providers.protobuf.subject.ProtobufSubjectIdentifierFiel
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
-
-import javax.crypto.spec.IvParameterSpec;
 
 public class OneOfPersonalDataFieldDefinition implements PersonalDataFieldDefinition<Message.Builder> {
 
@@ -84,10 +81,10 @@ public class OneOfPersonalDataFieldDefinition implements PersonalDataFieldDefini
                     EncryptedPersonalData
                         .newBuilder()
                         .setSubjectId(subjectId)
-                        .setData(ByteString.copyFrom(encrypted.data())) //TODO input/output stream
+                        .setData(ByteString.copyFrom(encrypted.data()))
+                        .setEncryptedDataKey(ByteString.copyFrom(encrypted.encryptedDataKey()))
                         .setPersonalDataFieldNumber(sourceFieldNumber)
-                        .setUsedTransformation(encrypted.usedTransformation())
-                        .setInitializationVector(ByteString.copyFrom(encrypted.initializationVector().getIV()))
+                        .setKmsId(encrypted.keysetHandle())
                         .build()
                 );
             });
@@ -96,19 +93,18 @@ public class OneOfPersonalDataFieldDefinition implements PersonalDataFieldDefini
     @Override
     public CompletableFuture<Void> swapToDecrypted(Decryptor decryptor, Message.Builder decryptingInstance) {
         var encryptedValue = decryptingInstance.getField(targetFieldForEncryption);
-        if (!(encryptedValue instanceof EncryptedPersonalData)) {
+        if (!(encryptedValue instanceof EncryptedPersonalData encryptedPersonalData)) {
             throw new UnsupportedEncryptedFieldFormatException(
                 EncryptedPersonalData.class.getName(),
                 targetFieldForEncryption.getFullName(),
                 encryptedValue.getClass()
             );
         }
-        var encryptedPersonalData = (EncryptedPersonalData) encryptedValue;
 
         var encryptedData = new EncryptedData(
             encryptedPersonalData.getData().asReadOnlyByteBuffer(),
-            encryptedPersonalData.getUsedTransformation(),
-            new IvParameterSpec(encryptedPersonalData.getInitializationVector().toByteArray())
+            encryptedPersonalData.getEncryptedDataKey().asReadOnlyByteBuffer(),
+            encryptedPersonalData.getSubjectId()
         );
 
         return decryptor
@@ -133,11 +129,7 @@ public class OneOfPersonalDataFieldDefinition implements PersonalDataFieldDefini
     }
 
     private FieldDescriptor determineEncryptionField() {
-        var encryptionFields = containerOneOfDescriptor
-            .getFields()
-            .stream()
-            .filter(isEncryptedFieldType)
-            .collect(Collectors.toList());
+        var encryptionFields = containerOneOfDescriptor.getFields().stream().filter(isEncryptedFieldType).toList();
 
         if (encryptionFields.isEmpty()) {
             throw new EncryptionTargetFieldNotFoundException(

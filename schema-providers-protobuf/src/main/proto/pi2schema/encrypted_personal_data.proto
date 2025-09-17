@@ -8,17 +8,10 @@ message EncryptedPersonalData {
   string subject_id = 1;
   string kms_id = 2;
   bytes data = 3;
+  bytes encrypted_data_key = 4;
 
   //(protobuf) metadata
   int32 personal_data_field_number = 10;
 
-  //encryption metadata
-
-  //  Used transformation following the structure: {algo}/{mode}/{padding}
-  //  For more details: https://docs.oracle.com/javase/7/docs/technotes/guides/security/StandardNames.html#Cipher>possible values
-  string usedTransformation = 20;
-
-  // Used initialization vector
-  bytes initializationVector = 21;
 
 }

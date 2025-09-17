@@ -14,18 +14,14 @@
       "description": "Base64 encoded encrypted data",
       "contentEncoding": "base64"
     },
+    "encryptedDataKey": {
+      "type": "string",
+      "description": "Base64 encoded encrypted data key",
+      "contentEncoding": "base64"
+    },
     "personalDataFieldNumber": {
       "type": "string",
       "description": "The field identifier for the personal data"
-    },
-    "usedTransformation": {
-      "type": "string",
-      "description": "The cryptographic transformation used for encryption (format: algorithm/mode/padding)"
-    },
-    "initializationVector": {
-      "type": "string",
-      "description": "Base64 encoded initialization vector used for encryption",
-      "contentEncoding": "base64"
     },
     "kmsId": {
       "type": ["string", "null"],
@@ -35,9 +31,7 @@
   "required": [
     "subjectId",
     "data",
-    "personalDataFieldNumber",
-    "usedTransformation",
-    "initializationVector"
+    "encryptedDataKey"
   ],
-  "additionalProperties": false
+  "additionalProperties": true
 }
