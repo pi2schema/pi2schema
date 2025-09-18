@@ -6,6 +6,39 @@ import java.util.Objects;
 /**
  * Configuration class for Vault crypto provider containing all necessary
  * connection and behavior settings.
+ * 
+ * <p>This class provides a builder pattern for configuring the Vault crypto provider
+ * with sensible defaults. All configuration parameters are validated during construction
+ * to ensure proper operation.</p>
+ * 
+ * <h3>Example Usage:</h3>
+ * <pre>{@code
+ * VaultCryptoConfiguration config = VaultCryptoConfiguration.builder()
+ *     .vaultUrl("https://vault.example.com:8200")
+ *     .vaultToken("hvs.CAESIJ...")
+ *     .transitEnginePath("transit")
+ *     .keyPrefix("myapp")
+ *     .connectionTimeout(Duration.ofSeconds(10))
+ *     .requestTimeout(Duration.ofSeconds(30))
+ *     .maxRetries(3)
+ *     .build();
+ * }</pre>
+ * 
+ * <h3>Configuration Parameters:</h3>
+ * <ul>
+ *   <li><strong>vaultUrl</strong>: The URL of the Vault server (required)</li>
+ *   <li><strong>vaultToken</strong>: Authentication token for Vault (required)</li>
+ *   <li><strong>transitEnginePath</strong>: Path to the transit engine (default: "transit")</li>
+ *   <li><strong>keyPrefix</strong>: Prefix for subject-specific keys (default: "pi2schema")</li>
+ *   <li><strong>connectionTimeout</strong>: HTTP connection timeout (default: 10 seconds)</li>
+ *   <li><strong>requestTimeout</strong>: Request timeout (default: 30 seconds)</li>
+ *   <li><strong>maxRetries</strong>: Maximum retry attempts (default: 3)</li>
+ *   <li><strong>retryBackoffMs</strong>: Base retry backoff duration (default: 100ms)</li>
+ * </ul>
+ * 
+ * @since 1.0
+ * @see VaultEncryptingMaterialsProvider
+ * @see VaultDecryptingMaterialsProvider
  */
 public final class VaultCryptoConfiguration {
 
@@ -141,8 +174,18 @@ public final class VaultCryptoConfiguration {
 
     /**
      * Creates a new builder for VaultCryptoConfiguration.
+     * 
+     * <p>The builder comes with sensible defaults for all optional parameters:
+     * <ul>
+     *   <li>transitEnginePath: "transit"</li>
+     *   <li>keyPrefix: "pi2schema"</li>
+     *   <li>connectionTimeout: 10 seconds</li>
+     *   <li>requestTimeout: 30 seconds</li>
+     *   <li>maxRetries: 3</li>
+     *   <li>retryBackoffMs: 100ms</li>
+     * </ul>
      *
-     * @return a new builder instance
+     * @return a new builder instance with default values
      */
     public static Builder builder() {
         return new Builder();
@@ -150,6 +193,18 @@ public final class VaultCryptoConfiguration {
 
     /**
      * Builder class for VaultCryptoConfiguration with sensible defaults.
+     * 
+     * <p>This builder provides a fluent API for constructing VaultCryptoConfiguration
+     * instances with validation. All parameters are validated when {@link #build()}
+     * is called.</p>
+     * 
+     * <h3>Example:</h3>
+     * <pre>{@code
+     * VaultCryptoConfiguration config = VaultCryptoConfiguration.builder()
+     *     .vaultUrl("https://vault.example.com:8200")
+     *     .vaultToken(System.getenv("VAULT_TOKEN"))
+     *     .build();
+     * }</pre>
      */
     public static class Builder {
 
@@ -162,46 +217,111 @@ public final class VaultCryptoConfiguration {
         private int maxRetries = 3;
         private Duration retryBackoffMs = Duration.ofMillis(100);
 
+        /**
+         * Sets the Vault server URL.
+         * 
+         * @param vaultUrl the Vault server URL (must start with http:// or https://)
+         * @return this builder instance
+         * @throws IllegalArgumentException if URL is null, empty, or invalid format
+         */
         public Builder vaultUrl(String vaultUrl) {
             this.vaultUrl = vaultUrl;
             return this;
         }
 
+        /**
+         * Sets the Vault authentication token.
+         * 
+         * @param vaultToken the Vault token for authentication
+         * @return this builder instance
+         * @throws IllegalArgumentException if token is null, empty, or contains whitespace
+         */
         public Builder vaultToken(String vaultToken) {
             this.vaultToken = vaultToken;
             return this;
         }
 
+        /**
+         * Sets the path to the transit encryption engine.
+         * 
+         * @param transitEnginePath the path to the transit engine (default: "transit")
+         * @return this builder instance
+         * @throws IllegalArgumentException if path is null or empty
+         */
         public Builder transitEnginePath(String transitEnginePath) {
             this.transitEnginePath = transitEnginePath;
             return this;
         }
 
+        /**
+         * Sets the prefix for subject-specific keys in Vault.
+         * 
+         * @param keyPrefix the key prefix (default: "pi2schema", must contain only alphanumeric, underscore, hyphen)
+         * @return this builder instance
+         * @throws IllegalArgumentException if prefix is null, empty, or contains invalid characters
+         */
         public Builder keyPrefix(String keyPrefix) {
             this.keyPrefix = keyPrefix;
             return this;
         }
 
+        /**
+         * Sets the HTTP connection timeout.
+         * 
+         * @param connectionTimeout the connection timeout (default: 10 seconds, max: 5 minutes)
+         * @return this builder instance
+         * @throws IllegalArgumentException if timeout is null, zero, negative, or exceeds 5 minutes
+         */
         public Builder connectionTimeout(Duration connectionTimeout) {
             this.connectionTimeout = connectionTimeout;
             return this;
         }
 
+        /**
+         * Sets the HTTP request timeout.
+         * 
+         * @param requestTimeout the request timeout (default: 30 seconds, max: 10 minutes)
+         * @return this builder instance
+         * @throws IllegalArgumentException if timeout is null, zero, negative, or exceeds 10 minutes
+         */
         public Builder requestTimeout(Duration requestTimeout) {
             this.requestTimeout = requestTimeout;
             return this;
         }
 
+        /**
+         * Sets the maximum number of retry attempts for failed requests.
+         * 
+         * @param maxRetries the maximum retry attempts (default: 3, must be non-negative)
+         * @return this builder instance
+         * @throws IllegalArgumentException if maxRetries is negative
+         */
         public Builder maxRetries(int maxRetries) {
             this.maxRetries = maxRetries;
             return this;
         }
 
+        /**
+         * Sets the base backoff duration for retry attempts.
+         * 
+         * @param retryBackoffMs the base retry backoff duration (default: 100ms, must be non-negative)
+         * @return this builder instance
+         * @throws IllegalArgumentException if backoff is null or negative
+         */
         public Builder retryBackoffMs(Duration retryBackoffMs) {
             this.retryBackoffMs = retryBackoffMs;
             return this;
         }
 
+        /**
+         * Builds and validates the VaultCryptoConfiguration instance.
+         * 
+         * <p>This method validates all configuration parameters and throws
+         * IllegalArgumentException if any validation fails.</p>
+         * 
+         * @return a new VaultCryptoConfiguration instance
+         * @throws IllegalArgumentException if any configuration parameter is invalid
+         */
         public VaultCryptoConfiguration build() {
             validateBuilder(this);
             return new VaultCryptoConfiguration(
