@@ -15,8 +15,66 @@ import java.util.regex.Pattern;
  * Implementation of DecryptingMaterialsProvider that uses HashiCorp Vault's transit encryption
  * to decrypt Key Encryption Keys (KEKs) for subject-specific data decryption.
  *
- * This provider decrypts encrypted Data Encryption Keys (DEKs) using Vault's transit engine
- * with subject-specific keys and validates encryption context for GDPR compliance.
+ * <p>This provider decrypts encrypted Data Encryption Keys (DEKs) using Vault's transit engine
+ * with subject-specific keys and validates encryption context for GDPR compliance.</p>
+ * 
+ * <h3>Decryption Process:</h3>
+ * <ol>
+ *   <li>Validate the encryption context format and subject ID match</li>
+ *   <li>Decrypt the encrypted DEK using Vault's transit engine with the subject-specific KEK</li>
+ *   <li>Reconstruct the Tink AEAD primitive from the decrypted DEK bytes</li>
+ * </ol>
+ * 
+ * <h3>Security Validation:</h3>
+ * <p>The provider performs strict validation of encryption context to ensure:
+ * <ul>
+ *   <li>Subject ID matches between request and context</li>
+ *   <li>Encryption context format is valid</li>
+ *   <li>Timestamp and version information is present</li>
+ * </ul>
+ * 
+ * <h3>Example Usage:</h3>
+ * <pre>{@code
+ * VaultCryptoConfiguration config = VaultCryptoConfiguration.builder()
+ *     .vaultUrl("https://vault.example.com:8200")
+ *     .vaultToken("hvs.CAESIJ...")
+ *     .build();
+ * 
+ * try (VaultDecryptingMaterialsProvider provider = new VaultDecryptingMaterialsProvider(config)) {
+ *     CompletableFuture<Aead> future = provider.decryptionKeysFor(
+ *         "user-12345", 
+ *         encryptedDataKey, 
+ *         encryptionContext
+ *     );
+ *     Aead aead = future.get();
+ *     
+ *     // Use aead for decrypting data
+ * }
+ * }</pre>
+ * 
+ * <h3>GDPR Compliance:</h3>
+ * <p>When a subject's key is deleted from Vault (right-to-be-forgotten), attempts to decrypt
+ * their data will fail with {@link SubjectKeyNotFoundException}, ensuring data becomes
+ * permanently inaccessible.</p>
+ * 
+ * <h3>Thread Safety:</h3>
+ * <p>This class is thread-safe and designed for concurrent use. All operations are asynchronous
+ * and return CompletableFuture instances.</p>
+ * 
+ * <h3>Error Handling:</h3>
+ * <p>Operations may throw the following exceptions:
+ * <ul>
+ *   <li>{@link SubjectKeyNotFoundException} - Subject's key not found in Vault</li>
+ *   <li>{@link InvalidEncryptionContextException} - Invalid or malformed encryption context</li>
+ *   <li>{@link VaultAuthenticationException} - Invalid or expired Vault token</li>
+ *   <li>{@link VaultConnectivityException} - Network or connectivity issues</li>
+ *   <li>{@link VaultCryptoException} - General cryptographic or Vault operation errors</li>
+ * </ul>
+ * 
+ * @since 1.0
+ * @see VaultEncryptingMaterialsProvider
+ * @see VaultCryptoConfiguration
+ * @see pi2schema.crypto.providers.DecryptingMaterialsProvider
  */
 public class VaultDecryptingMaterialsProvider implements DecryptingMaterialsProvider {
 
@@ -41,9 +99,13 @@ public class VaultDecryptingMaterialsProvider implements DecryptingMaterialsProv
 
     /**
      * Creates a new VaultDecryptingMaterialsProvider with the specified configuration.
+     * 
+     * <p>This constructor initializes the Vault client and validates the configuration.
+     * The Tink AEAD configuration is automatically registered during class loading.</p>
      *
-     * @param config the Vault configuration
-     * @throws IllegalArgumentException if configuration is invalid
+     * @param config the Vault configuration containing connection details and settings
+     * @throws IllegalArgumentException if configuration is null or invalid
+     * @throws VaultCryptoException if Tink AEAD configuration fails to register
      */
     public VaultDecryptingMaterialsProvider(VaultCryptoConfiguration config) {
         if (config == null) {
@@ -64,18 +126,28 @@ public class VaultDecryptingMaterialsProvider implements DecryptingMaterialsProv
      * Decrypts the provided encrypted DEK using the subject's KEK and returns
      * the ready-to-use DEK as an Aead primitive.
      *
-     * This method:
-     * 1. Validates the encryption context format and subject ID
-     * 2. Decrypts the encrypted DEK using Vault's transit engine with the subject-specific key
-     * 3. Reconstructs the Tink AEAD primitive from the decrypted DEK bytes
+     * <p>This method performs the following operations asynchronously:
+     * <ol>
+     *   <li>Validates the encryption context format and ensures subject ID matches</li>
+     *   <li>Decrypts the encrypted DEK using Vault's transit engine with the subject-specific key</li>
+     *   <li>Reconstructs the Tink AEAD primitive from the decrypted DEK bytes</li>
+     * </ol>
+     * 
+     * <p>The encryption context must follow the format: 
+     * {@code subjectId={subjectId};timestamp={timestamp};version={version}}</p>
+     * 
+     * <p>The subject-specific key in Vault follows the pattern: {@code {keyPrefix}/subject/{subjectId}}.</p>
      *
-     * @param subjectId the subject identifier to locate the appropriate KEK
-     * @param encryptedDataKey the encrypted DEK to decrypt
-     * @param encryptionContext context or metadata from encryption
+     * @param subjectId the subject identifier to locate the appropriate KEK (must not be null or empty)
+     * @param encryptedDataKey the encrypted DEK to decrypt (must not be null or empty)
+     * @param encryptionContext context or metadata from encryption (must not be null or empty)
      * @return CompletableFuture containing the Aead primitive with the decrypted DEK
-     * @throws IllegalArgumentException if subjectId is null or empty
-     * @throws InvalidEncryptionContextException if encryption context is invalid
+     * @throws IllegalArgumentException if subjectId, encryptedDataKey, or encryptionContext is null or empty
+     * @throws InvalidEncryptionContextException if encryption context format is invalid or subject ID mismatch
      * @throws SubjectKeyNotFoundException if the subject's key is not found in Vault
+     * @throws VaultAuthenticationException if Vault authentication fails
+     * @throws VaultConnectivityException if Vault is unreachable
+     * @throws VaultCryptoException if DEK decryption or AEAD reconstruction fails
      */
     @Override
     public CompletableFuture<Aead> decryptionKeysFor(String subjectId, byte[] encryptedDataKey, String encryptionContext) {
