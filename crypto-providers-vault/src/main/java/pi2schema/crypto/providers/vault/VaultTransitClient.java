@@ -197,6 +197,146 @@ public class VaultTransitClient implements AutoCloseable {
         return keyName;
     }
 
+    /**
+     * Deletes the subject-specific key from Vault to support GDPR right-to-be-forgotten.
+     * Once a key is deleted, all data encrypted with that key becomes unrecoverable.
+     *
+     * @param subjectId the subject identifier whose key should be deleted
+     * @return a CompletableFuture that completes when the key is successfully deleted
+     * @throws IllegalArgumentException if subjectId is null or empty
+     * @throws SubjectKeyNotFoundException if the subject's key is not found in Vault
+     */
+    public CompletableFuture<Void> deleteSubjectKey(String subjectId) {
+        long requestId = REQUEST_ID_GENERATOR.incrementAndGet();
+        
+        if (subjectId == null || subjectId.trim().isEmpty()) {
+            String errorMsg = String.format("Subject ID cannot be null or empty [requestId=%d]", requestId);
+            logger.error(errorMsg);
+            return CompletableFuture.failedFuture(new IllegalArgumentException(errorMsg));
+        }
+
+        String keyName = generateKeyName(subjectId);
+        logger.info("Deleting subject key for GDPR compliance [requestId={}, subjectId={}, keyName={}]", 
+                   requestId, subjectId, keyName);
+
+        return checkKeyExists(keyName, requestId)
+            .thenCompose(exists -> {
+                if (!exists) {
+                    String errorMsg = String.format("Subject key not found for deletion [requestId=%d, subjectId=%s, keyName=%s]", 
+                                                   requestId, subjectId, keyName);
+                    logger.warn(errorMsg);
+                    return CompletableFuture.failedFuture(
+                        new SubjectKeyNotFoundException(subjectId, errorMsg)
+                    );
+                }
+                return performKeyDeletion(keyName, requestId);
+            })
+            .whenComplete((result, throwable) -> {
+                if (throwable != null) {
+                    logger.error("Failed to delete subject key [requestId={}, subjectId={}, keyName={}, error={}]", 
+                               requestId, subjectId, keyName, throwable.getMessage(), throwable);
+                } else {
+                    logger.info("Successfully deleted subject key [requestId={}, subjectId={}, keyName={}]", 
+                               requestId, subjectId, keyName);
+                }
+            });
+    }
+
+    /**
+     * Checks if a subject-specific key exists in Vault.
+     * This method is useful for GDPR compliance to verify key existence before operations.
+     *
+     * @param subjectId the subject identifier to check
+     * @return a CompletableFuture containing true if the key exists, false otherwise
+     * @throws IllegalArgumentException if subjectId is null or empty
+     */
+    public CompletableFuture<Boolean> subjectKeyExists(String subjectId) {
+        long requestId = REQUEST_ID_GENERATOR.incrementAndGet();
+        
+        if (subjectId == null || subjectId.trim().isEmpty()) {
+            String errorMsg = String.format("Subject ID cannot be null or empty [requestId=%d]", requestId);
+            logger.error(errorMsg);
+            return CompletableFuture.failedFuture(new IllegalArgumentException(errorMsg));
+        }
+
+        String keyName = generateKeyName(subjectId);
+        logger.debug("Checking subject key existence [requestId={}, subjectId={}, keyName={}]", 
+                    requestId, subjectId, keyName);
+
+        return checkKeyExists(keyName, requestId)
+            .whenComplete((result, throwable) -> {
+                if (throwable != null) {
+                    logger.error("Failed to check subject key existence [requestId={}, subjectId={}, keyName={}, error={}]", 
+                               requestId, subjectId, keyName, throwable.getMessage(), throwable);
+                } else {
+                    logger.debug("Subject key existence check completed [requestId={}, subjectId={}, exists={}]", 
+                               requestId, subjectId, result);
+                }
+            });
+    }
+
+    /**
+     * Lists all subject keys managed by this provider.
+     * This method is useful for GDPR compliance auditing and bulk operations.
+     * Note: This is a potentially expensive operation and should be used carefully.
+     *
+     * @return a CompletableFuture containing a list of subject IDs that have keys in Vault
+     */
+    public CompletableFuture<java.util.List<String>> listSubjectKeys() {
+        long requestId = REQUEST_ID_GENERATOR.incrementAndGet();
+        
+        logger.debug("Listing all subject keys [requestId={}]", requestId);
+
+        String listUrl = baseUrl + "/keys";
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("list", true);
+
+        return executeWithRetry(() -> {
+            try {
+                logger.debug("Sending list keys request to Vault [requestId={}, url={}]", 
+                           requestId, sanitizeUrl(listUrl));
+                
+                HttpRequest request = HttpRequest
+                    .newBuilder()
+                    .uri(URI.create(listUrl))
+                    .header(VAULT_TOKEN_HEADER, config.getVaultToken())
+                    .header("Content-Type", CONTENT_TYPE_JSON)
+                    .timeout(config.getRequestTimeout())
+                    .method("LIST", HttpRequest.BodyPublishers.noBody())
+                    .build();
+
+                return httpClient
+                    .sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                    .thenApply(response -> {
+                        logger.debug("Received list keys response from Vault [requestId={}, statusCode={}, responseSize={}]", 
+                                   requestId, response.statusCode(), response.body().length());
+                        
+                        if (response.statusCode() == 404) {
+                            // No keys exist yet
+                            logger.debug("No keys found in Vault [requestId={}]", requestId);
+                            return java.util.Collections.<String>emptyList();
+                        }
+                        
+                        handleHttpResponse(response, "list keys", requestId);
+                        return parseSubjectKeysFromListResponse(response.body(), requestId);
+                    });
+            } catch (Exception e) {
+                String errorMsg = String.format("Failed to list keys [requestId=%d]", requestId);
+                logger.error(errorMsg, e);
+                return CompletableFuture.failedFuture(new VaultConnectivityException(errorMsg, e));
+            }
+        }, requestId)
+        .whenComplete((result, throwable) -> {
+            if (throwable != null) {
+                logger.error("Failed to list subject keys [requestId={}, error={}]", 
+                           requestId, throwable.getMessage(), throwable);
+            } else {
+                logger.debug("Successfully listed subject keys [requestId={}, count={}]", 
+                           requestId, result != null ? result.size() : 0);
+            }
+        });
+    }
+
     private CompletableFuture<byte[]> performEncrypt(String keyName, byte[] plaintext, String context, long requestId) {
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("plaintext", Base64.getEncoder().encodeToString(plaintext));
@@ -352,6 +492,92 @@ public class VaultTransitClient implements AutoCloseable {
                 return CompletableFuture.failedFuture(new VaultConnectivityException(errorMsg, e));
             }
         }, requestId);
+    }
+
+    /**
+     * Performs the actual key deletion operation in Vault.
+     *
+     * @param keyName the full key name to delete
+     * @param requestId the request ID for logging correlation
+     * @return a CompletableFuture that completes when the key is deleted
+     */
+    private CompletableFuture<Void> performKeyDeletion(String keyName, long requestId) {
+        String url = baseUrl + "/keys/" + keyName;
+
+        return executeWithRetry(() -> {
+            try {
+                logger.debug("Deleting key in Vault [requestId={}, url={}]", 
+                           requestId, sanitizeUrl(url));
+                
+                HttpRequest request = HttpRequest
+                    .newBuilder()
+                    .uri(URI.create(url))
+                    .header(VAULT_TOKEN_HEADER, config.getVaultToken())
+                    .timeout(config.getRequestTimeout())
+                    .DELETE()
+                    .build();
+
+                return httpClient
+                    .sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                    .thenApply(response -> {
+                        logger.debug("Key deletion response [requestId={}, statusCode={}]", 
+                                   requestId, response.statusCode());
+                        handleHttpResponse(response, "delete key", requestId);
+                        return null;
+                    });
+            } catch (Exception e) {
+                String errorMsg = String.format("Failed to delete key [requestId=%d, keyName=%s]", requestId, keyName);
+                logger.error(errorMsg, e);
+                return CompletableFuture.failedFuture(new VaultConnectivityException(errorMsg, e));
+            }
+        }, requestId);
+    }
+
+    /**
+     * Parses the Vault list keys response and extracts subject IDs.
+     *
+     * @param responseBody the JSON response from Vault's list keys API
+     * @param requestId the request ID for logging correlation
+     * @return a list of subject IDs extracted from the key names
+     */
+    private java.util.List<String> parseSubjectKeysFromListResponse(String responseBody, long requestId) {
+        try {
+            JsonNode responseNode = objectMapper.readTree(responseBody);
+            JsonNode dataNode = responseNode.get("data");
+
+            if (dataNode == null || !dataNode.has("keys")) {
+                logger.debug("No keys found in list response [requestId={}]", requestId);
+                return java.util.Collections.emptyList();
+            }
+
+            JsonNode keysNode = dataNode.get("keys");
+            if (!keysNode.isArray()) {
+                logger.warn("Keys node is not an array in list response [requestId={}]", requestId);
+                return java.util.Collections.emptyList();
+            }
+
+            java.util.List<String> subjectIds = new java.util.ArrayList<>();
+            String subjectPrefix = config.getKeyPrefix() + "/subject/";
+
+            for (JsonNode keyNode : keysNode) {
+                String keyName = keyNode.asText();
+                if (keyName.startsWith(subjectPrefix)) {
+                    String subjectId = keyName.substring(subjectPrefix.length());
+                    // Reverse the sanitization if needed (though this is best-effort)
+                    subjectIds.add(subjectId);
+                    logger.debug("Found subject key [requestId={}, keyName={}, subjectId={}]", 
+                               requestId, keyName, subjectId);
+                }
+            }
+
+            logger.debug("Parsed subject keys from list response [requestId={}, totalKeys={}, subjectKeys={}]", 
+                        requestId, keysNode.size(), subjectIds.size());
+            return subjectIds;
+        } catch (IOException e) {
+            String errorMsg = String.format("Failed to parse list keys response [requestId=%d]", requestId);
+            logger.error(errorMsg, e);
+            throw new VaultCryptoException(errorMsg, e);
+        }
     }
 
     private <T> CompletableFuture<T> executeWithRetry(java.util.function.Supplier<CompletableFuture<T>> operation, long requestId) {
