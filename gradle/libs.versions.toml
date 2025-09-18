@@ -15,6 +15,7 @@ kryo = "5.6.2"
 
 # Cryptography
 tink = "1.18.0"
+vault-java-driver = "5.4.0"
 
 # Kafka and Confluent
 kafka-streams = "3.2.3"
@@ -48,6 +49,7 @@ kryo = { module = "com.esotericsoftware:kryo", version.ref = "kryo" }
 
 # Cryptography
 tink = { module = "com.google.crypto.tink:tink", version.ref = "tink" }
+vault-java-driver = { module = "io.github.jopenlibs:vault-java-driver", version.ref = "vault-java-driver" }
 
 # Kafka and Confluent
 kafka-streams = { module = "org.apache.kafka:kafka-streams", version.ref = "kafka-streams" }
@@ -80,6 +82,7 @@ mockito-junit-jupiter = { module = "org.mockito:mockito-junit-jupiter", version.
 testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
 testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
 testcontainers-redpanda = { module = "org.testcontainers:redpanda", version.ref = "testcontainers" }
+testcontainers-vault = { module = "org.testcontainers:vault", version.ref = "testcontainers" }
 instancio-junit = { module = "org.instancio:instancio-junit", version.ref = "instancio-junit" }
 
 [plugins]
