@@ -17,8 +17,53 @@ import java.util.concurrent.CompletableFuture;
  * Implementation of EncryptingMaterialsProvider that uses HashiCorp Vault's transit encryption
  * to manage Key Encryption Keys (KEKs) for subject-specific data encryption.
  *
- * This provider generates Data Encryption Keys (DEKs) using Tink's AEAD primitive and encrypts
- * them using Vault's transit engine with subject-specific keys for GDPR compliance.
+ * <p>This provider generates Data Encryption Keys (DEKs) using Tink's AEAD primitive and encrypts
+ * them using Vault's transit engine with subject-specific keys for GDPR compliance.</p>
+ * 
+ * <h3>Key Management Architecture:</h3>
+ * <ol>
+ *   <li>Generate a new 256-bit DEK using Tink's AES-GCM AEAD primitive</li>
+ *   <li>Encrypt the DEK using Vault's transit engine with a subject-specific KEK</li>
+ *   <li>Return EncryptionMaterial containing the plaintext DEK, encrypted DEK, and context</li>
+ * </ol>
+ * 
+ * <h3>Subject Isolation:</h3>
+ * <p>Each subject gets a unique key in Vault following the pattern: {@code {keyPrefix}/subject/{subjectId}}.
+ * This ensures cryptographic isolation between subjects and enables GDPR right-to-be-forgotten
+ * compliance through selective key deletion.</p>
+ * 
+ * <h3>Example Usage:</h3>
+ * <pre>{@code
+ * VaultCryptoConfiguration config = VaultCryptoConfiguration.builder()
+ *     .vaultUrl("https://vault.example.com:8200")
+ *     .vaultToken("hvs.CAESIJ...")
+ *     .build();
+ * 
+ * try (VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config)) {
+ *     CompletableFuture<EncryptionMaterial> future = provider.encryptionKeysFor("user-12345");
+ *     EncryptionMaterial material = future.get();
+ *     
+ *     // Use material.aead() for encrypting data
+ *     // Store material.encryptedDataKey() and material.encryptionContext() with encrypted data
+ * }
+ * }</pre>
+ * 
+ * <h3>Thread Safety:</h3>
+ * <p>This class is thread-safe and designed for concurrent use. All operations are asynchronous
+ * and return CompletableFuture instances.</p>
+ * 
+ * <h3>Error Handling:</h3>
+ * <p>Operations may throw the following exceptions:
+ * <ul>
+ *   <li>{@link VaultAuthenticationException} - Invalid or expired Vault token</li>
+ *   <li>{@link VaultConnectivityException} - Network or connectivity issues</li>
+ *   <li>{@link VaultCryptoException} - General cryptographic or Vault operation errors</li>
+ * </ul>
+ * 
+ * @since 1.0
+ * @see VaultDecryptingMaterialsProvider
+ * @see VaultCryptoConfiguration
+ * @see pi2schema.crypto.providers.EncryptingMaterialsProvider
  */
 public class VaultEncryptingMaterialsProvider implements EncryptingMaterialsProvider {
 
@@ -39,9 +84,13 @@ public class VaultEncryptingMaterialsProvider implements EncryptingMaterialsProv
 
     /**
      * Creates a new VaultEncryptingMaterialsProvider with the specified configuration.
+     * 
+     * <p>This constructor initializes the Vault client and validates the configuration.
+     * The Tink AEAD configuration is automatically registered during class loading.</p>
      *
-     * @param config the Vault configuration
-     * @throws IllegalArgumentException if configuration is invalid
+     * @param config the Vault configuration containing connection details and settings
+     * @throws IllegalArgumentException if configuration is null or invalid
+     * @throws VaultCryptoException if Tink AEAD configuration fails to register
      */
     public VaultEncryptingMaterialsProvider(VaultCryptoConfiguration config) {
         if (config == null) {
@@ -75,14 +124,25 @@ public class VaultEncryptingMaterialsProvider implements EncryptingMaterialsProv
     /**
      * Generates encryption materials for the specified subject.
      *
-     * This method:
-     * 1. Generates a new DEK using Tink's AEAD primitive
-     * 2. Encrypts the DEK using Vault's transit engine with a subject-specific key
-     * 3. Returns EncryptionMaterial containing the plaintext DEK, encrypted DEK, and context
+     * <p>This method performs the following operations asynchronously:
+     * <ol>
+     *   <li>Generates a new 256-bit DEK using Tink's AES-GCM AEAD primitive</li>
+     *   <li>Encrypts the DEK using Vault's transit engine with a subject-specific key</li>
+     *   <li>Returns EncryptionMaterial containing the plaintext DEK, encrypted DEK, and context</li>
+     * </ol>
+     * 
+     * <p>The subject-specific key in Vault follows the pattern: {@code {keyPrefix}/subject/{subjectId}}.
+     * If the key doesn't exist, it will be automatically created.</p>
+     * 
+     * <p>The encryption context includes the subject ID, timestamp, and provider version
+     * for validation during decryption.</p>
      *
-     * @param subjectId the subject identifier for key isolation
+     * @param subjectId the subject identifier for key isolation (must not be null or empty)
      * @return a CompletableFuture containing the encryption materials
      * @throws IllegalArgumentException if subjectId is null or empty
+     * @throws VaultAuthenticationException if Vault authentication fails
+     * @throws VaultConnectivityException if Vault is unreachable
+     * @throws VaultCryptoException if DEK generation or encryption fails
      */
     @Override
     public CompletableFuture<EncryptionMaterial> encryptionKeysFor(String subjectId) {

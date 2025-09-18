@@ -63,7 +63,7 @@
   - Write tests verifying cryptographic isolation between subjects
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
 
-- [ ] 10. Create example usage and documentation
+- [x] 10. Create example usage and documentation
   - Write example code demonstrating provider usage in typical scenarios
   - Create configuration examples for different Vault setups
   - Add JavaDoc documentation for all public classes and methods
