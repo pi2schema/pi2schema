@@ -42,7 +42,7 @@
   - Write tests for resource lifecycle and cleanup scenarios
   - _Requirements: 3.3, 3.4_
 
-- [ ] 7. Create integration tests with real Vault instance
+- [x] 7. Create integration tests with real Vault instance
   - Set up Testcontainers-based integration tests with Vault
   - Test complete encrypt/decrypt cycle with subject isolation
   - Verify GDPR compliance scenarios (key deletion and data inaccessibility)
