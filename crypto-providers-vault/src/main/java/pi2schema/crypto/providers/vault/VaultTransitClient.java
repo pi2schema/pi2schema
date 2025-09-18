@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Client for interacting with HashiCorp Vault's transit encryption engine.
@@ -28,6 +29,9 @@ public class VaultTransitClient implements AutoCloseable {
     private static final Logger logger = LoggerFactory.getLogger(VaultTransitClient.class);
     private static final String VAULT_TOKEN_HEADER = "X-Vault-Token";
     private static final String CONTENT_TYPE_JSON = "application/json";
+    
+    // Request ID generator for correlation across logs
+    private static final AtomicLong REQUEST_ID_GENERATOR = new AtomicLong(0);
 
     private final VaultCryptoConfiguration config;
     private final HttpClient httpClient;
@@ -47,7 +51,13 @@ public class VaultTransitClient implements AutoCloseable {
 
         this.httpClient = HttpClient.newBuilder().connectTimeout(config.getConnectionTimeout()).build();
 
-        logger.info("VaultTransitClient initialized with base URL: {}", baseUrl);
+        logger.info("VaultTransitClient initialized [baseUrl={}, transitEngine={}, keyPrefix={}, connectionTimeout={}ms, requestTimeout={}ms, maxRetries={}]", 
+                   sanitizeUrl(config.getVaultUrl()), 
+                   config.getTransitEnginePath(),
+                   config.getKeyPrefix(),
+                   config.getConnectionTimeout().toMillis(),
+                   config.getRequestTimeout().toMillis(),
+                   config.getMaxRetries());
     }
 
     /**
@@ -59,19 +69,32 @@ public class VaultTransitClient implements AutoCloseable {
      * @return a CompletableFuture containing the encrypted data
      */
     public CompletableFuture<byte[]> encrypt(String keyName, byte[] plaintext, String context) {
-        logger.debug(
-            "Encrypting data with key: {} (context length: {})",
-            keyName,
-            context != null ? context.length() : 0
-        );
+        long requestId = REQUEST_ID_GENERATOR.incrementAndGet();
+        
+        if (keyName == null || keyName.trim().isEmpty()) {
+            String errorMsg = String.format("Key name cannot be null or empty [requestId=%d]", requestId);
+            logger.error(errorMsg);
+            return CompletableFuture.failedFuture(new IllegalArgumentException(errorMsg));
+        }
+        
+        if (plaintext == null || plaintext.length == 0) {
+            String errorMsg = String.format("Plaintext cannot be null or empty [requestId=%d, keyName=%s]", requestId, keyName);
+            logger.error(errorMsg);
+            return CompletableFuture.failedFuture(new IllegalArgumentException(errorMsg));
+        }
+
+        logger.debug("Starting encryption operation [requestId={}, keyName={}, plaintextSize={}, contextLength={}]",
+                    requestId, keyName, plaintext.length, context != null ? context.length() : 0);
 
         return ensureKeyExists(keyName)
-            .thenCompose(ignored -> performEncrypt(keyName, plaintext, context))
+            .thenCompose(ignored -> performEncrypt(keyName, plaintext, context, requestId))
             .whenComplete((result, throwable) -> {
                 if (throwable != null) {
-                    logger.error("Encryption failed for key: {}", keyName, throwable);
+                    logger.error("Encryption operation failed [requestId={}, keyName={}, error={}]", 
+                               requestId, keyName, throwable.getMessage(), throwable);
                 } else {
-                    logger.debug("Encryption successful for key: {}", keyName);
+                    logger.debug("Encryption operation completed successfully [requestId={}, keyName={}, ciphertextSize={}]", 
+                               requestId, keyName, result != null ? result.length : 0);
                 }
             });
     }
@@ -85,18 +108,31 @@ public class VaultTransitClient implements AutoCloseable {
      * @return a CompletableFuture containing the decrypted data
      */
     public CompletableFuture<byte[]> decrypt(String keyName, byte[] ciphertext, String context) {
-        logger.debug(
-            "Decrypting data with key: {} (context length: {})",
-            keyName,
-            context != null ? context.length() : 0
-        );
+        long requestId = REQUEST_ID_GENERATOR.incrementAndGet();
+        
+        if (keyName == null || keyName.trim().isEmpty()) {
+            String errorMsg = String.format("Key name cannot be null or empty [requestId=%d]", requestId);
+            logger.error(errorMsg);
+            return CompletableFuture.failedFuture(new IllegalArgumentException(errorMsg));
+        }
+        
+        if (ciphertext == null || ciphertext.length == 0) {
+            String errorMsg = String.format("Ciphertext cannot be null or empty [requestId=%d, keyName=%s]", requestId, keyName);
+            logger.error(errorMsg);
+            return CompletableFuture.failedFuture(new IllegalArgumentException(errorMsg));
+        }
 
-        return performDecrypt(keyName, ciphertext, context)
+        logger.debug("Starting decryption operation [requestId={}, keyName={}, ciphertextSize={}, contextLength={}]",
+                    requestId, keyName, ciphertext.length, context != null ? context.length() : 0);
+
+        return performDecrypt(keyName, ciphertext, context, requestId)
             .whenComplete((result, throwable) -> {
                 if (throwable != null) {
-                    logger.error("Decryption failed for key: {}", keyName, throwable);
+                    logger.error("Decryption operation failed [requestId={}, keyName={}, error={}]", 
+                               requestId, keyName, throwable.getMessage(), throwable);
                 } else {
-                    logger.debug("Decryption successful for key: {}", keyName);
+                    logger.debug("Decryption operation completed successfully [requestId={}, keyName={}, plaintextSize={}]", 
+                               requestId, keyName, result != null ? result.length : 0);
                 }
             });
     }
@@ -108,16 +144,30 @@ public class VaultTransitClient implements AutoCloseable {
      * @return a CompletableFuture that completes when the key is confirmed to exist
      */
     public CompletableFuture<Void> ensureKeyExists(String keyName) {
-        logger.debug("Ensuring key exists: {}", keyName);
+        long requestId = REQUEST_ID_GENERATOR.incrementAndGet();
+        
+        if (keyName == null || keyName.trim().isEmpty()) {
+            String errorMsg = String.format("Key name cannot be null or empty [requestId=%d]", requestId);
+            logger.error(errorMsg);
+            return CompletableFuture.failedFuture(new IllegalArgumentException(errorMsg));
+        }
+        
+        logger.debug("Ensuring key exists [requestId={}, keyName={}]", requestId, keyName);
 
-        return checkKeyExists(keyName)
+        return checkKeyExists(keyName, requestId)
             .thenCompose(exists -> {
                 if (exists) {
-                    logger.debug("Key already exists: {}", keyName);
+                    logger.debug("Key already exists [requestId={}, keyName={}]", requestId, keyName);
                     return CompletableFuture.completedFuture(null);
                 } else {
-                    logger.debug("Creating new key: {}", keyName);
-                    return createKey(keyName);
+                    logger.debug("Creating new key [requestId={}, keyName={}]", requestId, keyName);
+                    return createKey(keyName, requestId);
+                }
+            })
+            .whenComplete((result, throwable) -> {
+                if (throwable != null) {
+                    logger.error("Key existence check/creation failed [requestId={}, keyName={}, error={}]", 
+                               requestId, keyName, throwable.getMessage(), throwable);
                 }
             });
     }
@@ -130,15 +180,24 @@ public class VaultTransitClient implements AutoCloseable {
      */
     public String generateKeyName(String subjectId) {
         if (subjectId == null || subjectId.trim().isEmpty()) {
-            throw new IllegalArgumentException("Subject ID cannot be null or empty");
+            String errorMsg = "Subject ID cannot be null or empty";
+            logger.error("Key name generation failed: {}", errorMsg);
+            throw new IllegalArgumentException(errorMsg);
         }
 
         // Sanitize subject ID to prevent path traversal
         String sanitizedSubjectId = subjectId.replaceAll("[^a-zA-Z0-9_-]", "_");
-        return config.getKeyPrefix() + "/subject/" + sanitizedSubjectId;
+        String keyName = config.getKeyPrefix() + "/subject/" + sanitizedSubjectId;
+        
+        if (!sanitizedSubjectId.equals(subjectId)) {
+            logger.debug("Subject ID was sanitized [original={}, sanitized={}, keyName={}]", 
+                        subjectId, sanitizedSubjectId, keyName);
+        }
+        
+        return keyName;
     }
 
-    private CompletableFuture<byte[]> performEncrypt(String keyName, byte[] plaintext, String context) {
+    private CompletableFuture<byte[]> performEncrypt(String keyName, byte[] plaintext, String context, long requestId) {
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("plaintext", Base64.getEncoder().encodeToString(plaintext));
 
@@ -151,6 +210,9 @@ public class VaultTransitClient implements AutoCloseable {
         return executeWithRetry(() -> {
             try {
                 String jsonBody = objectMapper.writeValueAsString(requestBody);
+                logger.debug("Sending encrypt request to Vault [requestId={}, url={}, bodySize={}]", 
+                           requestId, sanitizeUrl(url), jsonBody.length());
+                
                 HttpRequest request = HttpRequest
                     .newBuilder()
                     .uri(URI.create(url))
@@ -163,16 +225,20 @@ public class VaultTransitClient implements AutoCloseable {
                 return httpClient
                     .sendAsync(request, HttpResponse.BodyHandlers.ofString())
                     .thenApply(response -> {
-                        handleHttpResponse(response, "encrypt");
-                        return parseCiphertext(response.body());
+                        logger.debug("Received encrypt response from Vault [requestId={}, statusCode={}, responseSize={}]", 
+                                   requestId, response.statusCode(), response.body().length());
+                        handleHttpResponse(response, "encrypt", requestId);
+                        return parseCiphertext(response.body(), requestId);
                     });
             } catch (Exception e) {
-                return CompletableFuture.failedFuture(new VaultConnectivityException("Failed to encrypt data", e));
+                String errorMsg = String.format("Failed to encrypt data [requestId=%d, keyName=%s]", requestId, keyName);
+                logger.error(errorMsg, e);
+                return CompletableFuture.failedFuture(new VaultConnectivityException(errorMsg, e));
             }
-        });
+        }, requestId);
     }
 
-    private CompletableFuture<byte[]> performDecrypt(String keyName, byte[] ciphertext, String context) {
+    private CompletableFuture<byte[]> performDecrypt(String keyName, byte[] ciphertext, String context, long requestId) {
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("ciphertext", new String(ciphertext, StandardCharsets.UTF_8));
 
@@ -185,6 +251,9 @@ public class VaultTransitClient implements AutoCloseable {
         return executeWithRetry(() -> {
             try {
                 String jsonBody = objectMapper.writeValueAsString(requestBody);
+                logger.debug("Sending decrypt request to Vault [requestId={}, url={}, bodySize={}]", 
+                           requestId, sanitizeUrl(url), jsonBody.length());
+                
                 HttpRequest request = HttpRequest
                     .newBuilder()
                     .uri(URI.create(url))
@@ -197,20 +266,26 @@ public class VaultTransitClient implements AutoCloseable {
                 return httpClient
                     .sendAsync(request, HttpResponse.BodyHandlers.ofString())
                     .thenApply(response -> {
-                        handleHttpResponse(response, "decrypt");
-                        return parsePlaintext(response.body());
+                        logger.debug("Received decrypt response from Vault [requestId={}, statusCode={}, responseSize={}]", 
+                                   requestId, response.statusCode(), response.body().length());
+                        handleHttpResponse(response, "decrypt", requestId);
+                        return parsePlaintext(response.body(), requestId);
                     });
             } catch (Exception e) {
-                return CompletableFuture.failedFuture(new VaultConnectivityException("Failed to decrypt data", e));
+                String errorMsg = String.format("Failed to decrypt data [requestId=%d, keyName=%s]", requestId, keyName);
+                logger.error(errorMsg, e);
+                return CompletableFuture.failedFuture(new VaultConnectivityException(errorMsg, e));
             }
-        });
+        }, requestId);
     }
 
-    CompletableFuture<Boolean> checkKeyExists(String keyName) {
+    CompletableFuture<Boolean> checkKeyExists(String keyName, long requestId) {
         String url = baseUrl + "/keys/" + keyName;
 
         return executeWithRetry(() -> {
             try {
+                logger.debug("Checking key existence [requestId={}, url={}]", requestId, sanitizeUrl(url));
+                
                 HttpRequest request = HttpRequest
                     .newBuilder()
                     .uri(URI.create(url))
@@ -222,24 +297,27 @@ public class VaultTransitClient implements AutoCloseable {
                 return httpClient
                     .sendAsync(request, HttpResponse.BodyHandlers.ofString())
                     .thenApply(response -> {
+                        logger.debug("Key existence check response [requestId={}, statusCode={}]", 
+                                   requestId, response.statusCode());
+                        
                         if (response.statusCode() == 200) {
                             return true;
                         } else if (response.statusCode() == 404) {
                             return false;
                         } else {
-                            handleHttpResponse(response, "check key existence");
+                            handleHttpResponse(response, "check key existence", requestId);
                             return false; // This line should not be reached due to exception in handleHttpResponse
                         }
                     });
             } catch (Exception e) {
-                return CompletableFuture.failedFuture(
-                    new VaultConnectivityException("Failed to check key existence", e)
-                );
+                String errorMsg = String.format("Failed to check key existence [requestId=%d, keyName=%s]", requestId, keyName);
+                logger.error(errorMsg, e);
+                return CompletableFuture.failedFuture(new VaultConnectivityException(errorMsg, e));
             }
-        });
+        }, requestId);
     }
 
-    private CompletableFuture<Void> createKey(String keyName) {
+    private CompletableFuture<Void> createKey(String keyName, long requestId) {
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("type", "aes256-gcm96");
 
@@ -248,6 +326,9 @@ public class VaultTransitClient implements AutoCloseable {
         return executeWithRetry(() -> {
             try {
                 String jsonBody = objectMapper.writeValueAsString(requestBody);
+                logger.debug("Creating key in Vault [requestId={}, url={}, keyType={}]", 
+                           requestId, sanitizeUrl(url), requestBody.get("type"));
+                
                 HttpRequest request = HttpRequest
                     .newBuilder()
                     .uri(URI.create(url))
@@ -260,22 +341,27 @@ public class VaultTransitClient implements AutoCloseable {
                 return httpClient
                     .sendAsync(request, HttpResponse.BodyHandlers.ofString())
                     .thenApply(response -> {
-                        handleHttpResponse(response, "create key");
+                        logger.debug("Key creation response [requestId={}, statusCode={}]", 
+                                   requestId, response.statusCode());
+                        handleHttpResponse(response, "create key", requestId);
                         return null;
                     });
             } catch (Exception e) {
-                return CompletableFuture.failedFuture(new VaultConnectivityException("Failed to create key", e));
+                String errorMsg = String.format("Failed to create key [requestId=%d, keyName=%s]", requestId, keyName);
+                logger.error(errorMsg, e);
+                return CompletableFuture.failedFuture(new VaultConnectivityException(errorMsg, e));
             }
-        });
+        }, requestId);
     }
 
-    private <T> CompletableFuture<T> executeWithRetry(java.util.function.Supplier<CompletableFuture<T>> operation) {
-        return executeWithRetry(operation, 0);
+    private <T> CompletableFuture<T> executeWithRetry(java.util.function.Supplier<CompletableFuture<T>> operation, long requestId) {
+        return executeWithRetry(operation, 0, requestId);
     }
 
     private <T> CompletableFuture<T> executeWithRetry(
         java.util.function.Supplier<CompletableFuture<T>> operation,
-        int attempt
+        int attempt,
+        long requestId
     ) {
         return operation
             .get()
@@ -285,23 +371,21 @@ public class VaultTransitClient implements AutoCloseable {
                 }
 
                 if (attempt >= config.getMaxRetries()) {
-                    logger.error("Max retries ({}) exceeded, failing operation", config.getMaxRetries());
+                    logger.error("Max retries exceeded, failing operation [requestId={}, maxRetries={}, errorType={}, finalError={}]", 
+                               requestId, config.getMaxRetries(), throwable.getClass().getSimpleName(), 
+                               sanitizeLogMessage(throwable.getMessage()), throwable);
                     return CompletableFuture.<T>failedFuture(throwable);
                 }
 
                 if (isRetryableException(throwable)) {
                     long delay = calculateBackoffDelay(attempt);
-                    logger.warn(
-                        "Operation failed (attempt {}/{}), retrying in {}ms",
-                        attempt + 1,
-                        config.getMaxRetries() + 1,
-                        delay,
-                        throwable
-                    );
+                    logger.warn("Operation failed, retrying [requestId={}, attempt={}/{}, retryDelay={}ms, errorType={}, error={}]",
+                              requestId, attempt + 1, config.getMaxRetries() + 1, delay, 
+                              throwable.getClass().getSimpleName(), sanitizeLogMessage(throwable.getMessage()), throwable);
 
                     // For testing, we'll use a simpler approach without actual delay
                     if (delay == 0) {
-                        return executeWithRetry(operation, attempt + 1);
+                        return executeWithRetry(operation, attempt + 1, requestId);
                     }
 
                     CompletableFuture<T> delayedRetry = new CompletableFuture<>();
@@ -311,7 +395,7 @@ public class VaultTransitClient implements AutoCloseable {
                     scheduler.schedule(
                         () -> {
                             try {
-                                executeWithRetry(operation, attempt + 1)
+                                executeWithRetry(operation, attempt + 1, requestId)
                                     .whenComplete((retryResult, retryThrowable) -> {
                                         scheduler.shutdown();
                                         if (retryThrowable != null) {
@@ -331,7 +415,9 @@ public class VaultTransitClient implements AutoCloseable {
 
                     return delayedRetry;
                 } else {
-                    logger.error("Non-retryable exception occurred", throwable);
+                    logger.error("Non-retryable exception occurred [requestId={}, errorType={}, error={}]", 
+                               requestId, throwable.getClass().getSimpleName(), 
+                               sanitizeLogMessage(throwable.getMessage()), throwable);
                     return CompletableFuture.<T>failedFuture(throwable);
                 }
             })
@@ -340,11 +426,23 @@ public class VaultTransitClient implements AutoCloseable {
 
     private boolean isRetryableException(Throwable throwable) {
         // Retry on connectivity issues but not on authentication or validation errors
-        return (
+        boolean isRetryable = (
             throwable instanceof VaultConnectivityException ||
             (throwable instanceof IOException) ||
             (throwable.getCause() instanceof IOException)
         );
+        
+        // Don't retry on authentication or validation errors
+        if (throwable instanceof VaultAuthenticationException ||
+            throwable instanceof InvalidEncryptionContextException ||
+            throwable instanceof IllegalArgumentException) {
+            isRetryable = false;
+        }
+        
+        logger.debug("Exception retry evaluation [exception={}, retryable={}]", 
+                    throwable.getClass().getSimpleName(), isRetryable);
+        
+        return isRetryable;
     }
 
     private long calculateBackoffDelay(int attempt) {
@@ -359,68 +457,146 @@ public class VaultTransitClient implements AutoCloseable {
         return Math.round(delay * jitterFactor);
     }
 
-    private void handleHttpResponse(HttpResponse<String> response, String operation) {
+    private void handleHttpResponse(HttpResponse<String> response, String operation, long requestId) {
         int statusCode = response.statusCode();
 
         if (statusCode >= 200 && statusCode < 300) {
             return; // Success
         }
 
-        String errorMessage = String.format("Vault %s operation failed with status %d", operation, statusCode);
+        String baseErrorMessage = String.format("Vault %s operation failed [requestId=%d, statusCode=%d]", 
+                                               operation, requestId, statusCode);
 
+        // Parse Vault error response for additional details
+        String vaultErrorDetails = null;
+        String detailedErrorMessage = baseErrorMessage;
+        
         try {
-            JsonNode errorNode = objectMapper.readTree(response.body());
-            if (errorNode.has("errors") && errorNode.get("errors").isArray()) {
-                String errors = errorNode.get("errors").toString();
-                errorMessage += ": " + errors;
+            if (response.body() != null && !response.body().trim().isEmpty()) {
+                JsonNode errorNode = objectMapper.readTree(response.body());
+                if (errorNode.has("errors") && errorNode.get("errors").isArray()) {
+                    vaultErrorDetails = errorNode.get("errors").toString();
+                    detailedErrorMessage = baseErrorMessage + " - Vault errors: " + vaultErrorDetails;
+                }
             }
         } catch (Exception e) {
-            logger.debug("Could not parse error response body", e);
+            logger.debug("Could not parse error response body [requestId={}, responseBodyLength={}]", 
+                        requestId, response.body() != null ? response.body().length() : 0, e);
         }
 
+        // Log the error with appropriate level based on status code and throw specific exceptions
         if (statusCode == 401 || statusCode == 403) {
-            throw new VaultAuthenticationException(errorMessage);
+            logger.error("Vault authentication failed [requestId={}, statusCode={}, operation={}, vaultErrors={}]", 
+                        requestId, statusCode, operation, vaultErrorDetails != null ? vaultErrorDetails : "none");
+            throw new VaultAuthenticationException(detailedErrorMessage);
         } else if (statusCode == 404) {
-            throw new SubjectKeyNotFoundException("", errorMessage);
+            logger.warn("Vault resource not found [requestId={}, statusCode={}, operation={}, vaultErrors={}]", 
+                       requestId, statusCode, operation, vaultErrorDetails != null ? vaultErrorDetails : "none");
+            throw new SubjectKeyNotFoundException("", detailedErrorMessage);
         } else if (statusCode >= 500) {
-            throw new VaultConnectivityException(errorMessage);
+            logger.error("Vault server error [requestId={}, statusCode={}, operation={}, vaultErrors={}]", 
+                        requestId, statusCode, operation, vaultErrorDetails != null ? vaultErrorDetails : "none");
+            throw new VaultConnectivityException(detailedErrorMessage);
         } else {
-            throw new VaultCryptoException(errorMessage);
+            logger.error("Vault client error [requestId={}, statusCode={}, operation={}, vaultErrors={}]", 
+                        requestId, statusCode, operation, vaultErrorDetails != null ? vaultErrorDetails : "none");
+            throw new VaultCryptoException(detailedErrorMessage);
         }
     }
 
-    private byte[] parseCiphertext(String responseBody) {
+    private byte[] parseCiphertext(String responseBody, long requestId) {
         try {
             JsonNode responseNode = objectMapper.readTree(responseBody);
             JsonNode dataNode = responseNode.get("data");
 
             if (dataNode == null || !dataNode.has("ciphertext")) {
-                throw new VaultCryptoException("Invalid response format: missing ciphertext");
+                String errorMsg = String.format("Invalid encryption response format: missing ciphertext [requestId=%d]", requestId);
+                logger.error(errorMsg);
+                throw new VaultCryptoException(errorMsg);
             }
 
             String ciphertext = dataNode.get("ciphertext").asText();
+            logger.debug("Successfully parsed ciphertext from response [requestId={}, ciphertextLength={}]", 
+                        requestId, ciphertext.length());
             return ciphertext.getBytes(StandardCharsets.UTF_8);
         } catch (IOException e) {
-            throw new VaultCryptoException("Failed to parse encryption response", e);
+            String errorMsg = String.format("Failed to parse encryption response [requestId=%d]", requestId);
+            logger.error(errorMsg, e);
+            throw new VaultCryptoException(errorMsg, e);
         }
     }
 
-    private byte[] parsePlaintext(String responseBody) {
+    private byte[] parsePlaintext(String responseBody, long requestId) {
         try {
             JsonNode responseNode = objectMapper.readTree(responseBody);
             JsonNode dataNode = responseNode.get("data");
 
             if (dataNode == null || !dataNode.has("plaintext")) {
-                throw new VaultCryptoException("Invalid response format: missing plaintext");
+                String errorMsg = String.format("Invalid decryption response format: missing plaintext [requestId=%d]", requestId);
+                logger.error(errorMsg);
+                throw new VaultCryptoException(errorMsg);
             }
 
             String plaintext = dataNode.get("plaintext").asText();
-            return Base64.getDecoder().decode(plaintext);
+            byte[] decodedPlaintext = Base64.getDecoder().decode(plaintext);
+            logger.debug("Successfully parsed plaintext from response [requestId={}, plaintextSize={}]", 
+                        requestId, decodedPlaintext.length);
+            return decodedPlaintext;
         } catch (IOException e) {
-            throw new VaultCryptoException("Failed to parse decryption response", e);
+            String errorMsg = String.format("Failed to parse decryption response [requestId=%d]", requestId);
+            logger.error(errorMsg, e);
+            throw new VaultCryptoException(errorMsg, e);
         } catch (IllegalArgumentException e) {
-            throw new VaultCryptoException("Failed to decode base64 plaintext", e);
+            String errorMsg = String.format("Failed to decode base64 plaintext [requestId=%d]", requestId);
+            logger.error(errorMsg, e);
+            throw new VaultCryptoException(errorMsg, e);
         }
+    }
+
+    /**
+     * Sanitizes URLs for logging by removing sensitive information.
+     * This ensures that tokens or other sensitive data in URLs are not logged.
+     *
+     * @param url the URL to sanitize
+     * @return the sanitized URL safe for logging
+     */
+    private String sanitizeUrl(String url) {
+        if (url == null) {
+            return "null";
+        }
+        
+        // Remove any query parameters that might contain sensitive data
+        int queryIndex = url.indexOf('?');
+        if (queryIndex != -1) {
+            url = url.substring(0, queryIndex) + "?[REDACTED]";
+        }
+        
+        // Replace any potential tokens in the path (though this shouldn't happen with Vault URLs)
+        return url.replaceAll("token=[^&]*", "token=[REDACTED]");
+    }
+
+    /**
+     * Sanitizes log messages to ensure no sensitive data is exposed.
+     * This method removes or redacts potentially sensitive information from log messages.
+     *
+     * @param message the message to sanitize
+     * @return the sanitized message safe for logging
+     */
+    private String sanitizeLogMessage(String message) {
+        if (message == null) {
+            return "null";
+        }
+        
+        // Remove base64-encoded data that might be keys or sensitive content
+        String sanitized = message.replaceAll("[A-Za-z0-9+/]{32,}={0,2}", "[REDACTED_BASE64]");
+        
+        // Remove potential token patterns
+        sanitized = sanitized.replaceAll("(?i)token[=:]\\s*[A-Za-z0-9._-]+", "token=[REDACTED]");
+        
+        // Remove potential key material patterns
+        sanitized = sanitized.replaceAll("(?i)(key|secret|password)[=:]\\s*[A-Za-z0-9._-]+", "$1=[REDACTED]");
+        
+        return sanitized;
     }
 
     @Override
@@ -437,7 +613,7 @@ public class VaultTransitClient implements AutoCloseable {
             
             logger.debug("VaultTransitClient closed successfully");
         } catch (Exception e) {
-            logger.warn("Error during VaultTransitClient cleanup", e);
+            logger.warn("Error during VaultTransitClient cleanup [error={}]", e.getMessage(), e);
             // Don't rethrow exceptions from close() method
         }
     }
