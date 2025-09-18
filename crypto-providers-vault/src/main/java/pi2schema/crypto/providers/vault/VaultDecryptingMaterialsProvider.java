@@ -56,7 +56,8 @@ public class VaultDecryptingMaterialsProvider implements DecryptingMaterialsProv
         this.config = config;
         this.vaultClient = new VaultTransitClient(config);
 
-        logger.info("VaultDecryptingMaterialsProvider initialized with configuration: {}", config);
+        logger.info("VaultDecryptingMaterialsProvider initialized [vaultUrl={}, transitEngine={}, keyPrefix={}]", 
+                   sanitizeUrl(config.getVaultUrl()), config.getTransitEnginePath(), config.getKeyPrefix());
     }
 
     /**
@@ -79,30 +80,54 @@ public class VaultDecryptingMaterialsProvider implements DecryptingMaterialsProv
     @Override
     public CompletableFuture<Aead> decryptionKeysFor(String subjectId, byte[] encryptedDataKey, String encryptionContext) {
         if (subjectId == null || subjectId.trim().isEmpty()) {
-            return CompletableFuture.failedFuture(new IllegalArgumentException("Subject ID cannot be null or empty"));
+            String errorMsg = "Subject ID cannot be null or empty";
+            logger.error("Decryption materials request failed: {}", errorMsg);
+            return CompletableFuture.failedFuture(new IllegalArgumentException(errorMsg));
         }
 
         if (encryptedDataKey == null || encryptedDataKey.length == 0) {
-            return CompletableFuture.failedFuture(new IllegalArgumentException("Encrypted data key cannot be null or empty"));
+            String errorMsg = String.format("Encrypted data key cannot be null or empty [subjectId=%s]", subjectId);
+            logger.error(errorMsg);
+            return CompletableFuture.failedFuture(new IllegalArgumentException(errorMsg));
         }
 
         if (encryptionContext == null || encryptionContext.trim().isEmpty()) {
+            String errorMsg = String.format("Encryption context cannot be null or empty [subjectId=%s]", subjectId);
+            logger.error(errorMsg);
             return CompletableFuture.failedFuture(
-                new InvalidEncryptionContextException(encryptionContext, "Encryption context cannot be null or empty")
+                new InvalidEncryptionContextException(encryptionContext, errorMsg)
             );
         }
 
-        logger.debug("Decrypting materials for subject: {}", subjectId);
+        logger.debug("Decrypting materials [subjectId={}, encryptedKeySize={}, contextLength={}]", 
+                    subjectId, encryptedDataKey.length, encryptionContext.length());
 
         return CompletableFuture
-            .supplyAsync(() -> validateEncryptionContext(subjectId, encryptionContext))
+            .supplyAsync(() -> {
+                try {
+                    return validateEncryptionContext(subjectId, encryptionContext);
+                } catch (Exception e) {
+                    logger.error("Encryption context validation failed [subjectId={}, error={}]", 
+                               subjectId, e.getMessage(), e);
+                    throw e;
+                }
+            })
             .thenCompose(validatedContext -> decryptDataEncryptionKey(subjectId, encryptedDataKey, validatedContext))
-            .thenApply(this::reconstructAeadPrimitive)
+            .thenApply(dekBytes -> {
+                try {
+                    return reconstructAeadPrimitive(dekBytes);
+                } catch (Exception e) {
+                    logger.error("AEAD primitive reconstruction failed [subjectId={}, error={}]", 
+                               subjectId, e.getMessage(), e);
+                    throw e;
+                }
+            })
             .whenComplete((result, throwable) -> {
                 if (throwable != null) {
-                    logger.error("Failed to decrypt materials for subject: {}", subjectId, throwable);
+                    logger.error("Failed to decrypt materials [subjectId={}, error={}]", 
+                               subjectId, throwable.getMessage(), throwable);
                 } else {
-                    logger.debug("Successfully decrypted materials for subject: {}", subjectId);
+                    logger.debug("Successfully decrypted materials [subjectId={}]", subjectId);
                 }
             });
     }
@@ -116,14 +141,17 @@ public class VaultDecryptingMaterialsProvider implements DecryptingMaterialsProv
      * @throws InvalidEncryptionContextException if validation fails
      */
     private String validateEncryptionContext(String expectedSubjectId, String encryptionContext) {
-        logger.debug("Validating encryption context for subject: {}", expectedSubjectId);
+        logger.debug("Validating encryption context [subjectId={}, contextLength={}]", 
+                    expectedSubjectId, encryptionContext.length());
 
         var matcher = ENCRYPTION_CONTEXT_PATTERN.matcher(encryptionContext);
         if (!matcher.matches()) {
-            throw new InvalidEncryptionContextException(
-                encryptionContext,
-                "Encryption context format is invalid. Expected format: subjectId=value;timestamp=value;version=value"
+            String errorMsg = String.format(
+                "Encryption context format is invalid [subjectId=%s, expectedFormat=subjectId=value;timestamp=value;version=value]", 
+                expectedSubjectId
             );
+            logger.error(errorMsg);
+            throw new InvalidEncryptionContextException(encryptionContext, errorMsg);
         }
 
         String contextSubjectId = matcher.group(1);
@@ -132,38 +160,49 @@ public class VaultDecryptingMaterialsProvider implements DecryptingMaterialsProv
 
         // Validate subject ID matches
         if (!expectedSubjectId.equals(contextSubjectId)) {
-            throw new InvalidEncryptionContextException(
-                encryptionContext,
-                String.format("Subject ID mismatch. Expected: %s, Found in context: %s", expectedSubjectId, contextSubjectId)
+            String errorMsg = String.format(
+                "Subject ID mismatch [expected=%s, foundInContext=%s]", 
+                expectedSubjectId, contextSubjectId
             );
+            logger.error(errorMsg);
+            throw new InvalidEncryptionContextException(encryptionContext, errorMsg);
         }
 
         // Validate timestamp is a valid number
         if (timestampStr == null || timestampStr.trim().isEmpty()) {
-            throw new InvalidEncryptionContextException(
-                encryptionContext,
-                "Timestamp cannot be empty in encryption context"
+            String errorMsg = String.format(
+                "Timestamp cannot be empty in encryption context [subjectId=%s]", 
+                expectedSubjectId
             );
+            logger.error(errorMsg);
+            throw new InvalidEncryptionContextException(encryptionContext, errorMsg);
         }
         
         try {
-            Long.parseLong(timestampStr);
+            long timestamp = Long.parseLong(timestampStr);
+            logger.debug("Encryption context timestamp validated [subjectId={}, timestamp={}]", 
+                        expectedSubjectId, timestamp);
         } catch (NumberFormatException e) {
-            throw new InvalidEncryptionContextException(
-                encryptionContext,
-                "Invalid timestamp format in encryption context: " + timestampStr
+            String errorMsg = String.format(
+                "Invalid timestamp format in encryption context [subjectId=%s, timestamp=%s]", 
+                expectedSubjectId, timestampStr
             );
+            logger.error(errorMsg, e);
+            throw new InvalidEncryptionContextException(encryptionContext, errorMsg);
         }
 
         // Validate version (currently just check it's not empty)
         if (version == null || version.trim().isEmpty()) {
-            throw new InvalidEncryptionContextException(
-                encryptionContext,
-                "Version cannot be empty in encryption context"
+            String errorMsg = String.format(
+                "Version cannot be empty in encryption context [subjectId=%s]", 
+                expectedSubjectId
             );
+            logger.error(errorMsg);
+            throw new InvalidEncryptionContextException(encryptionContext, errorMsg);
         }
 
-        logger.debug("Encryption context validation successful for subject: {}", expectedSubjectId);
+        logger.debug("Encryption context validation successful [subjectId={}, version={}]", 
+                    expectedSubjectId, version);
         return encryptionContext;
     }
 
@@ -182,25 +221,36 @@ public class VaultDecryptingMaterialsProvider implements DecryptingMaterialsProv
     ) {
         String keyName = vaultClient.generateKeyName(subjectId);
 
-        logger.debug("Decrypting DEK with Vault key: {} (context: {})", keyName, encryptionContext);
+        logger.debug("Decrypting DEK with Vault [subjectId={}, keyName={}, encryptedKeySize={}]", 
+                    subjectId, keyName, encryptedDataKey.length);
 
         return vaultClient
             .decrypt(keyName, encryptedDataKey, encryptionContext)
             .whenComplete((result, throwable) -> {
                 if (throwable != null) {
-                    logger.error("Failed to decrypt DEK for subject: {}", subjectId, throwable);
+                    // Unwrap CompletionException if present for better error reporting
+                    Throwable actualThrowable = throwable;
+                    if (throwable instanceof java.util.concurrent.CompletionException && throwable.getCause() != null) {
+                        actualThrowable = throwable.getCause();
+                    }
+                    
+                    logger.error("Failed to decrypt DEK [subjectId={}, keyName={}, errorType={}, error={}]", 
+                               subjectId, keyName, actualThrowable.getClass().getSimpleName(), 
+                               sanitizeLogMessage(actualThrowable.getMessage()), actualThrowable);
+
                     
                     // Convert specific Vault exceptions to more meaningful ones for decryption context
-                    if (throwable instanceof SubjectKeyNotFoundException) {
+                    if (actualThrowable instanceof SubjectKeyNotFoundException) {
                         // Re-throw with proper subject ID
                         throw new SubjectKeyNotFoundException(
                             subjectId,
                             String.format("Subject key not found for subject: %s", subjectId),
-                            throwable
+                            actualThrowable
                         );
                     }
                 } else {
-                    logger.debug("Successfully decrypted DEK for subject: {}", subjectId);
+                    logger.debug("Successfully decrypted DEK [subjectId={}, dekSize={}]", 
+                               subjectId, result != null ? result.length : 0);
                 }
             });
     }
@@ -235,41 +285,59 @@ public class VaultDecryptingMaterialsProvider implements DecryptingMaterialsProv
 
     /**
      * Validates the configuration to ensure all required parameters are properly set.
+     * Note: Most validation is done in VaultCryptoConfiguration.Builder, this is for
+     * additional runtime validation if needed.
      *
      * @param config the configuration to validate
      * @throws IllegalArgumentException if configuration is invalid
      */
     private void validateConfiguration(VaultCryptoConfiguration config) {
-        // Additional validation beyond what's done in the configuration builder
-        
-        // Validate URL format
-        String vaultUrl = config.getVaultUrl();
-        if (!vaultUrl.startsWith("http://") && !vaultUrl.startsWith("https://")) {
-            throw new IllegalArgumentException("Vault URL must start with http:// or https://");
-        }
-
-        // Validate token is not just whitespace
-        String token = config.getVaultToken();
-        if (token.trim().length() != token.length()) {
-            throw new IllegalArgumentException("Vault token cannot contain leading or trailing whitespace");
-        }
-
-        // Validate key prefix doesn't contain invalid characters
-        String keyPrefix = config.getKeyPrefix();
-        if (!keyPrefix.matches("^[a-zA-Z0-9_-]+$")) {
-            throw new IllegalArgumentException("Key prefix can only contain alphanumeric characters, underscores, and hyphens");
-        }
-
-        // Validate timeout values are reasonable
-        if (config.getConnectionTimeout().toMillis() > 300000) { // 5 minutes
-            throw new IllegalArgumentException("Connection timeout cannot exceed 5 minutes");
-        }
-
-        if (config.getRequestTimeout().toMillis() > 600000) { // 10 minutes
-            throw new IllegalArgumentException("Request timeout cannot exceed 10 minutes");
-        }
-
+        // Configuration validation is primarily handled in the builder
+        // This method is kept for any additional runtime validation needs
         logger.debug("Configuration validation successful");
+    }
+
+    /**
+     * Sanitizes URLs for logging by removing sensitive information.
+     *
+     * @param url the URL to sanitize
+     * @return the sanitized URL safe for logging
+     */
+    private String sanitizeUrl(String url) {
+        if (url == null) {
+            return "null";
+        }
+        
+        // Remove any query parameters that might contain sensitive data
+        int queryIndex = url.indexOf('?');
+        if (queryIndex != -1) {
+            url = url.substring(0, queryIndex) + "?[REDACTED]";
+        }
+        
+        return url.replaceAll("token=[^&]*", "token=[REDACTED]");
+    }
+
+    /**
+     * Sanitizes log messages to ensure no sensitive data is exposed.
+     *
+     * @param message the message to sanitize
+     * @return the sanitized message safe for logging
+     */
+    private String sanitizeLogMessage(String message) {
+        if (message == null) {
+            return "null";
+        }
+        
+        // Remove base64-encoded data that might be keys or sensitive content
+        String sanitized = message.replaceAll("[A-Za-z0-9+/]{32,}={0,2}", "[REDACTED_BASE64]");
+        
+        // Remove potential token patterns
+        sanitized = sanitized.replaceAll("(?i)token[=:]\\s*[A-Za-z0-9._-]+", "token=[REDACTED]");
+        
+        // Remove potential key material patterns
+        sanitized = sanitized.replaceAll("(?i)(key|secret|password)[=:]\\s*[A-Za-z0-9._-]+", "$1=[REDACTED]");
+        
+        return sanitized;
     }
 
     @Override
@@ -278,9 +346,10 @@ public class VaultDecryptingMaterialsProvider implements DecryptingMaterialsProv
         try {
             if (vaultClient != null) {
                 vaultClient.close();
+                logger.debug("VaultTransitClient closed successfully");
             }
         } catch (Exception e) {
-            logger.warn("Error closing VaultTransitClient", e);
+            logger.warn("Error closing VaultTransitClient [error={}]", e.getMessage(), e);
         }
     }
 }

@@ -49,8 +49,19 @@ public final class VaultCryptoConfiguration {
             throw new IllegalArgumentException("Vault URL cannot be null or empty");
         }
 
+        // Validate URL format
+        String trimmedUrl = builder.vaultUrl.trim();
+        if (!trimmedUrl.startsWith("http://") && !trimmedUrl.startsWith("https://")) {
+            throw new IllegalArgumentException("Vault URL must start with http:// or https://");
+        }
+
         if (builder.vaultToken == null || builder.vaultToken.trim().isEmpty()) {
             throw new IllegalArgumentException("Vault token cannot be null or empty");
+        }
+
+        // Validate token doesn't have leading/trailing whitespace
+        if (!builder.vaultToken.equals(builder.vaultToken.trim())) {
+            throw new IllegalArgumentException("Vault token cannot contain leading or trailing whitespace");
         }
 
         if (builder.transitEnginePath == null || builder.transitEnginePath.trim().isEmpty()) {
@@ -61,6 +72,11 @@ public final class VaultCryptoConfiguration {
             throw new IllegalArgumentException("Key prefix cannot be null or empty");
         }
 
+        // Validate key prefix format
+        if (!builder.keyPrefix.matches("^[a-zA-Z0-9_-]+$")) {
+            throw new IllegalArgumentException("Key prefix can only contain alphanumeric characters, underscores, and hyphens");
+        }
+
         if (
             builder.connectionTimeout == null ||
             builder.connectionTimeout.isNegative() ||
@@ -69,8 +85,17 @@ public final class VaultCryptoConfiguration {
             throw new IllegalArgumentException("Connection timeout must be positive");
         }
 
+        // Validate timeout limits
+        if (builder.connectionTimeout.toMillis() > 300000) { // 5 minutes
+            throw new IllegalArgumentException("Connection timeout cannot exceed 5 minutes");
+        }
+
         if (builder.requestTimeout == null || builder.requestTimeout.isNegative() || builder.requestTimeout.isZero()) {
             throw new IllegalArgumentException("Request timeout must be positive");
+        }
+
+        if (builder.requestTimeout.toMillis() > 600000) { // 10 minutes
+            throw new IllegalArgumentException("Request timeout cannot exceed 10 minutes");
         }
 
         if (builder.maxRetries < 0) {
