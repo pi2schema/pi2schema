@@ -17,17 +17,17 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Simple integration tests for Vault crypto providers that can run against a local Vault instance.
- * 
+ *
  * To run these tests, start a local Vault instance:
- * 
+ *
  * 1. Start Vault in dev mode:
  *    vault server -dev -dev-root-token-id=test-token
- * 
+ *
  * 2. Enable transit engine:
  *    export VAULT_ADDR='http://127.0.0.1:8200'
  *    export VAULT_TOKEN='test-token'
  *    vault secrets enable transit
- * 
+ *
  * 3. Run tests with system property:
  *    ./gradlew test -Dvault.integration.enabled=true
  */
@@ -43,16 +43,18 @@ class VaultCryptoProviderSimpleIntegrationTest {
     @BeforeEach
     void setUp() {
         // Configure providers to use local Vault dev server
-        config = VaultCryptoConfiguration.builder()
-            .vaultUrl("http://127.0.0.1:8200")
-            .vaultToken("test-token")
-            .transitEnginePath("transit")
-            .keyPrefix("pi2schema-simple-test")
-            .connectionTimeout(Duration.ofSeconds(5))
-            .requestTimeout(Duration.ofSeconds(10))
-            .maxRetries(2)
-            .retryBackoffMs(Duration.ofMillis(100))
-            .build();
+        config =
+            VaultCryptoConfiguration
+                .builder()
+                .vaultUrl("http://127.0.0.1:8200")
+                .vaultToken("test-token")
+                .transitEnginePath("transit")
+                .keyPrefix("pi2schema-simple-test")
+                .connectionTimeout(Duration.ofSeconds(5))
+                .requestTimeout(Duration.ofSeconds(10))
+                .maxRetries(2)
+                .retryBackoffMs(Duration.ofMillis(100))
+                .build();
 
         encryptingProvider = new VaultEncryptingMaterialsProvider(config);
         decryptingProvider = new VaultDecryptingMaterialsProvider(config);
@@ -80,8 +82,10 @@ class VaultCryptoProviderSimpleIntegrationTest {
         String testData = "Simple integration test data";
 
         // When - Encrypt data
-        EncryptionMaterial encryptionMaterial = encryptingProvider.encryptionKeysFor(subjectId).get(10, TimeUnit.SECONDS);
-        
+        EncryptionMaterial encryptionMaterial = encryptingProvider
+            .encryptionKeysFor(subjectId)
+            .get(10, TimeUnit.SECONDS);
+
         assertNotNull(encryptionMaterial);
         assertNotNull(encryptionMaterial.dataEncryptionKey());
         assertNotNull(encryptionMaterial.encryptedDataKey());
@@ -92,11 +96,9 @@ class VaultCryptoProviderSimpleIntegrationTest {
         byte[] encryptedData = encryptingAead.encrypt(testData.getBytes(StandardCharsets.UTF_8), null);
 
         // When - Decrypt data
-        Aead decryptingAead = decryptingProvider.decryptionKeysFor(
-            subjectId,
-            encryptionMaterial.encryptedDataKey(),
-            encryptionMaterial.encryptionContext()
-        ).get(10, TimeUnit.SECONDS);
+        Aead decryptingAead = decryptingProvider
+            .decryptionKeysFor(subjectId, encryptionMaterial.encryptedDataKey(), encryptionMaterial.encryptionContext())
+            .get(10, TimeUnit.SECONDS);
 
         assertNotNull(decryptingAead);
 
@@ -131,11 +133,9 @@ class VaultCryptoProviderSimpleIntegrationTest {
         Aead aead1 = material1.dataEncryptionKey();
         byte[] encryptedData1 = aead1.encrypt(testData.getBytes(StandardCharsets.UTF_8), null);
 
-        Aead decryptingAead1 = decryptingProvider.decryptionKeysFor(
-            subjectId1,
-            material1.encryptedDataKey(),
-            material1.encryptionContext()
-        ).get(10, TimeUnit.SECONDS);
+        Aead decryptingAead1 = decryptingProvider
+            .decryptionKeysFor(subjectId1, material1.encryptedDataKey(), material1.encryptionContext())
+            .get(10, TimeUnit.SECONDS);
 
         byte[] decrypted1 = decryptingAead1.decrypt(encryptedData1, null);
         assertEquals(testData, new String(decrypted1, StandardCharsets.UTF_8));
@@ -150,27 +150,26 @@ class VaultCryptoProviderSimpleIntegrationTest {
     void testEncryptionContextValidation() throws Exception {
         // Given
         String subjectId = "user-context-validation-001";
-        
+
         // When - Create encryption material
         EncryptionMaterial material = encryptingProvider.encryptionKeysFor(subjectId).get(10, TimeUnit.SECONDS);
 
         // Then - Valid context should work
         assertDoesNotThrow(() -> {
-            decryptingProvider.decryptionKeysFor(
-                subjectId,
-                material.encryptedDataKey(),
-                material.encryptionContext()
-            ).get(10, TimeUnit.SECONDS);
+            decryptingProvider
+                .decryptionKeysFor(subjectId, material.encryptedDataKey(), material.encryptionContext())
+                .get(10, TimeUnit.SECONDS);
         });
 
         // Invalid context should fail
-        Exception exception = assertThrows(Exception.class, () -> {
-            decryptingProvider.decryptionKeysFor(
-                subjectId,
-                material.encryptedDataKey(),
-                "invalid-context-format"
-            ).get(10, TimeUnit.SECONDS);
-        });
+        Exception exception = assertThrows(
+            Exception.class,
+            () -> {
+                decryptingProvider
+                    .decryptionKeysFor(subjectId, material.encryptedDataKey(), "invalid-context-format")
+                    .get(10, TimeUnit.SECONDS);
+            }
+        );
 
         assertTrue(
             exception.getCause() instanceof InvalidEncryptionContextException,
@@ -192,11 +191,9 @@ class VaultCryptoProviderSimpleIntegrationTest {
         EncryptionMaterial material = encryptingProvider.encryptionKeysFor(subjectId).get(10, TimeUnit.SECONDS);
         assertNotNull(material);
 
-        Aead aead = decryptingProvider.decryptionKeysFor(
-            subjectId,
-            material.encryptedDataKey(),
-            material.encryptionContext()
-        ).get(10, TimeUnit.SECONDS);
+        Aead aead = decryptingProvider
+            .decryptionKeysFor(subjectId, material.encryptedDataKey(), material.encryptionContext())
+            .get(10, TimeUnit.SECONDS);
         assertNotNull(aead);
 
         // Then - Closing should work without exceptions

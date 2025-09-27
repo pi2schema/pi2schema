@@ -19,16 +19,18 @@ class VaultTransitClientGdprTest {
 
     @BeforeEach
     void setUp() {
-        config = VaultCryptoConfiguration.builder()
-            .vaultUrl("http://localhost:8200")
-            .vaultToken("test-token")
-            .transitEnginePath("transit")
-            .keyPrefix("test-prefix")
-            .connectionTimeout(Duration.ofSeconds(5))
-            .requestTimeout(Duration.ofSeconds(10))
-            .maxRetries(0) // Disable retries for unit tests
-            .retryBackoffMs(Duration.ofMillis(0))
-            .build();
+        config =
+            VaultCryptoConfiguration
+                .builder()
+                .vaultUrl("http://localhost:8200")
+                .vaultToken("test-token")
+                .transitEnginePath("transit")
+                .keyPrefix("test-prefix")
+                .connectionTimeout(Duration.ofSeconds(5))
+                .requestTimeout(Duration.ofSeconds(10))
+                .maxRetries(0) // Disable retries for unit tests
+                .retryBackoffMs(Duration.ofMillis(0))
+                .build();
 
         transitClient = new VaultTransitClient(config);
     }
@@ -37,7 +39,7 @@ class VaultTransitClientGdprTest {
     void testGenerateKeyName() {
         String subjectId = "user-123";
         String expectedKeyName = "test-prefix/subject/user-123";
-        
+
         String actualKeyName = transitClient.generateKeyName(subjectId);
         assertEquals(expectedKeyName, actualKeyName);
     }
@@ -46,58 +48,76 @@ class VaultTransitClientGdprTest {
     void testGenerateKeyNameWithSpecialCharacters() {
         String subjectId = "user@domain.com";
         String expectedKeyName = "test-prefix/subject/user_domain_com";
-        
+
         String actualKeyName = transitClient.generateKeyName(subjectId);
         assertEquals(expectedKeyName, actualKeyName);
     }
 
     @Test
     void testGenerateKeyNameWithNullSubjectId() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            transitClient.generateKeyName(null);
-        });
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> {
+                transitClient.generateKeyName(null);
+            }
+        );
     }
 
     @Test
     void testGenerateKeyNameWithEmptySubjectId() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            transitClient.generateKeyName("");
-        });
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> {
+                transitClient.generateKeyName("");
+            }
+        );
     }
 
     @Test
     void testSubjectKeyExistsWithNullSubjectId() {
-        ExecutionException exception = assertThrows(ExecutionException.class, () -> {
-            transitClient.subjectKeyExists(null).get();
-        });
-        
+        ExecutionException exception = assertThrows(
+            ExecutionException.class,
+            () -> {
+                transitClient.subjectKeyExists(null).get();
+            }
+        );
+
         assertTrue(exception.getCause() instanceof IllegalArgumentException);
     }
 
     @Test
     void testSubjectKeyExistsWithEmptySubjectId() {
-        ExecutionException exception = assertThrows(ExecutionException.class, () -> {
-            transitClient.subjectKeyExists("").get();
-        });
-        
+        ExecutionException exception = assertThrows(
+            ExecutionException.class,
+            () -> {
+                transitClient.subjectKeyExists("").get();
+            }
+        );
+
         assertTrue(exception.getCause() instanceof IllegalArgumentException);
     }
 
     @Test
     void testDeleteSubjectKeyWithNullSubjectId() {
-        ExecutionException exception = assertThrows(ExecutionException.class, () -> {
-            transitClient.deleteSubjectKey(null).get();
-        });
-        
+        ExecutionException exception = assertThrows(
+            ExecutionException.class,
+            () -> {
+                transitClient.deleteSubjectKey(null).get();
+            }
+        );
+
         assertTrue(exception.getCause() instanceof IllegalArgumentException);
     }
 
     @Test
     void testDeleteSubjectKeyWithEmptySubjectId() {
-        ExecutionException exception = assertThrows(ExecutionException.class, () -> {
-            transitClient.deleteSubjectKey("").get();
-        });
-        
+        ExecutionException exception = assertThrows(
+            ExecutionException.class,
+            () -> {
+                transitClient.deleteSubjectKey("").get();
+            }
+        );
+
         assertTrue(exception.getCause() instanceof IllegalArgumentException);
     }
 }

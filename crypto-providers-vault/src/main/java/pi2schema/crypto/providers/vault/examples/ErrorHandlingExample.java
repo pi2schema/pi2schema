@@ -5,11 +5,10 @@ import pi2schema.crypto.providers.vault.*;
 
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 
 /**
  * Example demonstrating comprehensive error handling with Vault crypto providers.
- * 
+ *
  * <p>This example shows how to handle various error conditions that can occur
  * when using the Vault crypto providers, including network issues, authentication
  * failures, and invalid configurations.</p>
@@ -24,27 +23,22 @@ public class ErrorHandlingExample {
 
         // Invalid URL format
         try {
-            VaultCryptoConfiguration.builder()
-                .vaultUrl("invalid-url")
-                .vaultToken("token")
-                .build();
+            VaultCryptoConfiguration.builder().vaultUrl("invalid-url").vaultToken("token").build();
         } catch (IllegalArgumentException e) {
             System.out.println("✓ Caught invalid URL error: " + e.getMessage());
         }
 
         // Empty token
         try {
-            VaultCryptoConfiguration.builder()
-                .vaultUrl("https://vault.example.com:8200")
-                .vaultToken("")
-                .build();
+            VaultCryptoConfiguration.builder().vaultUrl("https://vault.example.com:8200").vaultToken("").build();
         } catch (IllegalArgumentException e) {
             System.out.println("✓ Caught empty token error: " + e.getMessage());
         }
 
         // Invalid timeout
         try {
-            VaultCryptoConfiguration.builder()
+            VaultCryptoConfiguration
+                .builder()
                 .vaultUrl("https://vault.example.com:8200")
                 .vaultToken("token")
                 .connectionTimeout(Duration.ofSeconds(-1))
@@ -55,7 +49,8 @@ public class ErrorHandlingExample {
 
         // Invalid key prefix
         try {
-            VaultCryptoConfiguration.builder()
+            VaultCryptoConfiguration
+                .builder()
                 .vaultUrl("https://vault.example.com:8200")
                 .vaultToken("token")
                 .keyPrefix("invalid/prefix")
@@ -72,7 +67,8 @@ public class ErrorHandlingExample {
         System.out.println("\n=== Authentication Error Handling ===");
 
         // Configuration with invalid token
-        VaultCryptoConfiguration config = VaultCryptoConfiguration.builder()
+        VaultCryptoConfiguration config = VaultCryptoConfiguration
+            .builder()
             .vaultUrl("https://vault.example.com:8200")
             .vaultToken("invalid-token")
             .maxRetries(1) // Reduce retries for faster demo
@@ -80,7 +76,7 @@ public class ErrorHandlingExample {
 
         try (VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config)) {
             CompletableFuture<EncryptionMaterial> future = provider.encryptionKeysFor("test-user");
-            
+
             try {
                 future.get();
             } catch (Exception e) {
@@ -105,7 +101,8 @@ public class ErrorHandlingExample {
         System.out.println("\n=== Connectivity Error Handling ===");
 
         // Configuration with unreachable Vault server
-        VaultCryptoConfiguration config = VaultCryptoConfiguration.builder()
+        VaultCryptoConfiguration config = VaultCryptoConfiguration
+            .builder()
             .vaultUrl("https://unreachable-vault.example.com:8200")
             .vaultToken("token")
             .connectionTimeout(Duration.ofSeconds(2)) // Short timeout for demo
@@ -114,7 +111,7 @@ public class ErrorHandlingExample {
 
         try (VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config)) {
             CompletableFuture<EncryptionMaterial> future = provider.encryptionKeysFor("test-user");
-            
+
             try {
                 future.get();
             } catch (Exception e) {
@@ -136,7 +133,8 @@ public class ErrorHandlingExample {
     public static void demonstrateSubjectKeyNotFoundErrors() {
         System.out.println("\n=== Subject Key Not Found Error Handling ===");
 
-        VaultCryptoConfiguration config = VaultCryptoConfiguration.builder()
+        VaultCryptoConfiguration config = VaultCryptoConfiguration
+            .builder()
             .vaultUrl("https://vault.example.com:8200")
             .vaultToken("valid-token")
             .build();
@@ -145,13 +143,13 @@ public class ErrorHandlingExample {
             // Attempt to decrypt with non-existent subject key
             byte[] fakeEncryptedKey = "fake-encrypted-key".getBytes();
             String fakeContext = "subjectId=nonexistent-user;timestamp=1234567890;version=1.0";
-            
+
             CompletableFuture<com.google.crypto.tink.Aead> future = provider.decryptionKeysFor(
-                "nonexistent-user", 
-                fakeEncryptedKey, 
+                "nonexistent-user",
+                fakeEncryptedKey,
                 fakeContext
             );
-            
+
             try {
                 future.get();
             } catch (Exception e) {
@@ -176,28 +174,29 @@ public class ErrorHandlingExample {
     public static void demonstrateInvalidEncryptionContextErrors() {
         System.out.println("\n=== Invalid Encryption Context Error Handling ===");
 
-        VaultCryptoConfiguration config = VaultCryptoConfiguration.builder()
+        VaultCryptoConfiguration config = VaultCryptoConfiguration
+            .builder()
             .vaultUrl("https://vault.example.com:8200")
             .vaultToken("valid-token")
             .build();
 
         try (VaultDecryptingMaterialsProvider provider = new VaultDecryptingMaterialsProvider(config)) {
             byte[] fakeEncryptedKey = "fake-encrypted-key".getBytes();
-            
+
             // Test various invalid contexts
             String[] invalidContexts = {
                 "invalid-format",
                 "subjectId=user1", // Missing timestamp and version
                 "subjectId=user1;timestamp=abc;version=1.0", // Invalid timestamp
                 "subjectId=user1;timestamp=1234567890;version=", // Empty version
-                "subjectId=user2;timestamp=1234567890;version=1.0" // Subject ID mismatch
+                "subjectId=user2;timestamp=1234567890;version=1.0", // Subject ID mismatch
             };
-            
+
             for (String invalidContext : invalidContexts) {
                 try {
                     CompletableFuture<com.google.crypto.tink.Aead> future = provider.decryptionKeysFor(
-                        "user1", 
-                        fakeEncryptedKey, 
+                        "user1",
+                        fakeEncryptedKey,
                         invalidContext
                     );
                     future.get();
@@ -224,7 +223,8 @@ public class ErrorHandlingExample {
     public static void demonstrateRetryPatterns() {
         System.out.println("\n=== Retry Pattern Demonstration ===");
 
-        VaultCryptoConfiguration config = VaultCryptoConfiguration.builder()
+        VaultCryptoConfiguration config = VaultCryptoConfiguration
+            .builder()
             .vaultUrl("https://vault.example.com:8200")
             .vaultToken("token")
             .maxRetries(3)
@@ -233,12 +233,12 @@ public class ErrorHandlingExample {
 
         try (VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config)) {
             CompletableFuture<EncryptionMaterial> future = provider.encryptionKeysFor("test-user");
-            
+
             // Handle with custom retry logic
             future.handle((result, throwable) -> {
                 if (throwable != null) {
                     System.out.println("Operation failed after retries: " + throwable.getMessage());
-                    
+
                     // Determine if retry is appropriate
                     Throwable cause = throwable.getCause();
                     if (cause instanceof VaultConnectivityException) {
@@ -253,7 +253,6 @@ public class ErrorHandlingExample {
                 }
                 return result;
             });
-            
         } catch (Exception e) {
             System.out.println("Provider error: " + e.getMessage());
         }
@@ -265,26 +264,27 @@ public class ErrorHandlingExample {
     public static void demonstrateGracefulDegradation() {
         System.out.println("\n=== Graceful Degradation Patterns ===");
 
-        VaultCryptoConfiguration config = VaultCryptoConfiguration.builder()
+        VaultCryptoConfiguration config = VaultCryptoConfiguration
+            .builder()
             .vaultUrl("https://vault.example.com:8200")
             .vaultToken("token")
             .build();
 
         try (VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config)) {
             CompletableFuture<EncryptionMaterial> future = provider.encryptionKeysFor("test-user");
-            
+
             // Implement fallback strategy
             future.handle((result, throwable) -> {
                 if (throwable != null) {
                     System.out.println("Primary encryption failed: " + throwable.getMessage());
-                    
+
                     // Example fallback strategies:
                     System.out.println("Fallback options:");
                     System.out.println("1. Use local encryption (reduced security)");
                     System.out.println("2. Queue operation for later retry");
                     System.out.println("3. Return error to user with retry suggestion");
                     System.out.println("4. Use cached encryption materials (if available)");
-                    
+
                     // In practice, implement appropriate fallback
                     return null; // or fallback result
                 } else {
@@ -292,7 +292,6 @@ public class ErrorHandlingExample {
                     return result;
                 }
             });
-            
         } catch (Exception e) {
             System.out.println("Provider initialization failed - using fallback encryption");
         }
