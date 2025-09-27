@@ -34,17 +34,18 @@ class VaultDecryptingMaterialsProviderTest {
 
     @BeforeEach
     void setUp() {
-        config = VaultCryptoConfiguration
-            .builder()
-            .vaultUrl("https://vault.example.com")
-            .vaultToken("test-token")
-            .transitEnginePath("transit")
-            .keyPrefix("pi2schema")
-            .connectionTimeout(Duration.ofSeconds(10))
-            .requestTimeout(Duration.ofSeconds(30))
-            .maxRetries(3)
-            .retryBackoffMs(Duration.ofMillis(100))
-            .build();
+        config =
+            VaultCryptoConfiguration
+                .builder()
+                .vaultUrl("https://vault.example.com")
+                .vaultToken("test-token")
+                .transitEnginePath("transit")
+                .keyPrefix("pi2schema")
+                .connectionTimeout(Duration.ofSeconds(10))
+                .requestTimeout(Duration.ofSeconds(30))
+                .maxRetries(3)
+                .retryBackoffMs(Duration.ofMillis(100))
+                .build();
 
         secureRandom = new SecureRandom();
     }
@@ -56,7 +57,7 @@ class VaultDecryptingMaterialsProviderTest {
         String expectedKeyName = "pi2schema/subject/user-12345";
         String encryptionContext = "subjectId=user-12345;timestamp=1234567890;version=1.0";
         byte[] encryptedDataKey = "vault:v1:encrypted-dek-data".getBytes();
-        
+
         // Generate a valid 32-byte DEK
         byte[] dekBytes = new byte[32];
         secureRandom.nextBytes(dekBytes);
@@ -77,7 +78,7 @@ class VaultDecryptingMaterialsProviderTest {
         // Verify the AEAD primitive is functional by testing encrypt/decrypt
         byte[] testData = "test data".getBytes();
         byte[] associatedData = "associated data".getBytes();
-        
+
         assertDoesNotThrow(() -> {
             byte[] encrypted = result.encrypt(testData, associatedData);
             byte[] decrypted = result.decrypt(encrypted, associatedData);
@@ -135,7 +136,10 @@ class VaultDecryptingMaterialsProviderTest {
 
         CompletionException exception = assertThrows(CompletionException.class, future::join);
         assertTrue(exception.getCause() instanceof IllegalArgumentException);
-        assertEquals("Encrypted data key cannot be null or empty", exception.getCause().getMessage());
+        assertEquals(
+            "Encrypted data key cannot be null or empty [subjectId=user-123]",
+            exception.getCause().getMessage()
+        );
 
         verifyNoInteractions(mockVaultClient);
     }
@@ -152,7 +156,10 @@ class VaultDecryptingMaterialsProviderTest {
 
         CompletionException exception = assertThrows(CompletionException.class, future::join);
         assertTrue(exception.getCause() instanceof IllegalArgumentException);
-        assertEquals("Encrypted data key cannot be null or empty", exception.getCause().getMessage());
+        assertEquals(
+            "Encrypted data key cannot be null or empty [subjectId=user-123]",
+            exception.getCause().getMessage()
+        );
 
         verifyNoInteractions(mockVaultClient);
     }
@@ -169,7 +176,10 @@ class VaultDecryptingMaterialsProviderTest {
 
         CompletionException exception = assertThrows(CompletionException.class, future::join);
         assertTrue(exception.getCause() instanceof InvalidEncryptionContextException);
-        assertEquals("Encryption context cannot be null or empty", exception.getCause().getMessage());
+        assertEquals(
+            "Encryption context cannot be null or empty [subjectId=user-123]",
+            exception.getCause().getMessage()
+        );
 
         verifyNoInteractions(mockVaultClient);
     }
@@ -186,7 +196,10 @@ class VaultDecryptingMaterialsProviderTest {
 
         CompletionException exception = assertThrows(CompletionException.class, future::join);
         assertTrue(exception.getCause() instanceof InvalidEncryptionContextException);
-        assertEquals("Encryption context cannot be null or empty", exception.getCause().getMessage());
+        assertEquals(
+            "Encryption context cannot be null or empty [subjectId=user-123]",
+            exception.getCause().getMessage()
+        );
 
         verifyNoInteractions(mockVaultClient);
     }
@@ -218,7 +231,11 @@ class VaultDecryptingMaterialsProviderTest {
         provider = createProviderWithMockedClient();
 
         // When & Then
-        CompletableFuture<Aead> future = provider.decryptionKeysFor(subjectId, encryptedDataKey, contextWithDifferentSubject);
+        CompletableFuture<Aead> future = provider.decryptionKeysFor(
+            subjectId,
+            encryptedDataKey,
+            contextWithDifferentSubject
+        );
 
         CompletionException exception = assertThrows(CompletionException.class, future::join);
         assertTrue(exception.getCause() instanceof InvalidEncryptionContextException);
@@ -236,7 +253,11 @@ class VaultDecryptingMaterialsProviderTest {
         provider = createProviderWithMockedClient();
 
         // When & Then
-        CompletableFuture<Aead> future = provider.decryptionKeysFor(subjectId, encryptedDataKey, contextWithInvalidTimestamp);
+        CompletableFuture<Aead> future = provider.decryptionKeysFor(
+            subjectId,
+            encryptedDataKey,
+            contextWithInvalidTimestamp
+        );
 
         CompletionException exception = assertThrows(CompletionException.class, future::join);
         assertTrue(exception.getCause() instanceof InvalidEncryptionContextException);
@@ -254,7 +275,11 @@ class VaultDecryptingMaterialsProviderTest {
         provider = createProviderWithMockedClient();
 
         // When & Then
-        CompletableFuture<Aead> future = provider.decryptionKeysFor(subjectId, encryptedDataKey, contextWithEmptyVersion);
+        CompletableFuture<Aead> future = provider.decryptionKeysFor(
+            subjectId,
+            encryptedDataKey,
+            contextWithEmptyVersion
+        );
 
         CompletionException exception = assertThrows(CompletionException.class, future::join);
         assertTrue(exception.getCause() instanceof InvalidEncryptionContextException);
@@ -270,9 +295,9 @@ class VaultDecryptingMaterialsProviderTest {
         String expectedKeyName = "pi2schema/subject/user-12345";
         String encryptionContext = "subjectId=user-12345;timestamp=1234567890;version=1.0";
         byte[] encryptedDataKey = "encrypted-dek".getBytes();
-        
+
         SubjectKeyNotFoundException keyNotFoundException = new SubjectKeyNotFoundException(
-            subjectId, 
+            subjectId,
             "Key not found in Vault"
         );
 
@@ -300,7 +325,7 @@ class VaultDecryptingMaterialsProviderTest {
         String expectedKeyName = "pi2schema/subject/user-12345";
         String encryptionContext = "subjectId=user-12345;timestamp=1234567890;version=1.0";
         byte[] encryptedDataKey = "encrypted-dek".getBytes();
-        
+
         VaultConnectivityException connectivityException = new VaultConnectivityException("Vault is unreachable");
 
         when(mockVaultClient.generateKeyName(subjectId)).thenReturn(expectedKeyName);
@@ -327,7 +352,7 @@ class VaultDecryptingMaterialsProviderTest {
         String expectedKeyName = "pi2schema/subject/user-12345";
         String encryptionContext = "subjectId=user-12345;timestamp=1234567890;version=1.0";
         byte[] encryptedDataKey = "encrypted-dek".getBytes();
-        
+
         VaultAuthenticationException authException = new VaultAuthenticationException("Invalid token");
 
         when(mockVaultClient.generateKeyName(subjectId)).thenReturn(expectedKeyName);
@@ -351,7 +376,7 @@ class VaultDecryptingMaterialsProviderTest {
         String expectedKeyName = "pi2schema/subject/user-12345";
         String encryptionContext = "subjectId=user-12345;timestamp=1234567890;version=1.0";
         byte[] encryptedDataKey = "encrypted-dek".getBytes();
-        
+
         // Return invalid DEK size (not 32 bytes)
         byte[] invalidDekBytes = new byte[16]; // Only 16 bytes instead of 32
 
@@ -382,7 +407,7 @@ class VaultDecryptingMaterialsProviderTest {
         // Mock successful responses for all operations
         when(mockVaultClient.generateKeyName(anyString()))
             .thenAnswer(invocation -> "pi2schema/subject/" + invocation.getArgument(0));
-        
+
         when(mockVaultClient.decrypt(anyString(), any(byte[].class), anyString()))
             .thenAnswer(invocation -> {
                 byte[] dekBytes = new byte[32];
@@ -399,10 +424,17 @@ class VaultDecryptingMaterialsProviderTest {
                 for (int j = 0; j < operationsPerThread; j++) {
                     try {
                         String subjectId = "user-" + threadId + "-" + j;
-                        String encryptionContext = String.format("subjectId=%s;timestamp=1234567890;version=1.0", subjectId);
+                        String encryptionContext = String.format(
+                            "subjectId=%s;timestamp=1234567890;version=1.0",
+                            subjectId
+                        );
                         byte[] encryptedDataKey = ("encrypted-dek-" + threadId + "-" + j).getBytes();
-                        
-                        CompletableFuture<Aead> future = provider.decryptionKeysFor(subjectId, encryptedDataKey, encryptionContext);
+
+                        CompletableFuture<Aead> future = provider.decryptionKeysFor(
+                            subjectId,
+                            encryptedDataKey,
+                            encryptionContext
+                        );
                         Aead result = future.get(5, TimeUnit.SECONDS);
 
                         assertNotNull(result);
@@ -453,7 +485,7 @@ class VaultDecryptingMaterialsProviderTest {
             "subjectId=user-123;timestamp=1234567890;version=1.0",
             "subjectId=user-123;timestamp=0;version=2.0",
             "subjectId=user-123;timestamp=9999999999999;version=1.0.0",
-            "subjectId=user-123;timestamp=1234567890;version=beta"
+            "subjectId=user-123;timestamp=1234567890;version=beta",
         };
 
         for (String context : validContexts) {
@@ -501,16 +533,10 @@ class VaultDecryptingMaterialsProviderTest {
 
     @Test
     void testInvalidVaultUrlThrowsException() {
-        // Given
-        VaultCryptoConfiguration invalidConfig = VaultCryptoConfiguration.builder()
-            .vaultUrl("invalid-url")
-            .vaultToken("test-token")
-            .build();
-
         // When & Then
         IllegalArgumentException exception = assertThrows(
             IllegalArgumentException.class,
-            () -> new VaultDecryptingMaterialsProvider(invalidConfig)
+            () -> VaultCryptoConfiguration.builder().vaultUrl("invalid-url").vaultToken("test-token").build()
         );
 
         assertEquals("Vault URL must start with http:// or https://", exception.getMessage());
@@ -518,16 +544,15 @@ class VaultDecryptingMaterialsProviderTest {
 
     @Test
     void testVaultTokenWithWhitespaceThrowsException() {
-        // Given
-        VaultCryptoConfiguration invalidConfig = VaultCryptoConfiguration.builder()
-            .vaultUrl("https://vault.example.com")
-            .vaultToken(" test-token ")
-            .build();
-
         // When & Then
         IllegalArgumentException exception = assertThrows(
             IllegalArgumentException.class,
-            () -> new VaultDecryptingMaterialsProvider(invalidConfig)
+            () ->
+                VaultCryptoConfiguration
+                    .builder()
+                    .vaultUrl("https://vault.example.com")
+                    .vaultToken(" test-token ")
+                    .build()
         );
 
         assertEquals("Vault token cannot contain leading or trailing whitespace", exception.getMessage());
@@ -535,35 +560,36 @@ class VaultDecryptingMaterialsProviderTest {
 
     @Test
     void testInvalidKeyPrefixThrowsException() {
-        // Given
-        VaultCryptoConfiguration invalidConfig = VaultCryptoConfiguration.builder()
-            .vaultUrl("https://vault.example.com")
-            .vaultToken("test-token")
-            .keyPrefix("invalid/prefix")
-            .build();
-
         // When & Then
         IllegalArgumentException exception = assertThrows(
             IllegalArgumentException.class,
-            () -> new VaultDecryptingMaterialsProvider(invalidConfig)
+            () ->
+                VaultCryptoConfiguration
+                    .builder()
+                    .vaultUrl("https://vault.example.com")
+                    .vaultToken("test-token")
+                    .keyPrefix("invalid/prefix")
+                    .build()
         );
 
-        assertEquals("Key prefix can only contain alphanumeric characters, underscores, and hyphens", exception.getMessage());
+        assertEquals(
+            "Key prefix can only contain alphanumeric characters, underscores, and hyphens",
+            exception.getMessage()
+        );
     }
 
     @Test
     void testExcessiveConnectionTimeoutThrowsException() {
-        // Given
-        VaultCryptoConfiguration invalidConfig = VaultCryptoConfiguration.builder()
-            .vaultUrl("https://vault.example.com")
-            .vaultToken("test-token")
-            .connectionTimeout(Duration.ofMinutes(10)) // Exceeds 5 minute limit
-            .build();
-
         // When & Then
         IllegalArgumentException exception = assertThrows(
             IllegalArgumentException.class,
-            () -> new VaultDecryptingMaterialsProvider(invalidConfig)
+            () ->
+                VaultCryptoConfiguration
+                    .builder()
+                    .vaultUrl("https://vault.example.com")
+                    .vaultToken("test-token")
+                    .connectionTimeout(Duration.ofMinutes(10)) // Exceeds 5 minute limit
+                    .build()
         );
 
         assertEquals("Connection timeout cannot exceed 5 minutes", exception.getMessage());
@@ -571,17 +597,16 @@ class VaultDecryptingMaterialsProviderTest {
 
     @Test
     void testExcessiveRequestTimeoutThrowsException() {
-        // Given
-        VaultCryptoConfiguration invalidConfig = VaultCryptoConfiguration.builder()
-            .vaultUrl("https://vault.example.com")
-            .vaultToken("test-token")
-            .requestTimeout(Duration.ofMinutes(15)) // Exceeds 10 minute limit
-            .build();
-
         // When & Then
         IllegalArgumentException exception = assertThrows(
             IllegalArgumentException.class,
-            () -> new VaultDecryptingMaterialsProvider(invalidConfig)
+            () ->
+                VaultCryptoConfiguration
+                    .builder()
+                    .vaultUrl("https://vault.example.com")
+                    .vaultToken("test-token")
+                    .requestTimeout(Duration.ofMinutes(15)) // Exceeds 10 minute limit
+                    .build()
         );
 
         assertEquals("Request timeout cannot exceed 10 minutes", exception.getMessage());
@@ -590,7 +615,8 @@ class VaultDecryptingMaterialsProviderTest {
     @Test
     void testValidConfigurationAccepted() {
         // Given
-        VaultCryptoConfiguration validConfig = VaultCryptoConfiguration.builder()
+        VaultCryptoConfiguration validConfig = VaultCryptoConfiguration
+            .builder()
             .vaultUrl("https://vault.example.com")
             .vaultToken("valid-token")
             .keyPrefix("valid_prefix-123")
