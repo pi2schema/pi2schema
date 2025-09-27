@@ -14,7 +14,7 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * Example demonstrating GDPR compliance workflows with Vault crypto providers.
- * 
+ *
  * <p>This example shows how to implement GDPR right-to-be-forgotten using
  * subject-specific key deletion in Vault, making encrypted data permanently
  * inaccessible without affecting other subjects' data.</p>
@@ -22,7 +22,7 @@ import java.util.concurrent.CompletableFuture;
 public class GdprComplianceExample {
 
     private final VaultCryptoConfiguration config;
-    
+
     // Simulated data store (in practice, this would be a database)
     private final Map<String, EncryptedUserData> dataStore = new HashMap<>();
 
@@ -34,6 +34,7 @@ public class GdprComplianceExample {
      * Represents encrypted user data as it would be stored in a database.
      */
     public static class EncryptedUserData {
+
         private final byte[] encryptedData;
         private final byte[] encryptedDataKey;
         private final String encryptionContext;
@@ -44,9 +45,17 @@ public class GdprComplianceExample {
             this.encryptionContext = encryptionContext;
         }
 
-        public byte[] getEncryptedData() { return encryptedData; }
-        public byte[] getEncryptedDataKey() { return encryptedDataKey; }
-        public String getEncryptionContext() { return encryptionContext; }
+        public byte[] getEncryptedData() {
+            return encryptedData;
+        }
+
+        public byte[] getEncryptedDataKey() {
+            return encryptedDataKey;
+        }
+
+        public String getEncryptionContext() {
+            return encryptionContext;
+        }
     }
 
     /**
@@ -62,7 +71,7 @@ public class GdprComplianceExample {
 
             // Encrypt the personal data
             byte[] plaintext = personalData.getBytes(StandardCharsets.UTF_8);
-            byte[] encryptedData = material.aead().encrypt(plaintext, null);
+            byte[] encryptedData = material.dataEncryptionKey().encrypt(plaintext, null);
 
             // Store encrypted data with its key material
             EncryptedUserData userData = new EncryptedUserData(
@@ -70,7 +79,7 @@ public class GdprComplianceExample {
                 material.encryptedDataKey(),
                 material.encryptionContext()
             );
-            
+
             dataStore.put(userId, userData);
             System.out.println("✓ User data encrypted and stored successfully");
         }
@@ -99,7 +108,7 @@ public class GdprComplianceExample {
             // Decrypt the data
             byte[] decryptedData = aead.decrypt(userData.getEncryptedData(), null);
             String personalData = new String(decryptedData, StandardCharsets.UTF_8);
-            
+
             System.out.println("✓ User data retrieved and decrypted successfully");
             return personalData;
         }
@@ -111,7 +120,7 @@ public class GdprComplianceExample {
      */
     public void demonstrateRightToBeForgotten(String userId) {
         System.out.println("\n=== GDPR Right-to-be-Forgotten Demonstration ===");
-        
+
         try {
             // First, show that we can access the data normally
             System.out.println("Before key deletion:");
@@ -136,7 +145,6 @@ public class GdprComplianceExample {
                     System.out.println("✓ Data access failed (key not found): " + e.getMessage());
                 }
             }
-
         } catch (Exception e) {
             System.err.println("Error during GDPR demonstration: " + e.getMessage());
             e.printStackTrace();
@@ -201,7 +209,8 @@ public class GdprComplianceExample {
      */
     public static void main(String[] args) throws Exception {
         // Configure Vault (use environment variables in production)
-        VaultCryptoConfiguration config = VaultCryptoConfiguration.builder()
+        VaultCryptoConfiguration config = VaultCryptoConfiguration
+            .builder()
             .vaultUrl("https://vault.example.com:8200")
             .vaultToken(System.getenv("VAULT_TOKEN"))
             .keyPrefix("gdpr-demo")
@@ -212,12 +221,12 @@ public class GdprComplianceExample {
         // Demonstrate basic encryption/decryption
         String userId = "user-12345";
         String personalData = "John Doe, john.doe@example.com, 555-1234, 123 Main St";
-        
+
         example.storeUserData(userId, personalData);
-        
+
         // Demonstrate GDPR right-to-be-forgotten
         example.demonstrateRightToBeForgotten(userId);
-        
+
         // Demonstrate subject isolation
         example.demonstrateSubjectIsolation();
 

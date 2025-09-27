@@ -36,10 +36,10 @@ class VaultAuthenticationErrorHandlingTest {
 
         transitClientLogger = (Logger) LoggerFactory.getLogger(VaultTransitClient.class);
         encryptingProviderLogger = (Logger) LoggerFactory.getLogger(VaultEncryptingMaterialsProvider.class);
-        
+
         transitClientLogger.addAppender(logAppender);
         encryptingProviderLogger.addAppender(logAppender);
-        
+
         transitClientLogger.setLevel(Level.DEBUG);
         encryptingProviderLogger.setLevel(Level.DEBUG);
     }
@@ -57,18 +57,22 @@ class VaultAuthenticationErrorHandlingTest {
     @DisplayName("Should handle invalid token format with proper error logging")
     void shouldHandleInvalidTokenFormatWithProperErrorLogging() {
         // When/Then - should fail during configuration building with empty token
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            VaultCryptoConfiguration.builder()
-                .vaultUrl("https://vault.example.com:8200")
-                .vaultToken("") // Empty token
-                .transitEnginePath("transit")
-                .keyPrefix("test-prefix")
-                .connectionTimeout(Duration.ofSeconds(5))
-                .requestTimeout(Duration.ofSeconds(10))
-                .maxRetries(1)
-                .retryBackoffMs(Duration.ofMillis(100))
-                .build();
-        });
+        IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class,
+            () -> {
+                VaultCryptoConfiguration
+                    .builder()
+                    .vaultUrl("https://vault.example.com:8200")
+                    .vaultToken("") // Empty token
+                    .transitEnginePath("transit")
+                    .keyPrefix("test-prefix")
+                    .connectionTimeout(Duration.ofSeconds(5))
+                    .requestTimeout(Duration.ofSeconds(10))
+                    .maxRetries(1)
+                    .retryBackoffMs(Duration.ofMillis(100))
+                    .build();
+            }
+        );
 
         assertTrue(exception.getMessage().contains("Vault token cannot be null or empty"));
     }
@@ -77,14 +81,18 @@ class VaultAuthenticationErrorHandlingTest {
     @DisplayName("Should handle token with whitespace with proper error logging")
     void shouldHandleTokenWithWhitespaceWithProperErrorLogging() {
         // Given - configuration with token containing whitespace
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            VaultCryptoConfiguration.builder()
-                .vaultUrl("https://vault.example.com:8200")
-                .vaultToken("  token-with-spaces  ") // Token with leading/trailing spaces
-                .transitEnginePath("transit")
-                .keyPrefix("test-prefix")
-                .build();
-        });
+        IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class,
+            () -> {
+                VaultCryptoConfiguration
+                    .builder()
+                    .vaultUrl("https://vault.example.com:8200")
+                    .vaultToken("  token-with-spaces  ") // Token with leading/trailing spaces
+                    .transitEnginePath("transit")
+                    .keyPrefix("test-prefix")
+                    .build();
+            }
+        );
 
         assertTrue(exception.getMessage().contains("Vault token cannot contain leading or trailing whitespace"));
     }
@@ -94,8 +102,9 @@ class VaultAuthenticationErrorHandlingTest {
     void shouldNotRetryAuthenticationFailures() {
         // This test simulates what would happen with a 401/403 response
         // Since we can't easily mock HTTP responses in this test, we'll test the retry logic directly
-        
-        VaultCryptoConfiguration config = VaultCryptoConfiguration.builder()
+
+        VaultCryptoConfiguration config = VaultCryptoConfiguration
+            .builder()
             .vaultUrl("https://vault.example.com:8200")
             .vaultToken("invalid-token-format")
             .transitEnginePath("transit")
@@ -110,17 +119,18 @@ class VaultAuthenticationErrorHandlingTest {
 
         // Test the retry logic with authentication exception
         VaultAuthenticationException authException = new VaultAuthenticationException("Invalid token");
-        
+
         // Verify that authentication exceptions are not retryable
         // This is tested indirectly through the isRetryableException method behavior
-        
+
         client.close();
     }
 
     @Test
     @DisplayName("Should log authentication failures without exposing token")
     void shouldLogAuthenticationFailuresWithoutExposingToken() {
-        VaultCryptoConfiguration config = VaultCryptoConfiguration.builder()
+        VaultCryptoConfiguration config = VaultCryptoConfiguration
+            .builder()
             .vaultUrl("https://vault.example.com:8200")
             .vaultToken("secret-token-12345")
             .transitEnginePath("transit")
@@ -134,20 +144,23 @@ class VaultAuthenticationErrorHandlingTest {
         VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config);
 
         // When - this will fail due to network issues, but we can verify token is not logged
-        CompletableFuture<pi2schema.crypto.providers.EncryptionMaterial> future = 
-            provider.encryptionKeysFor("test-subject");
+        CompletableFuture<pi2schema.crypto.providers.EncryptionMaterial> future = provider.encryptionKeysFor(
+            "test-subject"
+        );
 
-        assertThrows(ExecutionException.class, () -> {
-            future.get(3, TimeUnit.SECONDS);
-        });
+        assertThrows(
+            ExecutionException.class,
+            () -> {
+                future.get(3, TimeUnit.SECONDS);
+            }
+        );
 
         // Then - verify token is not in any log messages
         List<ILoggingEvent> allLogs = logAppender.list;
-        
+
         allLogs.forEach(event -> {
             String message = event.getFormattedMessage();
-            assertFalse(message.contains("secret-token-12345"), 
-                       "Should not log vault token: " + message);
+            assertFalse(message.contains("secret-token-12345"), "Should not log vault token: " + message);
         });
 
         provider.close();
@@ -157,23 +170,31 @@ class VaultAuthenticationErrorHandlingTest {
     @DisplayName("Should handle configuration validation for URL format")
     void shouldHandleConfigurationValidationForUrlFormat() {
         // Test invalid URL schemes
-        IllegalArgumentException exception1 = assertThrows(IllegalArgumentException.class, () -> {
-            VaultCryptoConfiguration.builder()
-                .vaultUrl("ftp://vault.example.com:8200") // Invalid scheme
-                .vaultToken("token")
-                .build();
-        });
-        
+        IllegalArgumentException exception1 = assertThrows(
+            IllegalArgumentException.class,
+            () -> {
+                VaultCryptoConfiguration
+                    .builder()
+                    .vaultUrl("ftp://vault.example.com:8200") // Invalid scheme
+                    .vaultToken("token")
+                    .build();
+            }
+        );
+
         assertTrue(exception1.getMessage().contains("Vault URL must start with http:// or https://"));
 
         // Test missing scheme
-        IllegalArgumentException exception2 = assertThrows(IllegalArgumentException.class, () -> {
-            VaultCryptoConfiguration.builder()
-                .vaultUrl("vault.example.com:8200") // Missing scheme
-                .vaultToken("token")
-                .build();
-        });
-        
+        IllegalArgumentException exception2 = assertThrows(
+            IllegalArgumentException.class,
+            () -> {
+                VaultCryptoConfiguration
+                    .builder()
+                    .vaultUrl("vault.example.com:8200") // Missing scheme
+                    .vaultToken("token")
+                    .build();
+            }
+        );
+
         assertTrue(exception2.getMessage().contains("Vault URL must start with http:// or https://"));
     }
 
@@ -181,16 +202,20 @@ class VaultAuthenticationErrorHandlingTest {
     @DisplayName("Should handle configuration validation for key prefix")
     void shouldHandleConfigurationValidationForKeyPrefix() {
         // Test invalid characters in key prefix
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            new VaultEncryptingMaterialsProvider(
-                VaultCryptoConfiguration.builder()
-                    .vaultUrl("https://vault.example.com:8200")
-                    .vaultToken("token")
-                    .keyPrefix("invalid@prefix!") // Invalid characters
-                    .build()
-            );
-        });
-        
+        IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class,
+            () -> {
+                new VaultEncryptingMaterialsProvider(
+                    VaultCryptoConfiguration
+                        .builder()
+                        .vaultUrl("https://vault.example.com:8200")
+                        .vaultToken("token")
+                        .keyPrefix("invalid@prefix!") // Invalid characters
+                        .build()
+                );
+            }
+        );
+
         assertTrue(exception.getMessage().contains("Key prefix can only contain alphanumeric characters"));
     }
 
@@ -198,29 +223,37 @@ class VaultAuthenticationErrorHandlingTest {
     @DisplayName("Should handle configuration validation for timeout values")
     void shouldHandleConfigurationValidationForTimeoutValues() {
         // Test excessive connection timeout
-        IllegalArgumentException exception1 = assertThrows(IllegalArgumentException.class, () -> {
-            new VaultEncryptingMaterialsProvider(
-                VaultCryptoConfiguration.builder()
-                    .vaultUrl("https://vault.example.com:8200")
-                    .vaultToken("token")
-                    .connectionTimeout(Duration.ofMinutes(10)) // Too long
-                    .build()
-            );
-        });
-        
+        IllegalArgumentException exception1 = assertThrows(
+            IllegalArgumentException.class,
+            () -> {
+                new VaultEncryptingMaterialsProvider(
+                    VaultCryptoConfiguration
+                        .builder()
+                        .vaultUrl("https://vault.example.com:8200")
+                        .vaultToken("token")
+                        .connectionTimeout(Duration.ofMinutes(10)) // Too long
+                        .build()
+                );
+            }
+        );
+
         assertTrue(exception1.getMessage().contains("Connection timeout cannot exceed 5 minutes"));
 
         // Test excessive request timeout
-        IllegalArgumentException exception2 = assertThrows(IllegalArgumentException.class, () -> {
-            new VaultEncryptingMaterialsProvider(
-                VaultCryptoConfiguration.builder()
-                    .vaultUrl("https://vault.example.com:8200")
-                    .vaultToken("token")
-                    .requestTimeout(Duration.ofMinutes(15)) // Too long
-                    .build()
-            );
-        });
-        
+        IllegalArgumentException exception2 = assertThrows(
+            IllegalArgumentException.class,
+            () -> {
+                new VaultEncryptingMaterialsProvider(
+                    VaultCryptoConfiguration
+                        .builder()
+                        .vaultUrl("https://vault.example.com:8200")
+                        .vaultToken("token")
+                        .requestTimeout(Duration.ofMinutes(15)) // Too long
+                        .build()
+                );
+            }
+        );
+
         assertTrue(exception2.getMessage().contains("Request timeout cannot exceed 10 minutes"));
     }
 
@@ -228,17 +261,23 @@ class VaultAuthenticationErrorHandlingTest {
     @DisplayName("Should provide clear error messages for configuration issues")
     void shouldProvideClearErrorMessagesForConfigurationIssues() {
         // Test null configuration
-        IllegalArgumentException exception1 = assertThrows(IllegalArgumentException.class, () -> {
-            new VaultEncryptingMaterialsProvider(null);
-        });
-        
+        IllegalArgumentException exception1 = assertThrows(
+            IllegalArgumentException.class,
+            () -> {
+                new VaultEncryptingMaterialsProvider(null);
+            }
+        );
+
         assertEquals("Configuration cannot be null", exception1.getMessage());
 
         // Test null configuration for decrypting provider
-        IllegalArgumentException exception2 = assertThrows(IllegalArgumentException.class, () -> {
-            new VaultDecryptingMaterialsProvider(null);
-        });
-        
+        IllegalArgumentException exception2 = assertThrows(
+            IllegalArgumentException.class,
+            () -> {
+                new VaultDecryptingMaterialsProvider(null);
+            }
+        );
+
         assertEquals("Configuration cannot be null", exception2.getMessage());
     }
 
@@ -246,7 +285,8 @@ class VaultAuthenticationErrorHandlingTest {
     @DisplayName("Should log configuration validation success")
     void shouldLogConfigurationValidationSuccess() {
         // Given - valid configuration
-        VaultCryptoConfiguration config = VaultCryptoConfiguration.builder()
+        VaultCryptoConfiguration config = VaultCryptoConfiguration
+            .builder()
             .vaultUrl("https://vault.example.com:8200")
             .vaultToken("valid-token")
             .transitEnginePath("transit")
@@ -261,13 +301,15 @@ class VaultAuthenticationErrorHandlingTest {
         VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config);
 
         // Then - verify successful initialization is logged
-        List<ILoggingEvent> debugLogs = logAppender.list.stream()
+        List<ILoggingEvent> debugLogs = logAppender.list
+            .stream()
             .filter(event -> event.getLevel() == Level.DEBUG)
             .toList();
 
-        assertTrue(debugLogs.stream().anyMatch(event -> 
-            event.getMessage().contains("Configuration validation successful")
-        ), "Should log successful configuration validation");
+        assertTrue(
+            debugLogs.stream().anyMatch(event -> event.getMessage().contains("Configuration validation successful")),
+            "Should log successful configuration validation"
+        );
 
         provider.close();
     }
@@ -275,7 +317,8 @@ class VaultAuthenticationErrorHandlingTest {
     @Test
     @DisplayName("Should handle subject ID sanitization logging")
     void shouldHandleSubjectIdSanitizationLogging() {
-        VaultCryptoConfiguration config = VaultCryptoConfiguration.builder()
+        VaultCryptoConfiguration config = VaultCryptoConfiguration
+            .builder()
             .vaultUrl("https://vault.example.com:8200")
             .vaultToken("token")
             .transitEnginePath("transit")
@@ -295,13 +338,15 @@ class VaultAuthenticationErrorHandlingTest {
         assertTrue(keyName.contains("test-prefix/subject/"), "Should contain the expected path structure");
 
         // Verify sanitization was logged
-        List<ILoggingEvent> debugLogs = logAppender.list.stream()
+        List<ILoggingEvent> debugLogs = logAppender.list
+            .stream()
             .filter(event -> event.getLevel() == Level.DEBUG)
             .toList();
 
-        assertTrue(debugLogs.stream().anyMatch(event -> 
-            event.getMessage().contains("Subject ID was sanitized")
-        ), "Should log subject ID sanitization");
+        assertTrue(
+            debugLogs.stream().anyMatch(event -> event.getMessage().contains("Subject ID was sanitized")),
+            "Should log subject ID sanitization"
+        );
 
         client.close();
     }

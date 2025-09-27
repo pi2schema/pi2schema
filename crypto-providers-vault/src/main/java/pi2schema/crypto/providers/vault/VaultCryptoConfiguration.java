@@ -6,11 +6,11 @@ import java.util.Objects;
 /**
  * Configuration class for Vault crypto provider containing all necessary
  * connection and behavior settings.
- * 
+ *
  * <p>This class provides a builder pattern for configuring the Vault crypto provider
  * with sensible defaults. All configuration parameters are validated during construction
  * to ensure proper operation.</p>
- * 
+ *
  * <h3>Example Usage:</h3>
  * <pre>{@code
  * VaultCryptoConfiguration config = VaultCryptoConfiguration.builder()
@@ -23,7 +23,7 @@ import java.util.Objects;
  *     .maxRetries(3)
  *     .build();
  * }</pre>
- * 
+ *
  * <h3>Configuration Parameters:</h3>
  * <ul>
  *   <li><strong>vaultUrl</strong>: The URL of the Vault server (required)</li>
@@ -35,7 +35,7 @@ import java.util.Objects;
  *   <li><strong>maxRetries</strong>: Maximum retry attempts (default: 3)</li>
  *   <li><strong>retryBackoffMs</strong>: Base retry backoff duration (default: 100ms)</li>
  * </ul>
- * 
+ *
  * @since 1.0
  * @see VaultEncryptingMaterialsProvider
  * @see VaultDecryptingMaterialsProvider
@@ -107,7 +107,9 @@ public final class VaultCryptoConfiguration {
 
         // Validate key prefix format
         if (!builder.keyPrefix.matches("^[a-zA-Z0-9_-]+$")) {
-            throw new IllegalArgumentException("Key prefix can only contain alphanumeric characters, underscores, and hyphens");
+            throw new IllegalArgumentException(
+                "Key prefix can only contain alphanumeric characters, underscores, and hyphens"
+            );
         }
 
         if (
@@ -174,7 +176,7 @@ public final class VaultCryptoConfiguration {
 
     /**
      * Creates a new builder for VaultCryptoConfiguration.
-     * 
+     *
      * <p>The builder comes with sensible defaults for all optional parameters:
      * <ul>
      *   <li>transitEnginePath: "transit"</li>
@@ -193,11 +195,11 @@ public final class VaultCryptoConfiguration {
 
     /**
      * Builder class for VaultCryptoConfiguration with sensible defaults.
-     * 
+     *
      * <p>This builder provides a fluent API for constructing VaultCryptoConfiguration
      * instances with validation. All parameters are validated when {@link #build()}
      * is called.</p>
-     * 
+     *
      * <h3>Example:</h3>
      * <pre>{@code
      * VaultCryptoConfiguration config = VaultCryptoConfiguration.builder()
@@ -219,7 +221,7 @@ public final class VaultCryptoConfiguration {
 
         /**
          * Sets the Vault server URL.
-         * 
+         *
          * @param vaultUrl the Vault server URL (must start with http:// or https://)
          * @return this builder instance
          * @throws IllegalArgumentException if URL is null, empty, or invalid format
@@ -231,7 +233,7 @@ public final class VaultCryptoConfiguration {
 
         /**
          * Sets the Vault authentication token.
-         * 
+         *
          * @param vaultToken the Vault token for authentication
          * @return this builder instance
          * @throws IllegalArgumentException if token is null, empty, or contains whitespace
@@ -243,7 +245,7 @@ public final class VaultCryptoConfiguration {
 
         /**
          * Sets the path to the transit encryption engine.
-         * 
+         *
          * @param transitEnginePath the path to the transit engine (default: "transit")
          * @return this builder instance
          * @throws IllegalArgumentException if path is null or empty
@@ -255,7 +257,7 @@ public final class VaultCryptoConfiguration {
 
         /**
          * Sets the prefix for subject-specific keys in Vault.
-         * 
+         *
          * @param keyPrefix the key prefix (default: "pi2schema", must contain only alphanumeric, underscore, hyphen)
          * @return this builder instance
          * @throws IllegalArgumentException if prefix is null, empty, or contains invalid characters
@@ -267,7 +269,7 @@ public final class VaultCryptoConfiguration {
 
         /**
          * Sets the HTTP connection timeout.
-         * 
+         *
          * @param connectionTimeout the connection timeout (default: 10 seconds, max: 5 minutes)
          * @return this builder instance
          * @throws IllegalArgumentException if timeout is null, zero, negative, or exceeds 5 minutes
@@ -279,7 +281,7 @@ public final class VaultCryptoConfiguration {
 
         /**
          * Sets the HTTP request timeout.
-         * 
+         *
          * @param requestTimeout the request timeout (default: 30 seconds, max: 10 minutes)
          * @return this builder instance
          * @throws IllegalArgumentException if timeout is null, zero, negative, or exceeds 10 minutes
@@ -291,7 +293,7 @@ public final class VaultCryptoConfiguration {
 
         /**
          * Sets the maximum number of retry attempts for failed requests.
-         * 
+         *
          * @param maxRetries the maximum retry attempts (default: 3, must be non-negative)
          * @return this builder instance
          * @throws IllegalArgumentException if maxRetries is negative
@@ -303,7 +305,7 @@ public final class VaultCryptoConfiguration {
 
         /**
          * Sets the base backoff duration for retry attempts.
-         * 
+         *
          * @param retryBackoffMs the base retry backoff duration (default: 100ms, must be non-negative)
          * @return this builder instance
          * @throws IllegalArgumentException if backoff is null or negative
@@ -315,10 +317,10 @@ public final class VaultCryptoConfiguration {
 
         /**
          * Builds and validates the VaultCryptoConfiguration instance.
-         * 
+         *
          * <p>This method validates all configuration parameters and throws
          * IllegalArgumentException if any validation fails.</p>
-         * 
+         *
          * @return a new VaultCryptoConfiguration instance
          * @throws IllegalArgumentException if any configuration parameter is invalid
          */

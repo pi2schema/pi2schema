@@ -6,7 +6,7 @@ import java.time.Duration;
 
 /**
  * Examples of different Vault crypto provider configurations for various deployment scenarios.
- * 
+ *
  * <p>This class demonstrates how to configure the Vault crypto provider for different
  * environments and use cases, from development to production deployments.</p>
  */
@@ -17,7 +17,8 @@ public class ConfigurationExamples {
      * Suitable for local development with Vault dev server.
      */
     public static VaultCryptoConfiguration developmentConfig() {
-        return VaultCryptoConfiguration.builder()
+        return VaultCryptoConfiguration
+            .builder()
             .vaultUrl("http://localhost:8200")
             .vaultToken("dev-only-token")
             .build(); // Uses all default values
@@ -28,7 +29,8 @@ public class ConfigurationExamples {
      * Suitable for high-availability production environments.
      */
     public static VaultCryptoConfiguration productionConfig() {
-        return VaultCryptoConfiguration.builder()
+        return VaultCryptoConfiguration
+            .builder()
             .vaultUrl("https://vault.company.com:8200")
             .vaultToken(System.getenv("VAULT_TOKEN"))
             .transitEnginePath("transit")
@@ -45,7 +47,8 @@ public class ConfigurationExamples {
      * Optimized for low-latency microservice environments.
      */
     public static VaultCryptoConfiguration microserviceConfig() {
-        return VaultCryptoConfiguration.builder()
+        return VaultCryptoConfiguration
+            .builder()
             .vaultUrl("https://vault-internal.k8s.local:8200")
             .vaultToken(System.getenv("VAULT_TOKEN"))
             .transitEnginePath("microservices-transit")
@@ -62,7 +65,8 @@ public class ConfigurationExamples {
      * Suitable for batch jobs that can tolerate higher latency.
      */
     public static VaultCryptoConfiguration batchProcessingConfig() {
-        return VaultCryptoConfiguration.builder()
+        return VaultCryptoConfiguration
+            .builder()
             .vaultUrl("https://vault.company.com:8200")
             .vaultToken(System.getenv("VAULT_TOKEN"))
             .transitEnginePath("batch-transit")
@@ -79,7 +83,8 @@ public class ConfigurationExamples {
      * Uses tenant-specific key prefixes for isolation.
      */
     public static VaultCryptoConfiguration multiTenantConfig(String tenantId) {
-        return VaultCryptoConfiguration.builder()
+        return VaultCryptoConfiguration
+            .builder()
             .vaultUrl("https://vault.company.com:8200")
             .vaultToken(System.getenv("VAULT_TOKEN"))
             .transitEnginePath("tenant-transit")
@@ -96,21 +101,20 @@ public class ConfigurationExamples {
      * Suitable for containerized deployments with external configuration.
      */
     public static VaultCryptoConfiguration environmentBasedConfig() {
-        return VaultCryptoConfiguration.builder()
+        return VaultCryptoConfiguration
+            .builder()
             .vaultUrl(System.getenv("VAULT_URL"))
             .vaultToken(System.getenv("VAULT_TOKEN"))
             .transitEnginePath(getEnvOrDefault("VAULT_TRANSIT_PATH", "transit"))
             .keyPrefix(getEnvOrDefault("VAULT_KEY_PREFIX", "pi2schema"))
-            .connectionTimeout(Duration.ofSeconds(
-                Integer.parseInt(getEnvOrDefault("VAULT_CONNECTION_TIMEOUT_SECONDS", "10"))
-            ))
-            .requestTimeout(Duration.ofSeconds(
-                Integer.parseInt(getEnvOrDefault("VAULT_REQUEST_TIMEOUT_SECONDS", "30"))
-            ))
+            .connectionTimeout(
+                Duration.ofSeconds(Integer.parseInt(getEnvOrDefault("VAULT_CONNECTION_TIMEOUT_SECONDS", "10")))
+            )
+            .requestTimeout(
+                Duration.ofSeconds(Integer.parseInt(getEnvOrDefault("VAULT_REQUEST_TIMEOUT_SECONDS", "30")))
+            )
             .maxRetries(Integer.parseInt(getEnvOrDefault("VAULT_MAX_RETRIES", "3")))
-            .retryBackoffMs(Duration.ofMillis(
-                Integer.parseInt(getEnvOrDefault("VAULT_RETRY_BACKOFF_MS", "100"))
-            ))
+            .retryBackoffMs(Duration.ofMillis(Integer.parseInt(getEnvOrDefault("VAULT_RETRY_BACKOFF_MS", "100"))))
             .build();
     }
 
@@ -119,7 +123,8 @@ public class ConfigurationExamples {
      * Suitable for integration tests.
      */
     public static VaultCryptoConfiguration testConfig(String vaultUrl, String vaultToken) {
-        return VaultCryptoConfiguration.builder()
+        return VaultCryptoConfiguration
+            .builder()
             .vaultUrl(vaultUrl)
             .vaultToken(vaultToken)
             .transitEnginePath("transit")
@@ -145,17 +150,15 @@ public class ConfigurationExamples {
     public static void demonstrateConfigurationValidation() {
         try {
             // This will fail validation
-            VaultCryptoConfiguration.builder()
-                .vaultUrl("invalid-url")
-                .vaultToken("token")
-                .build();
+            VaultCryptoConfiguration.builder().vaultUrl("invalid-url").vaultToken("token").build();
         } catch (IllegalArgumentException e) {
             System.err.println("Configuration validation failed: " + e.getMessage());
         }
 
         try {
             // This will also fail validation
-            VaultCryptoConfiguration.builder()
+            VaultCryptoConfiguration
+                .builder()
                 .vaultUrl("https://vault.example.com:8200")
                 .vaultToken("") // Empty token
                 .build();
@@ -164,11 +167,12 @@ public class ConfigurationExamples {
         }
 
         // Valid configuration
-        VaultCryptoConfiguration validConfig = VaultCryptoConfiguration.builder()
+        VaultCryptoConfiguration validConfig = VaultCryptoConfiguration
+            .builder()
             .vaultUrl("https://vault.example.com:8200")
             .vaultToken("hvs.CAESIJ...")
             .build();
-        
+
         System.out.println("Valid configuration created: " + validConfig);
     }
 }

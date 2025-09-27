@@ -324,16 +324,10 @@ class VaultEncryptingMaterialsProviderTest {
 
     @Test
     void testInvalidVaultUrlThrowsException() {
-        // Given
-        VaultCryptoConfiguration invalidConfig = VaultCryptoConfiguration.builder()
-            .vaultUrl("invalid-url")
-            .vaultToken("test-token")
-            .build();
-
         // When & Then
         IllegalArgumentException exception = assertThrows(
             IllegalArgumentException.class,
-            () -> new VaultEncryptingMaterialsProvider(invalidConfig)
+            () -> VaultCryptoConfiguration.builder().vaultUrl("invalid-url").vaultToken("test-token").build()
         );
 
         assertEquals("Vault URL must start with http:// or https://", exception.getMessage());
@@ -341,16 +335,15 @@ class VaultEncryptingMaterialsProviderTest {
 
     @Test
     void testVaultTokenWithWhitespaceThrowsException() {
-        // Given
-        VaultCryptoConfiguration invalidConfig = VaultCryptoConfiguration.builder()
-            .vaultUrl("https://vault.example.com")
-            .vaultToken(" test-token ")
-            .build();
-
         // When & Then
         IllegalArgumentException exception = assertThrows(
             IllegalArgumentException.class,
-            () -> new VaultEncryptingMaterialsProvider(invalidConfig)
+            () ->
+                VaultCryptoConfiguration
+                    .builder()
+                    .vaultUrl("https://vault.example.com")
+                    .vaultToken(" test-token ")
+                    .build()
         );
 
         assertEquals("Vault token cannot contain leading or trailing whitespace", exception.getMessage());
@@ -358,35 +351,36 @@ class VaultEncryptingMaterialsProviderTest {
 
     @Test
     void testInvalidKeyPrefixThrowsException() {
-        // Given
-        VaultCryptoConfiguration invalidConfig = VaultCryptoConfiguration.builder()
-            .vaultUrl("https://vault.example.com")
-            .vaultToken("test-token")
-            .keyPrefix("invalid/prefix")
-            .build();
-
         // When & Then
         IllegalArgumentException exception = assertThrows(
             IllegalArgumentException.class,
-            () -> new VaultEncryptingMaterialsProvider(invalidConfig)
+            () ->
+                VaultCryptoConfiguration
+                    .builder()
+                    .vaultUrl("https://vault.example.com")
+                    .vaultToken("test-token")
+                    .keyPrefix("invalid/prefix")
+                    .build()
         );
 
-        assertEquals("Key prefix can only contain alphanumeric characters, underscores, and hyphens", exception.getMessage());
+        assertEquals(
+            "Key prefix can only contain alphanumeric characters, underscores, and hyphens",
+            exception.getMessage()
+        );
     }
 
     @Test
     void testExcessiveConnectionTimeoutThrowsException() {
-        // Given
-        VaultCryptoConfiguration invalidConfig = VaultCryptoConfiguration.builder()
-            .vaultUrl("https://vault.example.com")
-            .vaultToken("test-token")
-            .connectionTimeout(Duration.ofMinutes(10)) // Exceeds 5 minute limit
-            .build();
-
         // When & Then
         IllegalArgumentException exception = assertThrows(
             IllegalArgumentException.class,
-            () -> new VaultEncryptingMaterialsProvider(invalidConfig)
+            () ->
+                VaultCryptoConfiguration
+                    .builder()
+                    .vaultUrl("https://vault.example.com")
+                    .vaultToken("test-token")
+                    .connectionTimeout(Duration.ofMinutes(10)) // Exceeds 5 minute limit
+                    .build()
         );
 
         assertEquals("Connection timeout cannot exceed 5 minutes", exception.getMessage());
@@ -394,17 +388,16 @@ class VaultEncryptingMaterialsProviderTest {
 
     @Test
     void testExcessiveRequestTimeoutThrowsException() {
-        // Given
-        VaultCryptoConfiguration invalidConfig = VaultCryptoConfiguration.builder()
-            .vaultUrl("https://vault.example.com")
-            .vaultToken("test-token")
-            .requestTimeout(Duration.ofMinutes(15)) // Exceeds 10 minute limit
-            .build();
-
         // When & Then
         IllegalArgumentException exception = assertThrows(
             IllegalArgumentException.class,
-            () -> new VaultEncryptingMaterialsProvider(invalidConfig)
+            () ->
+                VaultCryptoConfiguration
+                    .builder()
+                    .vaultUrl("https://vault.example.com")
+                    .vaultToken("test-token")
+                    .requestTimeout(Duration.ofMinutes(15)) // Exceeds 10 minute limit
+                    .build()
         );
 
         assertEquals("Request timeout cannot exceed 10 minutes", exception.getMessage());
@@ -413,7 +406,8 @@ class VaultEncryptingMaterialsProviderTest {
     @Test
     void testValidConfigurationAccepted() {
         // Given
-        VaultCryptoConfiguration validConfig = VaultCryptoConfiguration.builder()
+        VaultCryptoConfiguration validConfig = VaultCryptoConfiguration
+            .builder()
             .vaultUrl("https://vault.example.com")
             .vaultToken("valid-token")
             .keyPrefix("valid_prefix-123")

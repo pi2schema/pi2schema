@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Integration tests for Vault crypto providers using a real Vault instance via Testcontainers.
- * 
+ *
  * These tests verify:
  * - Complete encrypt/decrypt cycle with subject isolation
  * - GDPR compliance scenarios (key deletion and data inaccessibility)
@@ -53,16 +53,18 @@ class VaultCryptoProviderIntegrationTest {
     @BeforeEach
     void setUp() {
         // Configure providers to use the test Vault container
-        config = VaultCryptoConfiguration.builder()
-            .vaultUrl("http://" + vaultContainer.getHost() + ":" + vaultContainer.getMappedPort(8200))
-            .vaultToken("test-token")
-            .transitEnginePath("transit")
-            .keyPrefix("pi2schema-test")
-            .connectionTimeout(Duration.ofSeconds(10))
-            .requestTimeout(Duration.ofSeconds(30))
-            .maxRetries(3)
-            .retryBackoffMs(Duration.ofMillis(100))
-            .build();
+        config =
+            VaultCryptoConfiguration
+                .builder()
+                .vaultUrl("http://" + vaultContainer.getHost() + ":" + vaultContainer.getMappedPort(8200))
+                .vaultToken("test-token")
+                .transitEnginePath("transit")
+                .keyPrefix("pi2schema-test")
+                .connectionTimeout(Duration.ofSeconds(10))
+                .requestTimeout(Duration.ofSeconds(30))
+                .maxRetries(3)
+                .retryBackoffMs(Duration.ofMillis(100))
+                .build();
 
         encryptingProvider = new VaultEncryptingMaterialsProvider(config);
         decryptingProvider = new VaultDecryptingMaterialsProvider(config);
@@ -91,8 +93,10 @@ class VaultCryptoProviderIntegrationTest {
         String testData = "This is sensitive personal data for integration testing";
 
         // When - Encrypt data
-        EncryptionMaterial encryptionMaterial = encryptingProvider.encryptionKeysFor(subjectId).get(10, TimeUnit.SECONDS);
-        
+        EncryptionMaterial encryptionMaterial = encryptingProvider
+            .encryptionKeysFor(subjectId)
+            .get(10, TimeUnit.SECONDS);
+
         assertNotNull(encryptionMaterial);
         assertNotNull(encryptionMaterial.dataEncryptionKey());
         assertNotNull(encryptionMaterial.encryptedDataKey());
@@ -103,11 +107,9 @@ class VaultCryptoProviderIntegrationTest {
         byte[] encryptedData = encryptingAead.encrypt(testData.getBytes(StandardCharsets.UTF_8), null);
 
         // When - Decrypt data
-        Aead decryptingAead = decryptingProvider.decryptionKeysFor(
-            subjectId,
-            encryptionMaterial.encryptedDataKey(),
-            encryptionMaterial.encryptionContext()
-        ).get(10, TimeUnit.SECONDS);
+        Aead decryptingAead = decryptingProvider
+            .decryptionKeysFor(subjectId, encryptionMaterial.encryptedDataKey(), encryptionMaterial.encryptionContext())
+            .get(10, TimeUnit.SECONDS);
 
         assertNotNull(decryptingAead);
 
@@ -147,20 +149,21 @@ class VaultCryptoProviderIntegrationTest {
         assertFalse(java.util.Arrays.equals(encryptedData1, encryptedData2));
 
         // Verify subject 1 cannot decrypt subject 2's data
-        Aead decryptingAead1 = decryptingProvider.decryptionKeysFor(
-            subjectId1,
-            material1.encryptedDataKey(),
-            material1.encryptionContext()
-        ).get(10, TimeUnit.SECONDS);
+        Aead decryptingAead1 = decryptingProvider
+            .decryptionKeysFor(subjectId1, material1.encryptedDataKey(), material1.encryptionContext())
+            .get(10, TimeUnit.SECONDS);
 
         // This should work - subject 1 decrypting their own data
         byte[] decrypted1 = decryptingAead1.decrypt(encryptedData1, null);
         assertEquals(testData, new String(decrypted1, StandardCharsets.UTF_8));
 
         // This should fail - subject 1 trying to decrypt subject 2's data with wrong key
-        assertThrows(Exception.class, () -> {
-            decryptingAead1.decrypt(encryptedData2, null);
-        });
+        assertThrows(
+            Exception.class,
+            () -> {
+                decryptingAead1.decrypt(encryptedData2, null);
+            }
+        );
 
         logger.info("Successfully verified subject isolation between {} and {}", subjectId1, subjectId2);
     }
@@ -181,12 +184,10 @@ class VaultCryptoProviderIntegrationTest {
         byte[] encryptedData = encryptingAead.encrypt(sensitiveData.getBytes(StandardCharsets.UTF_8), null);
 
         // Verify data can be decrypted initially
-        Aead decryptingAead = decryptingProvider.decryptionKeysFor(
-            subjectId,
-            material.encryptedDataKey(),
-            material.encryptionContext()
-        ).get(10, TimeUnit.SECONDS);
-        
+        Aead decryptingAead = decryptingProvider
+            .decryptionKeysFor(subjectId, material.encryptedDataKey(), material.encryptionContext())
+            .get(10, TimeUnit.SECONDS);
+
         byte[] decryptedData = decryptingAead.decrypt(encryptedData, null);
         assertEquals(sensitiveData, new String(decryptedData, StandardCharsets.UTF_8));
 
@@ -194,7 +195,7 @@ class VaultCryptoProviderIntegrationTest {
         // Note: In a real implementation, this would be done through a separate GDPR deletion service
         VaultTransitClient transitClient = new VaultTransitClient(config);
         String keyName = transitClient.generateKeyName(subjectId);
-        
+
         // Delete the key (this simulates the GDPR right-to-be-forgotten)
         // We'll use the Vault API directly to delete the key
         deleteVaultKey(keyName);
@@ -208,9 +209,12 @@ class VaultCryptoProviderIntegrationTest {
         );
 
         // The decryption should fail with a SubjectKeyNotFoundException
-        Exception exception = assertThrows(Exception.class, () -> {
-            decryptionFuture.get(10, TimeUnit.SECONDS);
-        });
+        Exception exception = assertThrows(
+            Exception.class,
+            () -> {
+                decryptionFuture.get(10, TimeUnit.SECONDS);
+            }
+        );
 
         // Verify the exception indicates the key was not found
         assertTrue(
@@ -239,8 +243,11 @@ class VaultCryptoProviderIntegrationTest {
         AtomicReference<Exception> firstException = new AtomicReference<>();
         List<Long> operationTimes = new ArrayList<>();
 
-        logger.info("Starting concurrent operations test with {} threads, {} operations per thread", 
-                   numberOfThreads, operationsPerThread);
+        logger.info(
+            "Starting concurrent operations test with {} threads, {} operations per thread",
+            numberOfThreads,
+            operationsPerThread
+        );
 
         // When - Execute concurrent encrypt/decrypt operations
         for (int i = 0; i < numberOfThreads; i++) {
@@ -249,23 +256,22 @@ class VaultCryptoProviderIntegrationTest {
                 for (int j = 0; j < operationsPerThread; j++) {
                     try {
                         long startTime = System.currentTimeMillis();
-                        
+
                         String subjectId = "user-concurrent-" + threadId + "-" + j;
                         String testData = "Concurrent test data for " + subjectId;
 
                         // Encrypt
-                        EncryptionMaterial material = encryptingProvider.encryptionKeysFor(subjectId)
+                        EncryptionMaterial material = encryptingProvider
+                            .encryptionKeysFor(subjectId)
                             .get(30, TimeUnit.SECONDS);
-                        
+
                         Aead encryptingAead = material.dataEncryptionKey();
                         byte[] encryptedData = encryptingAead.encrypt(testData.getBytes(StandardCharsets.UTF_8), null);
 
                         // Decrypt
-                        Aead decryptingAead = decryptingProvider.decryptionKeysFor(
-                            subjectId,
-                            material.encryptedDataKey(),
-                            material.encryptionContext()
-                        ).get(30, TimeUnit.SECONDS);
+                        Aead decryptingAead = decryptingProvider
+                            .decryptionKeysFor(subjectId, material.encryptedDataKey(), material.encryptionContext())
+                            .get(30, TimeUnit.SECONDS);
 
                         byte[] decryptedData = decryptingAead.decrypt(encryptedData, null);
                         String decryptedText = new String(decryptedData, StandardCharsets.UTF_8);
@@ -279,7 +285,7 @@ class VaultCryptoProviderIntegrationTest {
                         }
 
                         successCount.incrementAndGet();
-                        
+
                         if (j % 5 == 0) {
                             logger.debug("Thread {} completed operation {} in {}ms", threadId, j, operationTime);
                         }
@@ -314,7 +320,10 @@ class VaultCryptoProviderIntegrationTest {
         logger.info("  Max time: {}ms", maxTime);
 
         // Performance assertions - these are reasonable expectations for Vault operations
-        assertTrue(averageTime < 5000, "Average operation time should be less than 5 seconds, was: " + averageTime + "ms");
+        assertTrue(
+            averageTime < 5000,
+            "Average operation time should be less than 5 seconds, was: " + averageTime + "ms"
+        );
         assertTrue(maxTime < 10000, "Max operation time should be less than 10 seconds, was: " + maxTime + "ms");
 
         executor.shutdown();
@@ -328,17 +337,15 @@ class VaultCryptoProviderIntegrationTest {
     void testEncryptionContextValidation() throws Exception {
         // Given
         String subjectId = "user-context-test-001";
-        
+
         // When - Create encryption material
         EncryptionMaterial material = encryptingProvider.encryptionKeysFor(subjectId).get(10, TimeUnit.SECONDS);
 
         // Then - Valid context should work
         assertDoesNotThrow(() -> {
-            decryptingProvider.decryptionKeysFor(
-                subjectId,
-                material.encryptedDataKey(),
-                material.encryptionContext()
-            ).get(10, TimeUnit.SECONDS);
+            decryptingProvider
+                .decryptionKeysFor(subjectId, material.encryptedDataKey(), material.encryptionContext())
+                .get(10, TimeUnit.SECONDS);
         });
 
         // Invalid context should fail
@@ -348,9 +355,12 @@ class VaultCryptoProviderIntegrationTest {
             "invalid-context-format"
         );
 
-        Exception exception = assertThrows(Exception.class, () -> {
-            invalidContextFuture.get(10, TimeUnit.SECONDS);
-        });
+        Exception exception = assertThrows(
+            Exception.class,
+            () -> {
+                invalidContextFuture.get(10, TimeUnit.SECONDS);
+            }
+        );
 
         assertTrue(
             exception.getCause() instanceof InvalidEncryptionContextException,
@@ -365,9 +375,12 @@ class VaultCryptoProviderIntegrationTest {
             wrongSubjectContext
         );
 
-        Exception wrongSubjectException = assertThrows(Exception.class, () -> {
-            wrongSubjectFuture.get(10, TimeUnit.SECONDS);
-        });
+        Exception wrongSubjectException = assertThrows(
+            Exception.class,
+            () -> {
+                wrongSubjectFuture.get(10, TimeUnit.SECONDS);
+            }
+        );
 
         assertTrue(
             wrongSubjectException.getCause() instanceof InvalidEncryptionContextException,
@@ -390,11 +403,9 @@ class VaultCryptoProviderIntegrationTest {
         EncryptionMaterial material = encryptingProvider.encryptionKeysFor(subjectId).get(10, TimeUnit.SECONDS);
         assertNotNull(material);
 
-        Aead aead = decryptingProvider.decryptionKeysFor(
-            subjectId,
-            material.encryptedDataKey(),
-            material.encryptionContext()
-        ).get(10, TimeUnit.SECONDS);
+        Aead aead = decryptingProvider
+            .decryptionKeysFor(subjectId, material.encryptedDataKey(), material.encryptionContext())
+            .get(10, TimeUnit.SECONDS);
         assertNotNull(aead);
 
         // Then - Closing should work without exceptions
@@ -419,7 +430,8 @@ class VaultCryptoProviderIntegrationTest {
     @Test
     void testErrorHandlingWithInvalidConfiguration() {
         // Test with invalid Vault URL
-        VaultCryptoConfiguration invalidConfig = VaultCryptoConfiguration.builder()
+        VaultCryptoConfiguration invalidConfig = VaultCryptoConfiguration
+            .builder()
             .vaultUrl("http://invalid-vault-host:8200")
             .vaultToken("test-token")
             .connectionTimeout(Duration.ofSeconds(2)) // Short timeout for faster test
@@ -433,9 +445,12 @@ class VaultCryptoProviderIntegrationTest {
         CompletableFuture<EncryptionMaterial> future = invalidProvider.encryptionKeysFor("test-subject");
 
         // Then - Should fail with connectivity exception
-        Exception exception = assertThrows(Exception.class, () -> {
-            future.get(15, TimeUnit.SECONDS);
-        });
+        Exception exception = assertThrows(
+            Exception.class,
+            () -> {
+                future.get(15, TimeUnit.SECONDS);
+            }
+        );
 
         assertTrue(
             exception.getCause() instanceof VaultConnectivityException ||
@@ -455,16 +470,19 @@ class VaultCryptoProviderIntegrationTest {
     private void deleteVaultKey(String keyName) throws Exception {
         // Use Vault's HTTP API directly to delete the key
         String vaultUrl = config.getVaultUrl() + "/v1/" + config.getTransitEnginePath() + "/keys/" + keyName;
-        
+
         java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
-        java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+        java.net.http.HttpRequest request = java.net.http.HttpRequest
+            .newBuilder()
             .uri(java.net.URI.create(vaultUrl))
             .header("X-Vault-Token", config.getVaultToken())
             .DELETE()
             .build();
 
-        java.net.http.HttpResponse<String> response = client.send(request, 
-            java.net.http.HttpResponse.BodyHandlers.ofString());
+        java.net.http.HttpResponse<String> response = client.send(
+            request,
+            java.net.http.HttpResponse.BodyHandlers.ofString()
+        );
 
         if (response.statusCode() != 204 && response.statusCode() != 404) {
             throw new RuntimeException("Failed to delete Vault key: " + response.statusCode() + " " + response.body());

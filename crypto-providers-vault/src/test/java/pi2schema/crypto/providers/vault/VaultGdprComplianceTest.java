@@ -5,10 +5,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
-import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
+import org.testcontainers.vault.VaultContainer;
 import pi2schema.crypto.providers.EncryptionMaterial;
 
 import java.nio.charset.StandardCharsets;
@@ -27,11 +26,10 @@ import static org.junit.jupiter.api.Assertions.*;
 class VaultGdprComplianceTest {
 
     @Container
-    static final GenericContainer<?> vault = new GenericContainer<>(DockerImageName.parse("hashicorp/vault:1.15"))
-        .withExposedPorts(8200)
-        .withEnv("VAULT_DEV_ROOT_TOKEN_ID", "test-token")
-        .withEnv("VAULT_DEV_LISTEN_ADDRESS", "0.0.0.0:8200")
-        .withCommand("vault", "server", "-dev", "-dev-listen-address=0.0.0.0:8200");
+    static final VaultContainer<?> vault = new VaultContainer<>("hashicorp/vault:1.15")
+        .withVaultToken("test-token")
+        .withVaultPort(8200)
+        .withInitCommand("secrets enable transit");
 
     private VaultCryptoConfiguration config;
     private VaultTransitClient transitClient;
@@ -40,27 +38,46 @@ class VaultGdprComplianceTest {
 
     @BeforeEach
     void setUp(TestInfo testInfo) throws Exception {
-        String vaultUrl = "http://localhost:" + vault.getMappedPort(8200);
-        
-        config = VaultCryptoConfiguration.builder()
-            .vaultUrl(vaultUrl)
-            .vaultToken("test-token")
-            .transitEnginePath("transit")
-            .keyPrefix("gdpr-test")
-            .connectionTimeout(Duration.ofSeconds(5))
-            .requestTimeout(Duration.ofSeconds(10))
-            .maxRetries(2)
-            .retryBackoffMs(Duration.ofMillis(50))
-            .build();
+        String vaultUrl = "http://" + vault.getHost() + ":" + vault.getMappedPort(8200);
+
+        config =
+            VaultCryptoConfiguration
+                .builder()
+                .vaultUrl(vaultUrl)
+                .vaultToken("test-token")
+                .transitEnginePath("transit")
+                .keyPrefix("gdpr-test")
+                .connectionTimeout(Duration.ofSeconds(5))
+                .requestTimeout(Duration.ofSeconds(10))
+                .maxRetries(2)
+                .retryBackoffMs(Duration.ofMillis(50))
+                .build();
 
         transitClient = new VaultTransitClient(config);
         encryptingProvider = new VaultEncryptingMaterialsProvider(config);
         decryptingProvider = new VaultDecryptingMaterialsProvider(config);
 
-        // Enable transit engine
-        enableTransitEngine();
-        
+        // Wait for Vault to be ready and transit engine to be enabled
+        waitForVaultReady();
+
         System.out.println("Test setup completed for: " + testInfo.getDisplayName());
+    }
+
+    private void waitForVaultReady() throws Exception {
+        // Wait up to 30 seconds for Vault to be ready
+        int maxAttempts = 30;
+        for (int i = 0; i < maxAttempts; i++) {
+            try {
+                // Try to list keys to verify transit engine is working
+                transitClient.listSubjectKeys().get();
+                return; // Success
+            } catch (Exception e) {
+                if (i == maxAttempts - 1) {
+                    throw new RuntimeException("Vault transit engine not ready after " + maxAttempts + " seconds", e);
+                }
+                Thread.sleep(1000); // Wait 1 second before retry
+            }
+        }
     }
 
     @AfterEach
@@ -91,32 +108,38 @@ class VaultGdprComplianceTest {
         byte[] encryptedData2 = material2.dataEncryptionKey().encrypt(testData.getBytes(StandardCharsets.UTF_8), null);
 
         // Verify that subject1 can decrypt their own data
-        Aead decryptAead1 = decryptingProvider.decryptionKeysFor(
-            subject1, material1.encryptedDataKey(), material1.encryptionContext()
-        ).get();
+        Aead decryptAead1 = decryptingProvider
+            .decryptionKeysFor(subject1, material1.encryptedDataKey(), material1.encryptionContext())
+            .get();
         byte[] decryptedData1 = decryptAead1.decrypt(encryptedData1, null);
         assertEquals(testData, new String(decryptedData1, StandardCharsets.UTF_8));
 
         // Verify that subject2 can decrypt their own data
-        Aead decryptAead2 = decryptingProvider.decryptionKeysFor(
-            subject2, material2.encryptedDataKey(), material2.encryptionContext()
-        ).get();
+        Aead decryptAead2 = decryptingProvider
+            .decryptionKeysFor(subject2, material2.encryptedDataKey(), material2.encryptionContext())
+            .get();
         byte[] decryptedData2 = decryptAead2.decrypt(encryptedData2, null);
         assertEquals(testData, new String(decryptedData2, StandardCharsets.UTF_8));
 
         // Verify cryptographic isolation: subject1 cannot decrypt subject2's data
-        assertThrows(ExecutionException.class, () -> {
-            decryptingProvider.decryptionKeysFor(
-                subject1, material2.encryptedDataKey(), material2.encryptionContext()
-            ).get();
-        });
+        assertThrows(
+            ExecutionException.class,
+            () -> {
+                decryptingProvider
+                    .decryptionKeysFor(subject1, material2.encryptedDataKey(), material2.encryptionContext())
+                    .get();
+            }
+        );
 
         // Verify cryptographic isolation: subject2 cannot decrypt subject1's data
-        assertThrows(ExecutionException.class, () -> {
-            decryptingProvider.decryptionKeysFor(
-                subject2, material1.encryptedDataKey(), material1.encryptionContext()
-            ).get();
-        });
+        assertThrows(
+            ExecutionException.class,
+            () -> {
+                decryptingProvider
+                    .decryptionKeysFor(subject2, material1.encryptedDataKey(), material1.encryptionContext())
+                    .get();
+            }
+        );
 
         // Verify that encrypted data keys are different
         assertFalse(java.util.Arrays.equals(material1.encryptedDataKey(), material2.encryptedDataKey()));
@@ -149,9 +172,9 @@ class VaultGdprComplianceTest {
         byte[] encryptedData = material.dataEncryptionKey().encrypt(testData.getBytes(StandardCharsets.UTF_8), null);
 
         // Step 2: Verify we can decrypt the data
-        Aead decryptAead = decryptingProvider.decryptionKeysFor(
-            subjectId, material.encryptedDataKey(), material.encryptionContext()
-        ).get();
+        Aead decryptAead = decryptingProvider
+            .decryptionKeysFor(subjectId, material.encryptedDataKey(), material.encryptionContext())
+            .get();
         byte[] decryptedData = decryptAead.decrypt(encryptedData, null);
         assertEquals(testData, new String(decryptedData, StandardCharsets.UTF_8));
 
@@ -165,24 +188,30 @@ class VaultGdprComplianceTest {
         assertFalse(transitClient.subjectKeyExists(subjectId).get());
 
         // Step 6: Verify that data can no longer be decrypted
-        assertThrows(ExecutionException.class, () -> {
-            decryptingProvider.decryptionKeysFor(
-                subjectId, material.encryptedDataKey(), material.encryptionContext()
-            ).get();
-        });
+        assertThrows(
+            ExecutionException.class,
+            () -> {
+                decryptingProvider
+                    .decryptionKeysFor(subjectId, material.encryptedDataKey(), material.encryptionContext())
+                    .get();
+            }
+        );
 
         // Step 7: Verify that the encrypted data is now unrecoverable
-        // Even if we try to create a new key with the same subject ID, 
+        // Even if we try to create a new key with the same subject ID,
         // the old encrypted data should remain unrecoverable
         EncryptionMaterial newMaterial = encryptingProvider.encryptionKeysFor(subjectId).get();
-        
+
         // The new material should be different from the old one
         assertFalse(java.util.Arrays.equals(material.encryptedDataKey(), newMaterial.encryptedDataKey()));
-        
+
         // The old encrypted data should still be unrecoverable with the new key
-        assertThrows(Exception.class, () -> {
-            newMaterial.dataEncryptionKey().decrypt(encryptedData, null);
-        });
+        assertThrows(
+            Exception.class,
+            () -> {
+                newMaterial.dataEncryptionKey().decrypt(encryptedData, null);
+            }
+        );
     }
 
     @Test
@@ -193,9 +222,12 @@ class VaultGdprComplianceTest {
         assertFalse(transitClient.subjectKeyExists(nonExistentSubject).get());
 
         // Attempting to delete a non-existent key should throw SubjectKeyNotFoundException
-        ExecutionException exception = assertThrows(ExecutionException.class, () -> {
-            transitClient.deleteSubjectKey(nonExistentSubject).get();
-        });
+        ExecutionException exception = assertThrows(
+            ExecutionException.class,
+            () -> {
+                transitClient.deleteSubjectKey(nonExistentSubject).get();
+            }
+        );
 
         assertTrue(exception.getCause() instanceof SubjectKeyNotFoundException);
         SubjectKeyNotFoundException cause = (SubjectKeyNotFoundException) exception.getCause();
@@ -284,10 +316,14 @@ class VaultGdprComplianceTest {
 
         // Perform concurrent decryption operations
         CompletableFuture<Aead> decryptFuture1 = decryptingProvider.decryptionKeysFor(
-            subject1, material1.encryptedDataKey(), material1.encryptionContext()
+            subject1,
+            material1.encryptedDataKey(),
+            material1.encryptionContext()
         );
         CompletableFuture<Aead> decryptFuture2 = decryptingProvider.decryptionKeysFor(
-            subject2, material2.encryptedDataKey(), material2.encryptionContext()
+            subject2,
+            material2.encryptedDataKey(),
+            material2.encryptionContext()
         );
 
         Aead decryptAead1 = decryptFuture1.get();
@@ -308,31 +344,49 @@ class VaultGdprComplianceTest {
     @Test
     void testInvalidSubjectIdHandling() throws Exception {
         // Test null subject ID
-        assertThrows(ExecutionException.class, () -> {
-            transitClient.subjectKeyExists(null).get();
-        });
+        assertThrows(
+            ExecutionException.class,
+            () -> {
+                transitClient.subjectKeyExists(null).get();
+            }
+        );
 
-        assertThrows(ExecutionException.class, () -> {
-            transitClient.deleteSubjectKey(null).get();
-        });
+        assertThrows(
+            ExecutionException.class,
+            () -> {
+                transitClient.deleteSubjectKey(null).get();
+            }
+        );
 
         // Test empty subject ID
-        assertThrows(ExecutionException.class, () -> {
-            transitClient.subjectKeyExists("").get();
-        });
+        assertThrows(
+            ExecutionException.class,
+            () -> {
+                transitClient.subjectKeyExists("").get();
+            }
+        );
 
-        assertThrows(ExecutionException.class, () -> {
-            transitClient.deleteSubjectKey("").get();
-        });
+        assertThrows(
+            ExecutionException.class,
+            () -> {
+                transitClient.deleteSubjectKey("").get();
+            }
+        );
 
         // Test whitespace-only subject ID
-        assertThrows(ExecutionException.class, () -> {
-            transitClient.subjectKeyExists("   ").get();
-        });
+        assertThrows(
+            ExecutionException.class,
+            () -> {
+                transitClient.subjectKeyExists("   ").get();
+            }
+        );
 
-        assertThrows(ExecutionException.class, () -> {
-            transitClient.deleteSubjectKey("   ").get();
-        });
+        assertThrows(
+            ExecutionException.class,
+            () -> {
+                transitClient.deleteSubjectKey("   ").get();
+            }
+        );
     }
 
     /**
