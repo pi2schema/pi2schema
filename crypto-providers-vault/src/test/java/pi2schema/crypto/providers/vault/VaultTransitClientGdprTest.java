@@ -38,7 +38,7 @@ class VaultTransitClientGdprTest {
     @Test
     void testGenerateKeyName() {
         String subjectId = "user-123";
-        String expectedKeyName = "test-prefix/subject/user-123";
+        String expectedKeyName = "test-prefix_subject_user-123";
 
         String actualKeyName = transitClient.generateKeyName(subjectId);
         assertEquals(expectedKeyName, actualKeyName);
@@ -47,7 +47,7 @@ class VaultTransitClientGdprTest {
     @Test
     void testGenerateKeyNameWithSpecialCharacters() {
         String subjectId = "user@domain.com";
-        String expectedKeyName = "test-prefix/subject/user_domain_com";
+        String expectedKeyName = "test-prefix_subject_user_domain_com";
 
         String actualKeyName = transitClient.generateKeyName(subjectId);
         assertEquals(expectedKeyName, actualKeyName);

@@ -240,32 +240,6 @@ public class VaultEncryptingMaterialsProvider implements EncryptingMaterialsProv
                     encryptedDek.length
                 );
                 return new EncryptionMaterial(dekMaterial.aead(), encryptedDek, encryptionContext);
-            })
-            .exceptionally(throwable -> {
-                // Unwrap CompletionException if present
-                Throwable actualThrowable = throwable;
-                if (throwable instanceof java.util.concurrent.CompletionException && throwable.getCause() != null) {
-                    actualThrowable = throwable.getCause();
-                }
-
-                logger.error(
-                    "Failed to encrypt DEK [subjectId={}, keyName={}, errorType={}, error={}]",
-                    subjectId,
-                    keyName,
-                    actualThrowable.getClass().getSimpleName(),
-                    sanitizeLogMessage(actualThrowable.getMessage()),
-                    actualThrowable
-                );
-
-                // Preserve the original exception type and chain properly
-                if (actualThrowable instanceof RuntimeException) {
-                    throw (RuntimeException) actualThrowable;
-                } else {
-                    throw new VaultCryptoException(
-                        String.format("Failed to encrypt data encryption key for subject: %s", subjectId),
-                        actualThrowable
-                    );
-                }
             });
     }
 
