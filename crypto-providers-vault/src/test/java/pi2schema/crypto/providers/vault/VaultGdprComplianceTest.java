@@ -164,7 +164,7 @@ class VaultGdprComplianceTest {
 
     @Test
     void testGdprRightToBeForgotten() throws Exception {
-        String subjectId = "user-david";
+        String subjectId = "user-david-" + System.currentTimeMillis();
         String testData = "personal data to be forgotten";
 
         // Step 1: Encrypt data for the subject
@@ -270,7 +270,7 @@ class VaultGdprComplianceTest {
     @Test
     void testSubjectKeyNamingStrategy() throws Exception {
         String subjectId = "user-123";
-        String expectedKeyName = "gdpr-test/subject/user-123";
+        String expectedKeyName = "gdpr-test_subject_user-123";
 
         String actualKeyName = transitClient.generateKeyName(subjectId);
         assertEquals(expectedKeyName, actualKeyName);
@@ -278,7 +278,7 @@ class VaultGdprComplianceTest {
         // Test with special characters that should be sanitized
         String specialSubjectId = "user@domain.com";
         String sanitizedKeyName = transitClient.generateKeyName(specialSubjectId);
-        assertEquals("gdpr-test/subject/user_domain_com", sanitizedKeyName);
+        assertEquals("gdpr-test_subject_user_domain_com", sanitizedKeyName);
     }
 
     @Test

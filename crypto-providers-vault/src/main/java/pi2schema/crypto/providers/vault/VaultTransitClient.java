@@ -296,7 +296,7 @@ public class VaultTransitClient implements AutoCloseable {
 
         // Sanitize subject ID to prevent path traversal
         String sanitizedSubjectId = subjectId.replaceAll("[^a-zA-Z0-9_-]", "_");
-        String keyName = config.getKeyPrefix() + "/subject/" + sanitizedSubjectId;
+        String keyName = config.getKeyPrefix() + "_subject_" + sanitizedSubjectId;
 
         if (!sanitizedSubjectId.equals(subjectId)) {
             logger.debug(
@@ -669,14 +669,67 @@ public class VaultTransitClient implements AutoCloseable {
         String url = baseUrl + "/keys/" + keyName;
 
         return executeWithRetry(
+                () -> {
+                    try {
+                        String jsonBody = objectMapper.writeValueAsString(requestBody);
+                        logger.debug(
+                            "Creating key in Vault [requestId={}, url={}, keyType={}]",
+                            requestId,
+                            sanitizeUrl(url),
+                            requestBody.get("type")
+                        );
+
+                        HttpRequest request = HttpRequest
+                            .newBuilder()
+                            .uri(URI.create(url))
+                            .header(VAULT_TOKEN_HEADER, config.getVaultToken())
+                            .header("Content-Type", CONTENT_TYPE_JSON)
+                            .timeout(config.getRequestTimeout())
+                            .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                            .build();
+
+                        return httpClient
+                            .sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                            .thenApply(response -> {
+                                logger.debug(
+                                    "Key creation response [requestId={}, statusCode={}]",
+                                    requestId,
+                                    response.statusCode()
+                                );
+
+                                handleHttpResponse(response, "create key", requestId);
+                                return null;
+                            });
+                    } catch (Exception e) {
+                        String errorMsg = String.format(
+                            "Failed to create key [requestId=%d, keyName=%s]",
+                            requestId,
+                            keyName
+                        );
+                        logger.error(errorMsg, e);
+                        return CompletableFuture.failedFuture(new VaultConnectivityException(errorMsg, e));
+                    }
+                },
+                requestId
+            )
+            .thenCompose(result -> enableKeyDeletion(keyName, requestId));
+    }
+
+    private CompletableFuture<Void> enableKeyDeletion(String keyName, long requestId) {
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("deletion_allowed", true);
+
+        String url = baseUrl + "/keys/" + keyName + "/config";
+
+        return executeWithRetry(
             () -> {
                 try {
                     String jsonBody = objectMapper.writeValueAsString(requestBody);
                     logger.debug(
-                        "Creating key in Vault [requestId={}, url={}, keyType={}]",
+                        "Enabling key deletion in Vault [requestId={}, url={}, deletionAllowed={}]",
                         requestId,
                         sanitizeUrl(url),
-                        requestBody.get("type")
+                        requestBody.get("deletion_allowed")
                     );
 
                     HttpRequest request = HttpRequest
@@ -692,16 +745,17 @@ public class VaultTransitClient implements AutoCloseable {
                         .sendAsync(request, HttpResponse.BodyHandlers.ofString())
                         .thenApply(response -> {
                             logger.debug(
-                                "Key creation response [requestId={}, statusCode={}]",
+                                "Key deletion enablement response [requestId={}, statusCode={}]",
                                 requestId,
                                 response.statusCode()
                             );
-                            handleHttpResponse(response, "create key", requestId);
+
+                            handleHttpResponse(response, "enable key deletion", requestId);
                             return null;
                         });
                 } catch (Exception e) {
                     String errorMsg = String.format(
-                        "Failed to create key [requestId=%d, keyName=%s]",
+                        "Failed to enable key deletion [requestId=%d, keyName=%s]",
                         requestId,
                         keyName
                     );
@@ -744,6 +798,7 @@ public class VaultTransitClient implements AutoCloseable {
                                 requestId,
                                 response.statusCode()
                             );
+
                             handleHttpResponse(response, "delete key", requestId);
                             return null;
                         });
@@ -785,7 +840,7 @@ public class VaultTransitClient implements AutoCloseable {
             }
 
             java.util.List<String> subjectIds = new java.util.ArrayList<>();
-            String subjectPrefix = config.getKeyPrefix() + "/subject/";
+            String subjectPrefix = config.getKeyPrefix() + "_subject_";
 
             for (JsonNode keyNode : keysNode) {
                 String keyName = keyNode.asText();
