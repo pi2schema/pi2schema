@@ -22,35 +22,46 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Client for interacting with HashiCorp Vault's transit encryption engine.
  *
- * <p>This client handles authentication, encryption, decryption, and key management operations
- * with proper retry logic and connection pooling. It provides a high-level interface for
- * Vault's transit encryption API while handling error conditions and performance optimization.</p>
+ * <p>
+ * This client handles authentication, encryption, decryption, and key
+ * management operations
+ * with proper retry logic and connection pooling. It provides a high-level
+ * interface for
+ * Vault's transit encryption API while handling error conditions and
+ * performance optimization.
+ * </p>
  *
  * <h3>Features:</h3>
  * <ul>
- *   <li>Asynchronous operations using CompletableFuture</li>
- *   <li>Automatic retry with exponential backoff</li>
- *   <li>HTTP connection pooling for performance</li>
- *   <li>Comprehensive error handling and logging</li>
- *   <li>Request correlation for debugging</li>
+ * <li>Asynchronous operations using CompletableFuture</li>
+ * <li>Automatic retry with exponential backoff</li>
+ * <li>HTTP connection pooling for performance</li>
+ * <li>Comprehensive error handling and logging</li>
+ * <li>Request correlation for debugging</li>
  * </ul>
  *
  * <h3>Key Management:</h3>
- * <p>Keys are automatically created if they don't exist when first accessed.
+ * <p>
+ * Keys are automatically created if they don't exist when first accessed.
  * The client uses subject-specific key naming following the pattern:
- * {@code {keyPrefix}/subject/{subjectId}}</p>
+ * {@code {keyPrefix}/subject/{subjectId}}
+ * </p>
  *
  * <h3>Error Handling:</h3>
- * <p>The client handles various error conditions:
+ * <p>
+ * The client handles various error conditions:
  * <ul>
- *   <li>Network timeouts and connectivity issues</li>
- *   <li>Authentication failures</li>
- *   <li>Invalid requests and responses</li>
- *   <li>Vault server errors</li>
+ * <li>Network timeouts and connectivity issues</li>
+ * <li>Authentication failures</li>
+ * <li>Invalid requests and responses</li>
+ * <li>Vault server errors</li>
  * </ul>
  *
  * <h3>Thread Safety:</h3>
- * <p>This class is thread-safe and designed for concurrent use across multiple threads.</p>
+ * <p>
+ * This class is thread-safe and designed for concurrent use across multiple
+ * threads.
+ * </p>
  *
  * @since 1.0
  * @see VaultCryptoConfiguration
@@ -74,10 +85,13 @@ public class VaultTransitClient implements AutoCloseable {
     /**
      * Creates a new VaultTransitClient with the specified configuration.
      *
-     * <p>This constructor initializes the HTTP client with connection pooling
-     * and sets up the base URL for Vault API calls.</p>
+     * <p>
+     * This constructor initializes the HTTP client with connection pooling
+     * and sets up the base URL for Vault API calls.
+     * </p>
      *
-     * @param config the Vault configuration containing connection details and settings
+     * @param config the Vault configuration containing connection details and
+     *               settings
      * @throws IllegalArgumentException if configuration is null or invalid
      */
     public VaultTransitClient(VaultCryptoConfiguration config) {
@@ -99,20 +113,24 @@ public class VaultTransitClient implements AutoCloseable {
     }
 
     /**
-     * Encrypts the given plaintext using the specified key name and encryption context.
+     * Encrypts the given plaintext using the specified key name and encryption
+     * context.
      *
-     * <p>This method ensures the key exists in Vault (creating it if necessary) before
-     * performing the encryption operation. The encryption context provides additional
-     * authenticated data for the encryption operation.</p>
+     * <p>
+     * This method ensures the key exists in Vault (creating it if necessary) before
+     * performing the encryption operation. The encryption context provides
+     * additional
+     * authenticated data for the encryption operation.
+     * </p>
      *
-     * @param keyName the name of the key in Vault (must not be null or empty)
+     * @param keyName   the name of the key in Vault (must not be null or empty)
      * @param plaintext the data to encrypt (must not be null or empty)
-     * @param context the encryption context for additional security (may be null)
+     * @param context   the encryption context for additional security (may be null)
      * @return a CompletableFuture containing the encrypted data as bytes
-     * @throws IllegalArgumentException if keyName or plaintext is null or empty
+     * @throws IllegalArgumentException     if keyName or plaintext is null or empty
      * @throws VaultAuthenticationException if Vault authentication fails
-     * @throws VaultConnectivityException if Vault is unreachable
-     * @throws VaultCryptoException if encryption operation fails
+     * @throws VaultConnectivityException   if Vault is unreachable
+     * @throws VaultCryptoException         if encryption operation fails
      */
     public CompletableFuture<byte[]> encrypt(String keyName, byte[] plaintext, String context) {
         long requestId = REQUEST_ID_GENERATOR.incrementAndGet();
@@ -160,25 +178,60 @@ public class VaultTransitClient implements AutoCloseable {
                         result != null ? result.length : 0
                     );
                 }
+            })
+            .exceptionally(throwable -> {
+                // Unwrap CompletionException if present
+                Throwable actualThrowable = throwable;
+                if (throwable instanceof java.util.concurrent.CompletionException && throwable.getCause() != null) {
+                    actualThrowable = throwable.getCause();
+                }
+
+                logger.error(
+                    "Network error during encryption [requestId={}, keyName={}, errorType={}, error={}]",
+                    requestId,
+                    keyName,
+                    actualThrowable.getClass().getSimpleName(),
+                    sanitizeLogMessage(actualThrowable.getMessage()),
+                    actualThrowable
+                );
+
+                // Preserve the original exception type and chain properly
+                if (actualThrowable instanceof RuntimeException) {
+                    throw (RuntimeException) actualThrowable;
+                } else if (actualThrowable instanceof IOException) {
+                    throw new VaultConnectivityException(
+                        String.format("Network error during encryption using key '%s'", keyName),
+                        actualThrowable
+                    );
+                } else {
+                    throw new VaultCryptoException(
+                        String.format("Failed to encrypt data using key '%s'", keyName),
+                        actualThrowable
+                    );
+                }
             });
     }
 
     /**
-     * Decrypts the given ciphertext using the specified key name and encryption context.
+     * Decrypts the given ciphertext using the specified key name and encryption
+     * context.
      *
-     * <p>The encryption context must match the context used during encryption.
+     * <p>
+     * The encryption context must match the context used during encryption.
      * If the key doesn't exist in Vault, the operation will fail with
-     * {@link SubjectKeyNotFoundException}.</p>
+     * {@link SubjectKeyNotFoundException}.
+     * </p>
      *
-     * @param keyName the name of the key in Vault (must not be null or empty)
+     * @param keyName    the name of the key in Vault (must not be null or empty)
      * @param ciphertext the data to decrypt (must not be null or empty)
-     * @param context the encryption context used during encryption (may be null)
+     * @param context    the encryption context used during encryption (may be null)
      * @return a CompletableFuture containing the decrypted data as bytes
-     * @throws IllegalArgumentException if keyName or ciphertext is null or empty
-     * @throws SubjectKeyNotFoundException if the key doesn't exist in Vault
+     * @throws IllegalArgumentException     if keyName or ciphertext is null or
+     *                                      empty
+     * @throws SubjectKeyNotFoundException  if the key doesn't exist in Vault
      * @throws VaultAuthenticationException if Vault authentication fails
-     * @throws VaultConnectivityException if Vault is unreachable
-     * @throws VaultCryptoException if decryption operation fails
+     * @throws VaultConnectivityException   if Vault is unreachable
+     * @throws VaultCryptoException         if decryption operation fails
      */
     public CompletableFuture<byte[]> decrypt(String keyName, byte[] ciphertext, String context) {
         long requestId = REQUEST_ID_GENERATOR.incrementAndGet();
@@ -231,16 +284,19 @@ public class VaultTransitClient implements AutoCloseable {
     /**
      * Ensures that the specified key exists in Vault, creating it if necessary.
      *
-     * <p>This method first checks if the key exists and creates it only if needed.
+     * <p>
+     * This method first checks if the key exists and creates it only if needed.
      * Key creation is idempotent - if multiple threads attempt to create the same
-     * key simultaneously, only one will succeed and others will continue normally.</p>
+     * key simultaneously, only one will succeed and others will continue normally.
+     * </p>
      *
-     * @param keyName the name of the key to ensure exists (must not be null or empty)
+     * @param keyName the name of the key to ensure exists (must not be null or
+     *                empty)
      * @return a CompletableFuture that completes when the key is confirmed to exist
-     * @throws IllegalArgumentException if keyName is null or empty
+     * @throws IllegalArgumentException     if keyName is null or empty
      * @throws VaultAuthenticationException if Vault authentication fails
-     * @throws VaultConnectivityException if Vault is unreachable
-     * @throws VaultCryptoException if key creation fails
+     * @throws VaultConnectivityException   if Vault is unreachable
+     * @throws VaultCryptoException         if key creation fails
      */
     public CompletableFuture<Void> ensureKeyExists(String keyName) {
         long requestId = REQUEST_ID_GENERATOR.incrementAndGet();
@@ -277,11 +333,15 @@ public class VaultTransitClient implements AutoCloseable {
     }
 
     /**
-     * Generates the full key name including the configured prefix and subject pattern.
+     * Generates the full key name including the configured prefix and subject
+     * pattern.
      *
-     * <p>The generated key name follows the pattern: {@code {keyPrefix}/subject/{subjectId}}.
+     * <p>
+     * The generated key name follows the pattern:
+     * {@code {keyPrefix}/subject/{subjectId}}.
      * The subject ID is sanitized to prevent path traversal attacks by replacing
-     * non-alphanumeric characters (except underscore and hyphen) with underscores.</p>
+     * non-alphanumeric characters (except underscore and hyphen) with underscores.
+     * </p>
      *
      * @param subjectId the subject identifier (must not be null or empty)
      * @return the full key name for Vault
@@ -311,13 +371,17 @@ public class VaultTransitClient implements AutoCloseable {
     }
 
     /**
-     * Deletes the subject-specific key from Vault to support GDPR right-to-be-forgotten.
-     * Once a key is deleted, all data encrypted with that key becomes unrecoverable.
+     * Deletes the subject-specific key from Vault to support GDPR
+     * right-to-be-forgotten.
+     * Once a key is deleted, all data encrypted with that key becomes
+     * unrecoverable.
      *
      * @param subjectId the subject identifier whose key should be deleted
-     * @return a CompletableFuture that completes when the key is successfully deleted
-     * @throws IllegalArgumentException if subjectId is null or empty
-     * @throws SubjectKeyNotFoundException if the subject's key is not found in Vault
+     * @return a CompletableFuture that completes when the key is successfully
+     *         deleted
+     * @throws IllegalArgumentException    if subjectId is null or empty
+     * @throws SubjectKeyNotFoundException if the subject's key is not found in
+     *                                     Vault
      */
     public CompletableFuture<Void> deleteSubjectKey(String subjectId) {
         long requestId = REQUEST_ID_GENERATOR.incrementAndGet();
@@ -373,10 +437,12 @@ public class VaultTransitClient implements AutoCloseable {
 
     /**
      * Checks if a subject-specific key exists in Vault.
-     * This method is useful for GDPR compliance to verify key existence before operations.
+     * This method is useful for GDPR compliance to verify key existence before
+     * operations.
      *
      * @param subjectId the subject identifier to check
-     * @return a CompletableFuture containing true if the key exists, false otherwise
+     * @return a CompletableFuture containing true if the key exists, false
+     *         otherwise
      * @throws IllegalArgumentException if subjectId is null or empty
      */
     public CompletableFuture<Boolean> subjectKeyExists(String subjectId) {
@@ -423,7 +489,8 @@ public class VaultTransitClient implements AutoCloseable {
      * This method is useful for GDPR compliance auditing and bulk operations.
      * Note: This is a potentially expensive operation and should be used carefully.
      *
-     * @return a CompletableFuture containing a list of subject IDs that have keys in Vault
+     * @return a CompletableFuture containing a list of subject IDs that have keys
+     *         in Vault
      */
     public CompletableFuture<java.util.List<String>> listSubjectKeys() {
         long requestId = REQUEST_ID_GENERATOR.incrementAndGet();
@@ -645,7 +712,8 @@ public class VaultTransitClient implements AutoCloseable {
                                 return false;
                             } else {
                                 handleHttpResponse(response, "check key existence", requestId);
-                                return false; // This line should not be reached due to exception in handleHttpResponse
+                                return false; // This line should not be reached due to exception in
+                                // handleHttpResponse
                             }
                         });
                 } catch (Exception e) {
@@ -770,7 +838,7 @@ public class VaultTransitClient implements AutoCloseable {
     /**
      * Performs the actual key deletion operation in Vault.
      *
-     * @param keyName the full key name to delete
+     * @param keyName   the full key name to delete
      * @param requestId the request ID for logging correlation
      * @return a CompletableFuture that completes when the key is deleted
      */
@@ -820,7 +888,7 @@ public class VaultTransitClient implements AutoCloseable {
      * Parses the Vault list keys response and extracts subject IDs.
      *
      * @param responseBody the JSON response from Vault's list keys API
-     * @param requestId the request ID for logging correlation
+     * @param requestId    the request ID for logging correlation
      * @return a list of subject IDs extracted from the key names
      */
     private java.util.List<String> parseSubjectKeysFromListResponse(String responseBody, long requestId) {
@@ -1032,7 +1100,8 @@ public class VaultTransitClient implements AutoCloseable {
             );
         }
 
-        // Log the error with appropriate level based on status code and throw specific exceptions
+        // Log the error with appropriate level based on status code and throw specific
+        // exceptions
         if (statusCode == 401 || statusCode == 403) {
             logger.error(
                 "Vault authentication failed [requestId={}, statusCode={}, operation={}, vaultErrors={}]",
@@ -1151,13 +1220,15 @@ public class VaultTransitClient implements AutoCloseable {
             url = url.substring(0, queryIndex) + "?[REDACTED]";
         }
 
-        // Replace any potential tokens in the path (though this shouldn't happen with Vault URLs)
+        // Replace any potential tokens in the path (though this shouldn't happen with
+        // Vault URLs)
         return url.replaceAll("token=[^&]*", "token=[REDACTED]");
     }
 
     /**
      * Sanitizes log messages to ensure no sensitive data is exposed.
-     * This method removes or redacts potentially sensitive information from log messages.
+     * This method removes or redacts potentially sensitive information from log
+     * messages.
      *
      * @param message the message to sanitize
      * @return the sanitized message safe for logging
@@ -1187,7 +1258,8 @@ public class VaultTransitClient implements AutoCloseable {
             // HttpClient in Java 11+ manages its own resources, but we should ensure
             // any scheduled retry operations are properly cancelled
 
-            // Note: In a production implementation, we might want to track active operations
+            // Note: In a production implementation, we might want to track active
+            // operations
             // and provide a graceful shutdown mechanism, but for now we rely on the
             // HttpClient's internal resource management
 

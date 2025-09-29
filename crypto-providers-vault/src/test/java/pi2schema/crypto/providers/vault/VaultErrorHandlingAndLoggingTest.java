@@ -200,7 +200,8 @@ class VaultErrorHandlingAndLoggingTest {
             }
         );
 
-        // Note: Retry behavior verification is now handled in VaultNetworkErrorHandlingTest
+        // Note: Retry behavior verification is now handled in
+        // VaultNetworkErrorHandlingTest
         // using WireMock request counting instead of log-based verification.
         // This test focuses on error handling and logging of other aspects.
 
@@ -364,16 +365,13 @@ class VaultErrorHandlingAndLoggingTest {
         // When - invalid key prefix
         IllegalArgumentException exception2 = assertThrows(
             IllegalArgumentException.class,
-            () -> {
-                new VaultEncryptingMaterialsProvider(
-                    VaultCryptoConfiguration
-                        .builder()
-                        .vaultUrl("https://vault.example.com")
-                        .vaultToken("token")
-                        .keyPrefix("invalid@prefix")
-                        .build()
-                );
-            }
+            () ->
+                VaultCryptoConfiguration
+                    .builder()
+                    .vaultUrl("https://vault.example.com")
+                    .vaultToken("token")
+                    .keyPrefix("invalid@prefix")
+                    .build()
         );
 
         assertTrue(exception2.getMessage().contains("Key prefix can only contain alphanumeric characters"));
@@ -398,13 +396,15 @@ class VaultErrorHandlingAndLoggingTest {
             // Should not contain tokens
             assertFalse(message.contains("invalid-token"), "Should not log vault token: " + message);
 
-            // Should not contain raw key material (check for base64-like patterns that look like keys)
+            // Should not contain raw key material (check for base64-like patterns that look
+            // like keys)
             assertFalse(
                 message.matches(".*\\b[A-Za-z0-9+/]{40,}={0,2}\\b.*"),
                 "Should not log base64 key material: " + message
             );
 
-            // Should not contain actual plaintext data (but references to "plaintext" in error messages are OK)
+            // Should not contain actual plaintext data (but references to "plaintext" in
+            // error messages are OK)
             assertFalse(
                 message.matches(".*plaintext[\\s]*[:=][\\s]*[A-Za-z0-9+/=]{8,}.*"),
                 "Should not log actual plaintext data: " + message
