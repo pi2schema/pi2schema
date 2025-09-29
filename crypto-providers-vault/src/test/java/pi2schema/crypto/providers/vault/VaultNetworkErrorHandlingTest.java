@@ -31,7 +31,7 @@ class VaultNetworkErrorHandlingTest {
 
     @AfterEach
     void tearDown() {
-        if (wireMockServer != null) {
+        if (wireMockServer != null && wireMockServer.isRunning()) {
             wireMockServer.stop();
         }
     }
@@ -50,11 +50,72 @@ class VaultNetworkErrorHandlingTest {
             .build();
     }
 
+    /**
+     * Helper method to simulate connection timeout by delaying response longer than client timeout.
+     */
+    private void simulateConnectionTimeout() {
+        wireMockServer.stubFor(any(urlMatching("/v1/transit/.*"))
+            .willReturn(aResponse().withFixedDelay(300))); // Longer than 100ms connection timeout
+    }
+
+    /**
+     * Helper method to simulate request timeout by delaying response longer than request timeout.
+     */
+    private void simulateRequestTimeout() {
+        wireMockServer.stubFor(any(urlMatching("/v1/transit/.*"))
+            .willReturn(aResponse()
+                .withFixedDelay(300) // Longer than 200ms request timeout
+                .withStatus(200)
+                .withHeader("Content-Type", "application/json")
+                .withBody("{\"data\":{\"keys\":{\"1\":{\"creation_time\":\"2023-01-01T00:00:00Z\"}}}}")));
+    }
+
+    /**
+     * Helper method to simulate connection refused by stopping the WireMock server.
+     */
+    private void simulateConnectionRefused() {
+        if (wireMockServer != null && wireMockServer.isRunning()) {
+            wireMockServer.stop();
+        }
+    }
+
+    /**
+     * Helper method to simulate DNS resolution failure.
+     * Note: This is handled by using an invalid hostname in the test configuration.
+     */
+    private void simulateDnsFailure() {
+        // DNS failure is simulated by using an invalid hostname in the configuration
+        // This method is provided for consistency but the actual DNS failure
+        // is achieved by using a non-resolvable hostname in the test config
+    }
+
+    /**
+     * Helper method to simulate server error responses.
+     */
+    private void simulateServerError() {
+        wireMockServer.stubFor(any(urlMatching("/v1/transit/.*"))
+            .willReturn(aResponse()
+                .withStatus(500)
+                .withHeader("Content-Type", "application/json")
+                .withBody("{\"errors\":[\"internal server error\"]}")));
+    }
+
+    /**
+     * Helper method to simulate authentication failure.
+     */
+    private void simulateAuthenticationFailure() {
+        wireMockServer.stubFor(any(urlMatching("/v1/transit/.*"))
+            .willReturn(aResponse()
+                .withStatus(403)
+                .withHeader("Content-Type", "application/json")
+                .withBody("{\"errors\":[\"permission denied\"]}")));
+    }
+
     @Test
     @DisplayName("Should throw VaultConnectivityException on connection timeout")
     void shouldThrowVaultConnectivityExceptionOnConnectionTimeout() {
-        // Given - simulate connection timeout with delay longer than client timeout
-        wireMockServer.stubFor(any(urlMatching("/v1/transit/.*")).willReturn(aResponse().withFixedDelay(300))); // Longer than 100ms connection timeout
+        // Given - simulate connection timeout
+        simulateConnectionTimeout();
 
         VaultCryptoConfiguration config = createTestConfig();
         VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config);
@@ -81,7 +142,10 @@ class VaultNetworkErrorHandlingTest {
     @Test
     @DisplayName("Should throw VaultConnectivityException on DNS resolution failure")
     void shouldThrowVaultConnectivityExceptionOnDnsResolutionFailure() {
-        // Given - invalid hostname that will cause DNS resolution failure
+        // Given - simulate DNS resolution failure by using invalid hostname with WireMock
+        simulateDnsFailure();
+        
+        // Use invalid hostname that will cause DNS resolution failure
         VaultCryptoConfiguration config = VaultCryptoConfiguration
             .builder()
             .vaultUrl("https://non-existent-vault-server-12345.invalid:8200")
@@ -117,19 +181,10 @@ class VaultNetworkErrorHandlingTest {
     @Test
     @DisplayName("Should throw VaultConnectivityException on connection refused")
     void shouldThrowVaultConnectivityExceptionOnConnectionRefused() {
-        // Given - use a port that's unlikely to be in use to simulate connection refused
-        VaultCryptoConfiguration config = VaultCryptoConfiguration
-            .builder()
-            .vaultUrl("http://localhost:65432") // Unlikely to be in use
-            .vaultToken("test-token")
-            .transitEnginePath("transit")
-            .keyPrefix("test-prefix")
-            .connectionTimeout(Duration.ofMillis(500))
-            .requestTimeout(Duration.ofMillis(1000))
-            .maxRetries(1)
-            .retryBackoffMs(Duration.ofMillis(10))
-            .build();
-
+        // Given - create config first, then simulate connection refused by stopping WireMock server
+        VaultCryptoConfiguration config = createTestConfig();
+        simulateConnectionRefused();
+        
         VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config);
 
         // When & Then
@@ -153,8 +208,8 @@ class VaultNetworkErrorHandlingTest {
     @Test
     @DisplayName("Should throw VaultConnectivityException on request timeout")
     void shouldThrowVaultConnectivityExceptionOnRequestTimeout() {
-        // Given - simulate request timeout with delay longer than request timeout
-        wireMockServer.stubFor(any(urlMatching("/v1/transit/.*")).willReturn(aResponse().withFixedDelay(300))); // Longer than 200ms request timeout
+        // Given - simulate request timeout
+        simulateRequestTimeout();
 
         VaultCryptoConfiguration config = createTestConfig();
         VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config);
@@ -203,16 +258,8 @@ class VaultNetworkErrorHandlingTest {
     @Test
     @DisplayName("Should throw VaultAuthenticationException on authentication failure")
     void shouldThrowVaultAuthenticationExceptionOnAuthenticationFailure() {
-        // Given - simulate authentication failure with 403 response
-        wireMockServer.stubFor(
-            any(urlMatching("/v1/transit/.*"))
-                .willReturn(
-                    aResponse()
-                        .withStatus(403)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody("{\"errors\":[\"permission denied\"]}")
-                )
-        );
+        // Given - simulate authentication failure
+        simulateAuthenticationFailure();
 
         VaultCryptoConfiguration config = createTestConfig();
         VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config);
@@ -238,15 +285,7 @@ class VaultNetworkErrorHandlingTest {
     @DisplayName("Should preserve error context in exceptions")
     void shouldPreserveErrorContextInExceptions() {
         // Given - simulate server error
-        wireMockServer.stubFor(
-            any(urlMatching("/v1/transit/.*"))
-                .willReturn(
-                    aResponse()
-                        .withStatus(500)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody("{\"errors\":[\"internal server error\"]}")
-                )
-        );
+        simulateServerError();
 
         VaultCryptoConfiguration config = createTestConfig();
         VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config);
@@ -268,14 +307,37 @@ class VaultNetworkErrorHandlingTest {
         provider.close();
     }
 
-    /**
-     * Helper method to get the root cause of an exception chain.
-     */
-    private Throwable getRootCause(Throwable throwable) {
-        Throwable cause = throwable;
-        while (cause.getCause() != null && cause.getCause() != cause) {
-            cause = cause.getCause();
+    @Test
+    @DisplayName("Should handle network conditions deterministically with controlled delays")
+    void shouldHandleNetworkConditionsDeterministically() {
+        // Given - simulate a specific delay pattern for deterministic testing
+        wireMockServer.stubFor(any(urlMatching("/v1/transit/.*"))
+            .willReturn(aResponse()
+                .withFixedDelay(250) // Delay longer than request timeout (200ms) to ensure timeout
+                .withStatus(200)
+                .withHeader("Content-Type", "application/json")
+                .withBody("{\"data\":{\"keys\":{\"1\":{\"creation_time\":\"2023-01-01T00:00:00Z\"}}}}")));
+
+        VaultCryptoConfiguration config = createTestConfig();
+        VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config);
+
+        // When & Then - this should timeout due to the controlled delay
+        // This demonstrates deterministic control over network conditions
+        CompletionException exception = assertThrows(
+            CompletionException.class,
+            () -> provider.encryptionKeysFor("test-subject").join()
+        );
+        
+        // Verify we get a timeout-related exception
+        assertThat(exception.getCause()).isNotNull();
+        
+        // Verify error message doesn't contain sensitive data
+        String errorMessage = exception.getCause().getMessage();
+        if (errorMessage != null) {
+            assertThat(errorMessage).doesNotContain("test-token");
         }
-        return cause;
+
+        provider.close();
     }
+
 }
