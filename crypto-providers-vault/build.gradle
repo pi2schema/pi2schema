@@ -15,4 +15,5 @@ dependencies {
     testImplementation libs.bundles.testing
     testImplementation libs.testcontainers.vault
     testImplementation libs.bundles.testcontainers
+    testImplementation libs.wiremock
 }
