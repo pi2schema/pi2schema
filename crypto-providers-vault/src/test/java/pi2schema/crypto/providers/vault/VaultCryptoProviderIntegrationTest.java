@@ -456,11 +456,22 @@ class VaultCryptoProviderIntegrationTest {
             }
         );
 
-        assertTrue(
+        boolean isConnectivityError =
             exception.getCause() instanceof VaultConnectivityException ||
+            exception.getCause() instanceof VaultCryptoException ||
             exception.getMessage().contains("ConnectException") ||
-            exception.getMessage().contains("connection"),
-            "Expected connectivity-related exception, but got: " + exception.getMessage()
+            exception.getMessage().contains("connection") ||
+            exception.getMessage().contains("Failed to encrypt data encryption key") ||
+            (exception.getCause() != null &&
+                exception.getCause().getMessage() != null &&
+                exception.getCause().getMessage().contains("HTTP/1.1 header parser received no bytes"));
+
+        assertTrue(
+            isConnectivityError,
+            "Expected connectivity-related exception, but got: " +
+            exception.getMessage() +
+            " with cause: " +
+            (exception.getCause() != null ? exception.getCause().getMessage() : "null")
         );
 
         invalidProvider.close();

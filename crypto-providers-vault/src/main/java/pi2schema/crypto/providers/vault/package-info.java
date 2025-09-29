@@ -85,7 +85,7 @@
  *   <li>HTTPS-only communication with Vault</li>
  * </ul>
  *
- * @since 1.0
+ * @since 0.4.0
  * @see pi2schema.crypto.providers.EncryptingMaterialsProvider
  * @see pi2schema.crypto.providers.DecryptingMaterialsProvider
  */

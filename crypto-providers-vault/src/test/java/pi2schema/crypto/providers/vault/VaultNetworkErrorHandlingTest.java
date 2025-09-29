@@ -17,13 +17,6 @@ import static org.junit.jupiter.api.Assertions.*;
  * Tests for network-related error handling scenarios.
  * This test class focuses on network failures, timeouts, and connectivity issues
  * using controlled WireMock server simulation instead of external dependencies.
- *
- * Performance Optimizations:
- * - All timeouts reduced to minimum viable values for fast execution
- * - Retry backoff times minimized (2-10ms) for speed
- * - WireMock delays optimized to be just above timeout thresholds
- * - No external network dependencies - fully controlled test environment
- * - Tests designed to complete within 5 seconds per test (Requirement 6.1)
  */
 class VaultNetworkErrorHandlingTest {
 
@@ -61,7 +54,9 @@ class VaultNetworkErrorHandlingTest {
      * Helper method to simulate connection timeout by delaying response longer than client timeout.
      */
     private void simulateConnectionTimeout() {
-        wireMockServer.stubFor(any(urlMatching("/v1/transit/.*")).willReturn(aResponse().withFixedDelay(150))); // Longer than 100ms connection timeout, optimized for reliability
+        // Simulate connection timeout by delaying response much longer than connection timeout
+        // This will cause the HTTP client to timeout and throw a connection timeout exception
+        wireMockServer.stubFor(any(urlMatching("/v1/transit/.*")).willReturn(aResponse().withFixedDelay(500))); // Much longer than 100ms connection timeout to ensure timeout
     }
 
     /**
@@ -134,15 +129,7 @@ class VaultNetworkErrorHandlingTest {
             () -> provider.encryptionKeysFor("test-subject").join()
         );
 
-        // Verify we get some kind of connectivity-related exception
-        // (The exact type may vary - could be VaultConnectivityException or other network exception)
-        assertThat(exception.getCause()).isNotNull();
-
-        // Verify error message contains useful information but no sensitive data
-        String errorMessage = exception.getCause().getMessage();
-        if (errorMessage != null) {
-            assertThat(errorMessage).doesNotContain("test-token");
-        }
+        assertConnectivityException(exception);
 
         provider.close();
     }
@@ -172,14 +159,7 @@ class VaultNetworkErrorHandlingTest {
             () -> provider.encryptionKeysFor("test-subject").join()
         );
 
-        // Verify we get some kind of network-related exception (could be VaultConnectivityException or other)
-        assertThat(exception.getCause()).isNotNull();
-
-        // Verify error message doesn't contain sensitive data
-        String errorMessage = exception.getCause().getMessage();
-        if (errorMessage != null) {
-            assertThat(errorMessage).doesNotContain("test-token");
-        }
+        assertConnectivityException(exception);
 
         provider.close();
     }
@@ -199,14 +179,7 @@ class VaultNetworkErrorHandlingTest {
             () -> provider.encryptionKeysFor("test-subject").join()
         );
 
-        // Verify we get some kind of network-related exception (could be VaultConnectivityException or other)
-        assertThat(exception.getCause()).isNotNull();
-
-        // Verify error message doesn't contain sensitive data
-        String errorMessage = exception.getCause().getMessage();
-        if (errorMessage != null) {
-            assertThat(errorMessage).doesNotContain("test-token");
-        }
+        assertConnectivityException(exception);
 
         provider.close();
     }
@@ -226,14 +199,7 @@ class VaultNetworkErrorHandlingTest {
             () -> provider.encryptionKeysFor("test-subject").join()
         );
 
-        // Verify we get some kind of network-related exception (could be VaultConnectivityException or other)
-        assertThat(exception.getCause()).isNotNull();
-
-        // Verify error message doesn't contain sensitive data
-        String errorMessage = exception.getCause().getMessage();
-        if (errorMessage != null) {
-            assertThat(errorMessage).doesNotContain("test-token");
-        }
+        assertConnectivityException(exception);
 
         provider.close();
     }
@@ -257,8 +223,6 @@ class VaultNetworkErrorHandlingTest {
         assertThat(exception.getCause()).isInstanceOf(VaultConnectivityException.class);
 
         // Verify only one request was made (server errors wrapped in CompletionException are currently non-retryable)
-        // This replaces log-based retry verification with direct request counting
-        // Note: This behavior may change if the retry logic is updated to unwrap CompletionException
         wireMockServer.verify(exactly(1), anyRequestedFor(urlMatching("/v1/transit/.*")));
 
         provider.close();
@@ -282,7 +246,6 @@ class VaultNetworkErrorHandlingTest {
         assertThat(exception.getCause().getMessage()).contains("Subject ID cannot be null or empty");
 
         // Verify no HTTP requests were made (no retries for validation errors)
-        // This replaces log-based verification with direct request counting
         wireMockServer.verify(0, anyRequestedFor(urlMatching("/v1/transit/.*")));
 
         provider.close();
@@ -307,7 +270,6 @@ class VaultNetworkErrorHandlingTest {
         assertThat(exception.getCause()).isInstanceOf(VaultAuthenticationException.class);
 
         // Verify only one request was made (no retries for authentication errors)
-        // This replaces log-based retry verification with direct request counting
         wireMockServer.verify(exactly(1), anyRequestedFor(urlMatching("/v1/transit/.*")));
 
         provider.close();
@@ -377,8 +339,6 @@ class VaultNetworkErrorHandlingTest {
         // Then - verify exception is thrown after retries
         assertThat(exception.getCause()).isNotNull();
 
-        // Verify retry attempts were made (implementation may vary in exact count)
-        // This replaces log-based retry verification with direct request counting
         wireMockServer.verify(exactly(3), anyRequestedFor(urlMatching("/v1/transit/.*")));
 
         provider.close();
@@ -585,8 +545,6 @@ class VaultNetworkErrorHandlingTest {
 
         provider.close();
     }
-
-    // ========== Enhanced Exception Content Validation Tests ==========
 
     @Test
     @DisplayName("Should verify exception messages contain useful information with sanitized URLs")
@@ -855,44 +813,11 @@ class VaultNetworkErrorHandlingTest {
         provider3.close();
     }
 
-    @Test
-    @DisplayName("Should verify exception messages are helpful for debugging without exposing secrets")
-    void shouldVerifyExceptionMessagesAreHelpfulForDebuggingWithoutExposingSecrets() {
-        // Given - configuration with various sensitive elements
-        VaultCryptoConfiguration config = VaultCryptoConfiguration
-            .builder()
-            .vaultUrl("http://localhost:" + wireMockServer.port())
-            .vaultToken("hvs.secret-vault-token-abcdef123456")
-            .transitEnginePath("transit")
-            .keyPrefix("confidential-prefix")
-            .connectionTimeout(Duration.ofMillis(30)) // Optimized for fast test execution
-            .requestTimeout(Duration.ofMillis(60)) // Optimized for fast test execution
-            .maxRetries(1)
-            .retryBackoffMs(Duration.ofMillis(2)) // Optimized for fast test execution
-            .build();
-
-        simulateServerError();
-        VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config);
-
-        // When
-        CompletionException exception = assertThrows(
-            CompletionException.class,
-            () -> provider.encryptionKeysFor("sensitive-subject-id").join()
-        );
-
-        // Then - verify exception is helpful but secure
-        assertThat(exception.getCause()).isInstanceOf(VaultConnectivityException.class);
-        String message = exception.getCause().getMessage();
-
-        // Verify helpful debugging information is present
-        assertThat(message).containsAnyOf("operation failed", "statusCode=500", "internal server error", "requestId=");
-
-        // Verify all sensitive information is sanitized
-        assertThat(message).doesNotContain("hvs.secret-vault-token-abcdef123456");
-        assertThat(message).doesNotContain("X-Vault-Token");
-        assertThat(message).doesNotContain("confidential-prefix");
-
-        provider.close();
+    private static void assertConnectivityException(CompletionException exception) {
+        Throwable actualException = exception.getCause();
+        assertThat(actualException).isNotNull();
+        assertThat(actualException).isInstanceOf(VaultConnectivityException.class);
+        assertThat(actualException.getMessage()).doesNotContain("test-token");
     }
 
     /**

@@ -332,10 +332,10 @@ class VaultAuthenticationErrorHandlingTest {
 
         // Then - verify sanitization occurred and was logged
         // The keyName should not contain the original special characters in the subject part
-        String subjectPart = keyName.substring(keyName.lastIndexOf("/") + 1);
+        String subjectPart = keyName.substring(keyName.lastIndexOf("_") + 1);
         assertFalse(subjectPart.contains("@"), "Subject part should not contain @");
         assertFalse(subjectPart.contains("#"), "Subject part should not contain #");
-        assertTrue(keyName.contains("test-prefix/subject/"), "Should contain the expected path structure");
+        assertTrue(keyName.contains("test-prefix_subject_"), "Should contain the expected path structure");
 
         // Verify sanitization was logged
         List<ILoggingEvent> debugLogs = logAppender.list
