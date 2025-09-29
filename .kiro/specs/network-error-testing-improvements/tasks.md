@@ -23,13 +23,13 @@
   - Verify non-retryable exceptions don't trigger retries
   - _Requirements: 4.1, 4.2, 4.3, 4.4_
 
-- [ ] 5. Enhance exception content validation
+- [x] 5. Enhance exception content validation
   - Verify exception messages contain useful information (sanitized URLs, timeouts)
   - Ensure sensitive information (tokens) is not exposed in exception messages
   - Test that original cause exceptions are properly chained
   - _Requirements: 3.1, 3.2, 3.3, 7.5_
 
-- [ ] 6. Optimize test execution time and reliability
+- [x] 6. Optimize test execution time and reliability
   - Replace long timeouts with short, controlled delays
   - Remove dependency on external network connectivity
   - Ensure tests complete within reasonable time limits
