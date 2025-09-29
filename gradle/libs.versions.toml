@@ -33,6 +33,7 @@ awaitility = "4.2.2"
 mockito = "5.8.0"
 testcontainers = "1.20.6"
 instancio-junit = "5.5.1"
+wiremock = "3.9.1"
 
 # Logging
 logback = "1.4.14"
@@ -83,6 +84,7 @@ testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter", ve
 testcontainers-redpanda = { module = "org.testcontainers:redpanda", version.ref = "testcontainers" }
 testcontainers-vault = { module = "org.testcontainers:vault", version.ref = "testcontainers" }
 instancio-junit = { module = "org.instancio:instancio-junit", version.ref = "instancio-junit" }
+wiremock = { module = "org.wiremock:wiremock", version.ref = "wiremock" }
 
 [plugins]
 release = { id = "net.researchgate.release", version.ref = "gradle-release" }
