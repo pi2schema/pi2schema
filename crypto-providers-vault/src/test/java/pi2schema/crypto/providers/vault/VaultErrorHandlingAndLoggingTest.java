@@ -185,8 +185,8 @@ class VaultErrorHandlingAndLoggingTest {
     }
 
     @Test
-    @DisplayName("Should handle connectivity failures with proper retry logging")
-    void shouldHandleConnectivityFailuresWithProperRetryLogging() {
+    @DisplayName("Should handle connectivity failures with proper error handling")
+    void shouldHandleConnectivityFailuresWithProperErrorHandling() {
         VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(invalidConfig);
 
         // When
@@ -200,26 +200,9 @@ class VaultErrorHandlingAndLoggingTest {
             }
         );
 
-        // Verify retry logging
-        List<ILoggingEvent> warnLogs = logAppender.list
-            .stream()
-            .filter(event -> event.getLevel() == Level.WARN)
-            .toList();
-
-        assertTrue(
-            warnLogs.stream().anyMatch(event -> event.getMessage().contains("retrying")),
-            "Should log retry attempts"
-        );
-
-        List<ILoggingEvent> errorLogs = logAppender.list
-            .stream()
-            .filter(event -> event.getLevel() == Level.ERROR)
-            .toList();
-
-        assertTrue(
-            errorLogs.stream().anyMatch(event -> event.getMessage().contains("Max retries exceeded")),
-            "Should log max retries exceeded"
-        );
+        // Note: Retry behavior verification is now handled in VaultNetworkErrorHandlingTest
+        // using WireMock request counting instead of log-based verification.
+        // This test focuses on error handling and logging of other aspects.
 
         provider.close();
     }

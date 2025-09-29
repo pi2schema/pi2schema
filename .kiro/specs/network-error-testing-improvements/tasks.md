@@ -17,7 +17,7 @@
   - Use WireMock's delay and error response features for deterministic testing
   - _Requirements: 2.1, 2.3, 2.4, 6.2_
 
-- [ ] 4. Add retry behavior verification through request counting
+- [x] 4. Add retry behavior verification through request counting
   - Use WireMock request verification to count actual retry attempts
   - Remove log-based retry verification and replace with request count assertions
   - Verify non-retryable exceptions don't trigger retries
