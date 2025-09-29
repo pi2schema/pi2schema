@@ -11,7 +11,7 @@
   - Verify VaultConnectivityException is thrown with appropriate cause exceptions
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
 
-- [ ] 3. Implement controlled network condition simulation
+- [x] 3. Implement controlled network condition simulation
   - Replace external URLs (httpbin.org, non-routable IPs) with WireMock stubs
   - Create simple helper methods for common network failures (timeout, refused, DNS)
   - Use WireMock's delay and error response features for deterministic testing
