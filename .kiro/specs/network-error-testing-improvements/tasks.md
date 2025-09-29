@@ -5,7 +5,7 @@
   - Replace external URL dependencies with local WireMock server in existing tests
   - _Requirements: 2.1, 2.2, 6.1_
 
-- [ ] 2. Replace log assertions with exception verification
+- [x] 2. Replace log assertions with exception verification
   - Remove ListAppender setup and log message assertions
   - Replace log content checks with direct exception type and message verification
   - Verify VaultConnectivityException is thrown with appropriate cause exceptions

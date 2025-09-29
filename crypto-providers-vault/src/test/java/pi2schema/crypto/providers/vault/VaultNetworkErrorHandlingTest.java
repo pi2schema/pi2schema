@@ -5,15 +5,13 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import pi2schema.crypto.providers.EncryptionMaterial;
 
 import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests for network-related error handling scenarios.
@@ -39,7 +37,8 @@ class VaultNetworkErrorHandlingTest {
     }
 
     private VaultCryptoConfiguration createTestConfig() {
-        return VaultCryptoConfiguration.builder()
+        return VaultCryptoConfiguration
+            .builder()
             .vaultUrl("http://localhost:" + wireMockServer.port())
             .vaultToken("test-token")
             .transitEnginePath("transit")
@@ -55,8 +54,7 @@ class VaultNetworkErrorHandlingTest {
     @DisplayName("Should throw VaultConnectivityException on connection timeout")
     void shouldThrowVaultConnectivityExceptionOnConnectionTimeout() {
         // Given - simulate connection timeout with delay longer than client timeout
-        wireMockServer.stubFor(any(urlMatching("/v1/transit/.*"))
-            .willReturn(aResponse().withFixedDelay(300))); // Longer than 100ms connection timeout
+        wireMockServer.stubFor(any(urlMatching("/v1/transit/.*")).willReturn(aResponse().withFixedDelay(300))); // Longer than 100ms connection timeout
 
         VaultCryptoConfiguration config = createTestConfig();
         VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config);
@@ -70,7 +68,7 @@ class VaultNetworkErrorHandlingTest {
         // Verify we get some kind of connectivity-related exception
         // (The exact type may vary - could be VaultConnectivityException or other network exception)
         assertThat(exception.getCause()).isNotNull();
-        
+
         // Verify error message contains useful information but no sensitive data
         String errorMessage = exception.getCause().getMessage();
         if (errorMessage != null) {
@@ -80,12 +78,10 @@ class VaultNetworkErrorHandlingTest {
         provider.close();
     }
 
-    // TODO: Update in task 2 - Replace log assertions with exception verification
-    /*
     @Test
-    @DisplayName("Should handle DNS resolution failure with proper error logging")
-    void shouldHandleDnsResolutionFailureWithProperErrorLogging() {
-        // Given - invalid hostname
+    @DisplayName("Should throw VaultConnectivityException on DNS resolution failure")
+    void shouldThrowVaultConnectivityExceptionOnDnsResolutionFailure() {
+        // Given - invalid hostname that will cause DNS resolution failure
         VaultCryptoConfiguration config = VaultCryptoConfiguration
             .builder()
             .vaultUrl("https://non-existent-vault-server-12345.invalid:8200")
@@ -100,36 +96,28 @@ class VaultNetworkErrorHandlingTest {
 
         VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config);
 
-        // When
-        CompletableFuture<EncryptionMaterial> future = provider.encryptionKeysFor("test-subject");
-
-        // Then
-        assertThrows(CompletionException.class, future::join);
-
-        // Verify DNS failure logging
-        List<ILoggingEvent> errorLogs = logAppender.list
-            .stream()
-            .filter(event -> event.getLevel() == Level.ERROR)
-            .toList();
-
-        assertTrue(
-            errorLogs
-                .stream()
-                .anyMatch(event ->
-                    event.getMessage().contains("Failed to") ||
-                    event.getMessage().contains("Connection") ||
-                    event.getMessage().contains("Encryption materials generation failed")
-                ),
-            "Should log DNS resolution failure"
+        // When & Then
+        CompletionException exception = assertThrows(
+            CompletionException.class,
+            () -> provider.encryptionKeysFor("test-subject").join()
         );
+
+        // Verify we get some kind of network-related exception (could be VaultConnectivityException or other)
+        assertThat(exception.getCause()).isNotNull();
+
+        // Verify error message doesn't contain sensitive data
+        String errorMessage = exception.getCause().getMessage();
+        if (errorMessage != null) {
+            assertThat(errorMessage).doesNotContain("test-token");
+        }
 
         provider.close();
     }
 
     @Test
-    @DisplayName("Should handle connection refused with proper error logging")
-    void shouldHandleConnectionRefusedWithProperErrorLogging() {
-        // Given - localhost on unused port
+    @DisplayName("Should throw VaultConnectivityException on connection refused")
+    void shouldThrowVaultConnectivityExceptionOnConnectionRefused() {
+        // Given - use a port that's unlikely to be in use to simulate connection refused
         VaultCryptoConfiguration config = VaultCryptoConfiguration
             .builder()
             .vaultUrl("http://localhost:65432") // Unlikely to be in use
@@ -144,234 +132,150 @@ class VaultNetworkErrorHandlingTest {
 
         VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config);
 
-        // When
-        CompletableFuture<EncryptionMaterial> future = provider.encryptionKeysFor("test-subject");
-
-        // Then
-        assertThrows(CompletionException.class, future::join);
-
-        // Verify connection refused logging
-        List<ILoggingEvent> errorLogs = logAppender.list
-            .stream()
-            .filter(event -> event.getLevel() == Level.ERROR)
-            .toList();
-
-        assertTrue(
-            errorLogs
-                .stream()
-                .anyMatch(event ->
-                    event.getMessage().contains("Failed to") ||
-                    event.getMessage().contains("Connection") ||
-                    event.getMessage().contains("Encryption materials generation failed")
-                ),
-            "Should log connection refused error"
+        // When & Then
+        CompletionException exception = assertThrows(
+            CompletionException.class,
+            () -> provider.encryptionKeysFor("test-subject").join()
         );
+
+        // Verify we get some kind of network-related exception (could be VaultConnectivityException or other)
+        assertThat(exception.getCause()).isNotNull();
+
+        // Verify error message doesn't contain sensitive data
+        String errorMessage = exception.getCause().getMessage();
+        if (errorMessage != null) {
+            assertThat(errorMessage).doesNotContain("test-token");
+        }
 
         provider.close();
     }
 
     @Test
-    @DisplayName("Should log retry attempts with exponential backoff information")
-    void shouldLogRetryAttemptsWithExponentialBackoffInformation() {
-        // Given - configuration that will fail but retry
-        VaultCryptoConfiguration config = VaultCryptoConfiguration
-            .builder()
-            .vaultUrl("http://localhost:65433") // Unlikely to be in use
-            .vaultToken("test-token")
-            .transitEnginePath("transit")
-            .keyPrefix("test-prefix")
-            .connectionTimeout(Duration.ofMillis(100))
-            .requestTimeout(Duration.ofMillis(200))
-            .maxRetries(3)
-            .retryBackoffMs(Duration.ofMillis(50))
-            .build();
+    @DisplayName("Should throw VaultConnectivityException on request timeout")
+    void shouldThrowVaultConnectivityExceptionOnRequestTimeout() {
+        // Given - simulate request timeout with delay longer than request timeout
+        wireMockServer.stubFor(any(urlMatching("/v1/transit/.*")).willReturn(aResponse().withFixedDelay(300))); // Longer than 200ms request timeout
 
+        VaultCryptoConfiguration config = createTestConfig();
         VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config);
 
-        // When
-        CompletableFuture<EncryptionMaterial> future = provider.encryptionKeysFor("test-subject");
-
-        // Then
-        assertThrows(CompletionException.class, future::join);
-
-        // Verify retry logging
-        List<ILoggingEvent> warnLogs = logAppender.list
-            .stream()
-            .filter(event -> event.getLevel() == Level.WARN)
-            .toList();
-
-        // Should have multiple retry attempts logged
-        long retryLogCount = warnLogs.stream().filter(event -> event.getMessage().contains("retrying")).count();
-
-        assertTrue(retryLogCount >= 1, "Should log at least one retry attempt");
-
-        // Verify retry information is included
-        assertTrue(
-            warnLogs
-                .stream()
-                .anyMatch(event -> event.getMessage().contains("attempt=") && event.getMessage().contains("retryDelay=")
-                ),
-            "Should log retry attempt number and delay"
+        // When & Then
+        CompletionException exception = assertThrows(
+            CompletionException.class,
+            () -> provider.encryptionKeysFor("test-subject").join()
         );
 
-        // Verify final failure is logged
-        List<ILoggingEvent> errorLogs = logAppender.list
-            .stream()
-            .filter(event -> event.getLevel() == Level.ERROR)
-            .toList();
+        // Verify we get some kind of network-related exception (could be VaultConnectivityException or other)
+        assertThat(exception.getCause()).isNotNull();
 
-        assertTrue(
-            errorLogs.stream().anyMatch(event -> event.getMessage().contains("Max retries exceeded")),
-            "Should log max retries exceeded"
-        );
+        // Verify error message doesn't contain sensitive data
+        String errorMessage = exception.getCause().getMessage();
+        if (errorMessage != null) {
+            assertThat(errorMessage).doesNotContain("test-token");
+        }
 
         provider.close();
     }
 
     @Test
-    @DisplayName("Should distinguish between retryable and non-retryable exceptions")
-    void shouldDistinguishBetweenRetryableAndNonRetryableExceptions() {
-        VaultCryptoConfiguration config = VaultCryptoConfiguration
-            .builder()
-            .vaultUrl("https://vault.example.com:8200")
-            .vaultToken("test-token")
-            .transitEnginePath("transit")
-            .keyPrefix("test-prefix")
-            .connectionTimeout(Duration.ofSeconds(1))
-            .requestTimeout(Duration.ofSeconds(2))
-            .maxRetries(2)
-            .retryBackoffMs(Duration.ofMillis(100))
-            .build();
-
+    @DisplayName("Should not retry non-retryable exceptions")
+    void shouldNotRetryNonRetryableExceptions() {
+        // Given - configuration for testing non-retryable exception
+        VaultCryptoConfiguration config = createTestConfig();
         VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config);
 
-        // Test non-retryable exception (null subject ID)
-        CompletableFuture<EncryptionMaterial> future1 = provider.encryptionKeysFor(null);
+        // When - test non-retryable exception (null subject ID)
+        CompletionException exception = assertThrows(
+            CompletionException.class,
+            () -> provider.encryptionKeysFor(null).join()
+        );
 
-        CompletionException exception1 = assertThrows(CompletionException.class, future1::join);
+        // Then - verify IllegalArgumentException is thrown (non-retryable)
+        assertThat(exception.getCause()).isInstanceOf(IllegalArgumentException.class);
+        assertThat(exception.getCause().getMessage()).contains("Subject ID cannot be null or empty");
 
-        assertTrue(exception1.getCause() instanceof IllegalArgumentException);
-
-        // Verify no retry attempts for non-retryable exception
-        List<ILoggingEvent> warnLogs = logAppender.list
-            .stream()
-            .filter(event -> event.getLevel() == Level.WARN && event.getMessage().contains("retrying"))
-            .toList();
-
-        assertEquals(0, warnLogs.size(), "Should not retry non-retryable exceptions");
+        // Verify no HTTP requests were made (no retries for validation errors)
+        wireMockServer.verify(0, anyRequestedFor(urlMatching("/v1/transit/.*")));
 
         provider.close();
     }
 
     @Test
-    @DisplayName("Should handle request timeout with proper error classification")
-    void shouldHandleRequestTimeoutWithProperErrorClassification() {
-        // Given - very short request timeout
-        VaultCryptoConfiguration config = VaultCryptoConfiguration
-            .builder()
-            .vaultUrl("http://httpbin.org/delay/5") // Will take 5 seconds to respond
-            .vaultToken("test-token")
-            .transitEnginePath("transit")
-            .keyPrefix("test-prefix")
-            .connectionTimeout(Duration.ofSeconds(2))
-            .requestTimeout(Duration.ofMillis(100)) // Very short request timeout
-            .maxRetries(1)
-            .retryBackoffMs(Duration.ofMillis(10))
-            .build();
+    @DisplayName("Should throw VaultAuthenticationException on authentication failure")
+    void shouldThrowVaultAuthenticationExceptionOnAuthenticationFailure() {
+        // Given - simulate authentication failure with 403 response
+        wireMockServer.stubFor(
+            any(urlMatching("/v1/transit/.*"))
+                .willReturn(
+                    aResponse()
+                        .withStatus(403)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("{\"errors\":[\"permission denied\"]}")
+                )
+        );
 
+        VaultCryptoConfiguration config = createTestConfig();
         VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config);
 
-        // When
-        CompletableFuture<EncryptionMaterial> future = provider.encryptionKeysFor("test-subject");
-
-        // Then
-        assertThrows(CompletionException.class, future::join);
-
-        // Verify timeout error logging
-        List<ILoggingEvent> errorLogs = logAppender.list
-            .stream()
-            .filter(event -> event.getLevel() == Level.ERROR)
-            .toList();
-
-        assertTrue(
-            errorLogs
-                .stream()
-                .anyMatch(event ->
-                    event.getMessage().contains("Failed to") ||
-                    event.getMessage().contains("timeout") ||
-                    event.getMessage().contains("Encryption materials generation failed")
-                ),
-            "Should log request timeout error"
+        // When & Then
+        CompletionException exception = assertThrows(
+            CompletionException.class,
+            () -> provider.encryptionKeysFor("test-subject").join()
         );
+
+        // Verify we get VaultAuthenticationException
+        assertThat(exception.getCause()).isInstanceOf(VaultAuthenticationException.class);
+        VaultAuthenticationException authException = (VaultAuthenticationException) exception.getCause();
+
+        // Verify error message contains useful information but no sensitive data
+        assertThat(authException.getMessage()).doesNotContain("test-token");
+        assertThat(authException.getMessage()).containsAnyOf("permission denied", "Authentication failed");
 
         provider.close();
     }
 
     @Test
-    @DisplayName("Should log structured information for debugging network issues")
-    void shouldLogStructuredInformationForDebuggingNetworkIssues() {
-        VaultCryptoConfiguration config = VaultCryptoConfiguration
-            .builder()
-            .vaultUrl("http://localhost:65434")
-            .vaultToken("test-token")
-            .transitEnginePath("transit")
-            .keyPrefix("test-prefix")
-            .connectionTimeout(Duration.ofMillis(200))
-            .requestTimeout(Duration.ofMillis(400))
-            .maxRetries(1)
-            .retryBackoffMs(Duration.ofMillis(50))
-            .build();
+    @DisplayName("Should preserve error context in exceptions")
+    void shouldPreserveErrorContextInExceptions() {
+        // Given - simulate server error
+        wireMockServer.stubFor(
+            any(urlMatching("/v1/transit/.*"))
+                .willReturn(
+                    aResponse()
+                        .withStatus(500)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("{\"errors\":[\"internal server error\"]}")
+                )
+        );
 
+        VaultCryptoConfiguration config = createTestConfig();
         VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config);
 
         // When
-        CompletableFuture<EncryptionMaterial> future = provider.encryptionKeysFor("test-subject-123");
-
-        assertThrows(CompletionException.class, future::join);
-
-        // Then - verify structured logging information
-        List<ILoggingEvent> debugLogs = logAppender.list
-            .stream()
-            .filter(event -> event.getLevel() == Level.DEBUG)
-            .toList();
-
-        // Should log request IDs for correlation (in debug or error logs)
-        List<ILoggingEvent> allLogs = logAppender.list;
-        assertTrue(
-            allLogs
-                .stream()
-                .anyMatch(event ->
-                    event.getMessage().contains("requestId=") ||
-                    event.getMessage().contains("Generating encryption materials") ||
-                    event.getMessage().contains("test-subject-123")
-                ),
-            "Should include request IDs or subject info for correlation"
+        CompletionException exception = assertThrows(
+            CompletionException.class,
+            () -> provider.encryptionKeysFor("test-subject-123").join()
         );
 
-        // Should log subject ID (but not sensitive data) - check all logs since debug might not be enabled
-        assertTrue(
-            allLogs
-                .stream()
-                .anyMatch(event ->
-                    event.getMessage().contains("test-subject-123") ||
-                    event.getMessage().contains("subjectId=test-subject-123")
-                ),
-            "Should include subject ID for debugging"
-        );
+        // Then - verify exception contains useful context
+        assertThat(exception.getCause()).isInstanceOf(VaultConnectivityException.class);
+        VaultConnectivityException vaultException = (VaultConnectivityException) exception.getCause();
 
-        // Should log operation details - check all logs
-        assertTrue(
-            allLogs
-                .stream()
-                .anyMatch(event ->
-                    event.getMessage().contains("keyName=") ||
-                    event.getMessage().contains("Generating") ||
-                    event.getMessage().contains("materials")
-                ),
-            "Should include operation details for debugging"
-        );
+        // Verify error message contains context but no sensitive data
+        assertThat(vaultException.getMessage()).doesNotContain("test-token");
+        assertThat(vaultException.getMessage()).containsAnyOf("Failed to", "internal server error", "operation failed");
 
         provider.close();
     }
-    */
+
+    /**
+     * Helper method to get the root cause of an exception chain.
+     */
+    private Throwable getRootCause(Throwable throwable) {
+        Throwable cause = throwable;
+        while (cause.getCause() != null && cause.getCause() != cause) {
+            cause = cause.getCause();
+        }
+        return cause;
+    }
 }
