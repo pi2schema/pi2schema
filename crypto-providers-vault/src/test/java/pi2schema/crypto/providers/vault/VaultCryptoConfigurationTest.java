@@ -8,33 +8,33 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.Duration;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.*;
 
 class VaultCryptoConfigurationTest {
 
     @Test
     @DisplayName("Should create configuration with valid parameters")
     void shouldCreateConfigurationWithValidParameters() {
-        VaultCryptoConfiguration config = VaultCryptoConfiguration
+        var config = VaultCryptoConfiguration
             .builder()
             .vaultUrl("https://vault.example.com")
             .vaultToken("test-token")
             .build();
 
-        assertEquals("https://vault.example.com", config.getVaultUrl());
-        assertEquals("test-token", config.getVaultToken());
-        assertEquals("transit", config.getTransitEnginePath());
-        assertEquals("pi2schema", config.getKeyPrefix());
-        assertEquals(Duration.ofSeconds(10), config.getConnectionTimeout());
-        assertEquals(Duration.ofSeconds(30), config.getRequestTimeout());
-        assertEquals(3, config.getMaxRetries());
-        assertEquals(Duration.ofMillis(100), config.getRetryBackoffMs());
+        assertThat(config.getVaultUrl()).isEqualTo("https://vault.example.com");
+        assertThat(config.getVaultToken()).isEqualTo("test-token");
+        assertThat(config.getTransitEnginePath()).isEqualTo("transit");
+        assertThat(config.getKeyPrefix()).isEqualTo("pi2schema");
+        assertThat(config.getConnectionTimeout()).isEqualTo(Duration.ofSeconds(10));
+        assertThat(config.getRequestTimeout()).isEqualTo(Duration.ofSeconds(30));
+        assertThat(config.getMaxRetries()).isEqualTo(3);
+        assertThat(config.getRetryBackoffMs()).isEqualTo(Duration.ofMillis(100));
     }
 
     @Test
     @DisplayName("Should create configuration with custom parameters")
     void shouldCreateConfigurationWithCustomParameters() {
-        VaultCryptoConfiguration config = VaultCryptoConfiguration
+        var config = VaultCryptoConfiguration
             .builder()
             .vaultUrl("https://custom-vault.example.com")
             .vaultToken("custom-token")
@@ -46,14 +46,14 @@ class VaultCryptoConfigurationTest {
             .retryBackoffMs(Duration.ofMillis(200))
             .build();
 
-        assertEquals("https://custom-vault.example.com", config.getVaultUrl());
-        assertEquals("custom-token", config.getVaultToken());
-        assertEquals("custom-transit", config.getTransitEnginePath());
-        assertEquals("custom-prefix", config.getKeyPrefix());
-        assertEquals(Duration.ofSeconds(5), config.getConnectionTimeout());
-        assertEquals(Duration.ofSeconds(60), config.getRequestTimeout());
-        assertEquals(5, config.getMaxRetries());
-        assertEquals(Duration.ofMillis(200), config.getRetryBackoffMs());
+        assertThat(config.getVaultUrl()).isEqualTo("https://custom-vault.example.com");
+        assertThat(config.getVaultToken()).isEqualTo("custom-token");
+        assertThat(config.getTransitEnginePath()).isEqualTo("custom-transit");
+        assertThat(config.getKeyPrefix()).isEqualTo("custom-prefix");
+        assertThat(config.getConnectionTimeout()).isEqualTo(Duration.ofSeconds(5));
+        assertThat(config.getRequestTimeout()).isEqualTo(Duration.ofSeconds(60));
+        assertThat(config.getMaxRetries()).isEqualTo(5);
+        assertThat(config.getRetryBackoffMs()).isEqualTo(Duration.ofMillis(200));
     }
 
     @ParameterizedTest
@@ -61,11 +61,11 @@ class VaultCryptoConfigurationTest {
     @ValueSource(strings = { "", "   " })
     @DisplayName("Should throw exception for invalid vault URL")
     void shouldThrowExceptionForInvalidVaultUrl(String invalidUrl) {
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
-            () -> VaultCryptoConfiguration.builder().vaultUrl(invalidUrl).vaultToken("test-token").build()
-        );
-        assertEquals("Vault URL cannot be null or empty", exception.getMessage());
+        assertThatThrownBy(() ->
+                VaultCryptoConfiguration.builder().vaultUrl(invalidUrl).vaultToken("test-token").build()
+            )
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("Vault URL cannot be null or empty");
     }
 
     @ParameterizedTest
@@ -73,16 +73,15 @@ class VaultCryptoConfigurationTest {
     @ValueSource(strings = { "", "   " })
     @DisplayName("Should throw exception for invalid vault token")
     void shouldThrowExceptionForInvalidVaultToken(String invalidToken) {
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
-            () ->
+        assertThatThrownBy(() ->
                 VaultCryptoConfiguration
                     .builder()
                     .vaultUrl("https://vault.example.com")
                     .vaultToken(invalidToken)
                     .build()
-        );
-        assertEquals("Vault token cannot be null or empty", exception.getMessage());
+            )
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("Vault token cannot be null or empty");
     }
 
     @ParameterizedTest
@@ -90,17 +89,16 @@ class VaultCryptoConfigurationTest {
     @ValueSource(strings = { "", "   " })
     @DisplayName("Should throw exception for invalid transit engine path")
     void shouldThrowExceptionForInvalidTransitEnginePath(String invalidPath) {
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
-            () ->
+        assertThatThrownBy(() ->
                 VaultCryptoConfiguration
                     .builder()
                     .vaultUrl("https://vault.example.com")
                     .vaultToken("test-token")
                     .transitEnginePath(invalidPath)
                     .build()
-        );
-        assertEquals("Transit engine path cannot be null or empty", exception.getMessage());
+            )
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("Transit engine path cannot be null or empty");
     }
 
     @ParameterizedTest
@@ -108,228 +106,220 @@ class VaultCryptoConfigurationTest {
     @ValueSource(strings = { "", "   " })
     @DisplayName("Should throw exception for invalid key prefix")
     void shouldThrowExceptionForInvalidKeyPrefix(String invalidPrefix) {
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
-            () ->
+        assertThatThrownBy(() ->
                 VaultCryptoConfiguration
                     .builder()
                     .vaultUrl("https://vault.example.com")
                     .vaultToken("test-token")
                     .keyPrefix(invalidPrefix)
                     .build()
-        );
-        assertEquals("Key prefix cannot be null or empty", exception.getMessage());
+            )
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("Key prefix cannot be null or empty");
     }
 
     @Test
     @DisplayName("Should throw exception for null connection timeout")
     void shouldThrowExceptionForNullConnectionTimeout() {
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
-            () ->
+        assertThatThrownBy(() ->
                 VaultCryptoConfiguration
                     .builder()
                     .vaultUrl("https://vault.example.com")
                     .vaultToken("test-token")
                     .connectionTimeout(null)
                     .build()
-        );
-        assertEquals("Connection timeout must be positive", exception.getMessage());
+            )
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("Connection timeout must be positive");
     }
 
     @Test
     @DisplayName("Should throw exception for zero connection timeout")
     void shouldThrowExceptionForZeroConnectionTimeout() {
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
-            () ->
+        assertThatThrownBy(() ->
                 VaultCryptoConfiguration
                     .builder()
                     .vaultUrl("https://vault.example.com")
                     .vaultToken("test-token")
                     .connectionTimeout(Duration.ZERO)
                     .build()
-        );
-        assertEquals("Connection timeout must be positive", exception.getMessage());
+            )
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("Connection timeout must be positive");
     }
 
     @Test
     @DisplayName("Should throw exception for negative connection timeout")
     void shouldThrowExceptionForNegativeConnectionTimeout() {
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
-            () ->
+        assertThatThrownBy(() ->
                 VaultCryptoConfiguration
                     .builder()
                     .vaultUrl("https://vault.example.com")
                     .vaultToken("test-token")
                     .connectionTimeout(Duration.ofSeconds(-1))
                     .build()
-        );
-        assertEquals("Connection timeout must be positive", exception.getMessage());
+            )
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("Connection timeout must be positive");
     }
 
     @Test
     @DisplayName("Should throw exception for null request timeout")
     void shouldThrowExceptionForNullRequestTimeout() {
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
-            () ->
+        assertThatThrownBy(() ->
                 VaultCryptoConfiguration
                     .builder()
                     .vaultUrl("https://vault.example.com")
                     .vaultToken("test-token")
                     .requestTimeout(null)
                     .build()
-        );
-        assertEquals("Request timeout must be positive", exception.getMessage());
+            )
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("Request timeout must be positive");
     }
 
     @Test
     @DisplayName("Should throw exception for zero request timeout")
     void shouldThrowExceptionForZeroRequestTimeout() {
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
-            () ->
+        assertThatThrownBy(() ->
                 VaultCryptoConfiguration
                     .builder()
                     .vaultUrl("https://vault.example.com")
                     .vaultToken("test-token")
                     .requestTimeout(Duration.ZERO)
                     .build()
-        );
-        assertEquals("Request timeout must be positive", exception.getMessage());
+            )
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("Request timeout must be positive");
     }
 
     @Test
     @DisplayName("Should throw exception for negative request timeout")
     void shouldThrowExceptionForNegativeRequestTimeout() {
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
-            () ->
+        assertThatThrownBy(() ->
                 VaultCryptoConfiguration
                     .builder()
                     .vaultUrl("https://vault.example.com")
                     .vaultToken("test-token")
                     .requestTimeout(Duration.ofSeconds(-1))
                     .build()
-        );
-        assertEquals("Request timeout must be positive", exception.getMessage());
+            )
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("Request timeout must be positive");
     }
 
     @Test
     @DisplayName("Should throw exception for negative max retries")
     void shouldThrowExceptionForNegativeMaxRetries() {
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
-            () ->
+        assertThatThrownBy(() ->
                 VaultCryptoConfiguration
                     .builder()
                     .vaultUrl("https://vault.example.com")
                     .vaultToken("test-token")
                     .maxRetries(-1)
                     .build()
-        );
-        assertEquals("Max retries cannot be negative", exception.getMessage());
+            )
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("Max retries cannot be negative");
     }
 
     @Test
     @DisplayName("Should allow zero max retries")
     void shouldAllowZeroMaxRetries() {
-        assertDoesNotThrow(() ->
-            VaultCryptoConfiguration
-                .builder()
-                .vaultUrl("https://vault.example.com")
-                .vaultToken("test-token")
-                .maxRetries(0)
-                .build()
-        );
+        assertThatCode(() ->
+                VaultCryptoConfiguration
+                    .builder()
+                    .vaultUrl("https://vault.example.com")
+                    .vaultToken("test-token")
+                    .maxRetries(0)
+                    .build()
+            )
+            .doesNotThrowAnyException();
     }
 
     @Test
     @DisplayName("Should throw exception for null retry backoff")
     void shouldThrowExceptionForNullRetryBackoff() {
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
-            () ->
+        assertThatThrownBy(() ->
                 VaultCryptoConfiguration
                     .builder()
                     .vaultUrl("https://vault.example.com")
                     .vaultToken("test-token")
                     .retryBackoffMs(null)
                     .build()
-        );
-        assertEquals("Retry backoff must be non-negative", exception.getMessage());
+            )
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("Retry backoff must be non-negative");
     }
 
     @Test
     @DisplayName("Should throw exception for negative retry backoff")
     void shouldThrowExceptionForNegativeRetryBackoff() {
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
-            () ->
+        assertThatThrownBy(() ->
                 VaultCryptoConfiguration
                     .builder()
                     .vaultUrl("https://vault.example.com")
                     .vaultToken("test-token")
                     .retryBackoffMs(Duration.ofMillis(-1))
                     .build()
-        );
-        assertEquals("Retry backoff must be non-negative", exception.getMessage());
+            )
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("Retry backoff must be non-negative");
     }
 
     @Test
     @DisplayName("Should allow zero retry backoff")
     void shouldAllowZeroRetryBackoff() {
-        assertDoesNotThrow(() ->
-            VaultCryptoConfiguration
-                .builder()
-                .vaultUrl("https://vault.example.com")
-                .vaultToken("test-token")
-                .retryBackoffMs(Duration.ZERO)
-                .build()
-        );
+        assertThatCode(() ->
+                VaultCryptoConfiguration
+                    .builder()
+                    .vaultUrl("https://vault.example.com")
+                    .vaultToken("test-token")
+                    .retryBackoffMs(Duration.ZERO)
+                    .build()
+            )
+            .doesNotThrowAnyException();
     }
 
     @Test
     @DisplayName("Should implement equals and hashCode correctly")
     void shouldImplementEqualsAndHashCodeCorrectly() {
-        VaultCryptoConfiguration config1 = VaultCryptoConfiguration
+        var config1 = VaultCryptoConfiguration
             .builder()
             .vaultUrl("https://vault.example.com")
             .vaultToken("test-token")
             .build();
 
-        VaultCryptoConfiguration config2 = VaultCryptoConfiguration
+        var config2 = VaultCryptoConfiguration
             .builder()
             .vaultUrl("https://vault.example.com")
             .vaultToken("test-token")
             .build();
 
-        VaultCryptoConfiguration config3 = VaultCryptoConfiguration
+        var config3 = VaultCryptoConfiguration
             .builder()
             .vaultUrl("https://different-vault.example.com")
             .vaultToken("test-token")
             .build();
 
-        assertEquals(config1, config2);
-        assertEquals(config1.hashCode(), config2.hashCode());
-        assertNotEquals(config1, config3);
-        assertNotEquals(config1.hashCode(), config3.hashCode());
+        assertThat(config1).isEqualTo(config2).hasSameHashCodeAs(config2);
+        assertThat(config1).isNotEqualTo(config3);
+        assertThat(config1.hashCode()).isNotEqualTo(config3.hashCode());
     }
 
     @Test
     @DisplayName("Should redact token in toString")
     void shouldRedactTokenInToString() {
-        VaultCryptoConfiguration config = VaultCryptoConfiguration
+        var config = VaultCryptoConfiguration
             .builder()
             .vaultUrl("https://vault.example.com")
             .vaultToken("secret-token")
             .build();
 
-        String toString = config.toString();
-        assertFalse(toString.contains("secret-token"));
-        assertTrue(toString.contains("[REDACTED]"));
-        assertTrue(toString.contains("https://vault.example.com"));
+        var toString = config.toString();
+        assertThat(toString)
+            .doesNotContain("secret-token")
+            .contains("[REDACTED]")
+            .contains("https://vault.example.com");
     }
 }

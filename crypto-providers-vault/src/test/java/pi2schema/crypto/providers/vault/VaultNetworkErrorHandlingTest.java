@@ -11,7 +11,7 @@ import java.util.concurrent.CompletionException;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Tests for network-related error handling scenarios.
@@ -120,18 +120,23 @@ class VaultNetworkErrorHandlingTest {
         // Given - simulate connection timeout
         simulateConnectionTimeout();
 
-        VaultCryptoConfiguration config = createTestConfig();
-        VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config);
-
-        // When & Then
-        CompletionException exception = assertThrows(
-            CompletionException.class,
-            () -> provider.encryptionKeysFor("test-subject").join()
-        );
-
-        assertConnectivityException(exception);
-
-        provider.close();
+        var config = VaultCryptoConfiguration
+            .builder()
+            .vaultUrl("http://localhost:" + wireMockServer.port())
+            .vaultToken("test-token")
+            .transitEnginePath("transit")
+            .keyPrefix("test-prefix")
+            .connectionTimeout(Duration.ofMillis(100))
+            .requestTimeout(Duration.ofMillis(100)) // Set to 100ms to be less than the 120ms delay
+            .maxRetries(0) // No retries for this test to make it faster and more deterministic
+            .retryBackoffMs(Duration.ofMillis(10))
+            .build();
+        try (var provider = new VaultEncryptingMaterialsProvider(config)) {
+            // When & Then
+            assertThatThrownBy(() -> provider.encryptionKeysFor("test-subject").join())
+                .isInstanceOf(CompletionException.class)
+                .satisfies(this::assertConnectivityException);
+        }
     }
 
     @Test
@@ -139,7 +144,7 @@ class VaultNetworkErrorHandlingTest {
     void shouldThrowVaultConnectivityExceptionOnDnsResolutionFailure() {
         // Given - simulate DNS resolution failure by using non-routable IP address
         // This avoids external network dependencies while still testing DNS-like failures
-        VaultCryptoConfiguration config = VaultCryptoConfiguration
+        var config = VaultCryptoConfiguration
             .builder()
             .vaultUrl("http://192.0.2.1:8200") // RFC 5737 test network - guaranteed non-routable
             .vaultToken("test-token")
@@ -151,37 +156,27 @@ class VaultNetworkErrorHandlingTest {
             .retryBackoffMs(Duration.ofMillis(10)) // Optimized for fast test execution
             .build();
 
-        VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config);
-
-        // When & Then
-        CompletionException exception = assertThrows(
-            CompletionException.class,
-            () -> provider.encryptionKeysFor("test-subject").join()
-        );
-
-        assertConnectivityException(exception);
-
-        provider.close();
+        try (var provider = new VaultEncryptingMaterialsProvider(config)) {
+            // When & Then
+            assertThatThrownBy(() -> provider.encryptionKeysFor("test-subject").join())
+                .isInstanceOf(CompletionException.class)
+                .satisfies(this::assertConnectivityException);
+        }
     }
 
     @Test
     @DisplayName("Should throw VaultConnectivityException on connection refused")
     void shouldThrowVaultConnectivityExceptionOnConnectionRefused() {
         // Given - create config first, then simulate connection refused by stopping WireMock server
-        VaultCryptoConfiguration config = createTestConfig();
+        var config = createTestConfig();
         simulateConnectionRefused();
 
-        VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config);
-
-        // When & Then
-        CompletionException exception = assertThrows(
-            CompletionException.class,
-            () -> provider.encryptionKeysFor("test-subject").join()
-        );
-
-        assertConnectivityException(exception);
-
-        provider.close();
+        try (var provider = new VaultEncryptingMaterialsProvider(config)) {
+            // When & Then
+            assertThatThrownBy(() -> provider.encryptionKeysFor("test-subject").join())
+                .isInstanceOf(CompletionException.class)
+                .satisfies(this::assertConnectivityException);
+        }
     }
 
     @Test
@@ -190,18 +185,13 @@ class VaultNetworkErrorHandlingTest {
         // Given - simulate request timeout
         simulateRequestTimeout();
 
-        VaultCryptoConfiguration config = createTestConfig();
-        VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config);
-
-        // When & Then
-        CompletionException exception = assertThrows(
-            CompletionException.class,
-            () -> provider.encryptionKeysFor("test-subject").join()
-        );
-
-        assertConnectivityException(exception);
-
-        provider.close();
+        var config = createTestConfig();
+        try (var provider = new VaultEncryptingMaterialsProvider(config)) {
+            // When & Then
+            assertThatThrownBy(() -> provider.encryptionKeysFor("test-subject").join())
+                .isInstanceOf(CompletionException.class)
+                .satisfies(this::assertConnectivityException);
+        }
     }
 
     @Test
@@ -210,45 +200,34 @@ class VaultNetworkErrorHandlingTest {
         // Given - simulate server error (currently non-retryable due to CompletionException wrapping)
         simulateServerError();
 
-        VaultCryptoConfiguration config = createTestConfig(); // maxRetries = 2
-        VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config);
+        var config = createTestConfig(); // maxRetries = 2
+        try (var provider = new VaultEncryptingMaterialsProvider(config)) {
+            // When & Then
+            assertThatThrownBy(() -> provider.encryptionKeysFor("test-subject").join())
+                .isInstanceOf(CompletionException.class)
+                .hasCauseInstanceOf(VaultConnectivityException.class);
 
-        // When
-        CompletionException exception = assertThrows(
-            CompletionException.class,
-            () -> provider.encryptionKeysFor("test-subject").join()
-        );
-
-        // Then - verify VaultConnectivityException is thrown
-        assertThat(exception.getCause()).isInstanceOf(VaultConnectivityException.class);
-
-        // Verify only one request was made (server errors wrapped in CompletionException are currently non-retryable)
-        wireMockServer.verify(exactly(1), anyRequestedFor(urlMatching("/v1/transit/.*")));
-
-        provider.close();
+            // Verify only one request was made (server errors wrapped in CompletionException are currently non-retryable)
+            wireMockServer.verify(exactly(1), anyRequestedFor(urlMatching("/v1/transit/.*")));
+        }
     }
 
     @Test
     @DisplayName("Should not retry non-retryable exceptions")
     void shouldNotRetryNonRetryableExceptions() {
         // Given - configuration for testing non-retryable exception
-        VaultCryptoConfiguration config = createTestConfig();
-        VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config);
+        var config = createTestConfig();
+        try (var provider = new VaultEncryptingMaterialsProvider(config)) {
+            // When & Then - test non-retryable exception (null subject ID)
+            assertThatThrownBy(() -> provider.encryptionKeysFor(null).join())
+                .isInstanceOf(CompletionException.class)
+                .cause()
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Subject ID cannot be null or empty");
 
-        // When - test non-retryable exception (null subject ID)
-        CompletionException exception = assertThrows(
-            CompletionException.class,
-            () -> provider.encryptionKeysFor(null).join()
-        );
-
-        // Then - verify IllegalArgumentException is thrown (non-retryable)
-        assertThat(exception.getCause()).isInstanceOf(IllegalArgumentException.class);
-        assertThat(exception.getCause().getMessage()).contains("Subject ID cannot be null or empty");
-
-        // Verify no HTTP requests were made (no retries for validation errors)
-        wireMockServer.verify(0, anyRequestedFor(urlMatching("/v1/transit/.*")));
-
-        provider.close();
+            // Verify no HTTP requests were made (no retries for validation errors)
+            wireMockServer.verify(0, anyRequestedFor(urlMatching("/v1/transit/.*")));
+        }
     }
 
     @Test
@@ -257,22 +236,16 @@ class VaultNetworkErrorHandlingTest {
         // Given - simulate authentication failure (non-retryable)
         simulateAuthenticationFailure();
 
-        VaultCryptoConfiguration config = createTestConfig();
-        VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config);
+        var config = createTestConfig();
+        try (var provider = new VaultEncryptingMaterialsProvider(config)) {
+            // When & Then
+            assertThatThrownBy(() -> provider.encryptionKeysFor("test-subject").join())
+                .isInstanceOf(CompletionException.class)
+                .hasCauseInstanceOf(VaultAuthenticationException.class);
 
-        // When
-        CompletionException exception = assertThrows(
-            CompletionException.class,
-            () -> provider.encryptionKeysFor("test-subject").join()
-        );
-
-        // Then - verify VaultAuthenticationException is thrown
-        assertThat(exception.getCause()).isInstanceOf(VaultAuthenticationException.class);
-
-        // Verify only one request was made (no retries for authentication errors)
-        wireMockServer.verify(exactly(1), anyRequestedFor(urlMatching("/v1/transit/.*")));
-
-        provider.close();
+            // Verify only one request was made (no retries for authentication errors)
+            wireMockServer.verify(exactly(1), anyRequestedFor(urlMatching("/v1/transit/.*")));
+        }
     }
 
     @Test
@@ -281,7 +254,7 @@ class VaultNetworkErrorHandlingTest {
         // Given - simulate connection timeout (retryable)
         simulateConnectionTimeout();
 
-        VaultCryptoConfiguration config = VaultCryptoConfiguration
+        var config = VaultCryptoConfiguration
             .builder()
             .vaultUrl("http://localhost:" + wireMockServer.port())
             .vaultToken("test-token")
@@ -293,21 +266,15 @@ class VaultNetworkErrorHandlingTest {
             .retryBackoffMs(Duration.ofMillis(10)) // Optimized for fast test execution
             .build();
 
-        VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config);
+        try (var provider = new VaultEncryptingMaterialsProvider(config)) {
+            // When & Then
+            assertThatThrownBy(() -> provider.encryptionKeysFor("test-subject").join())
+                .isInstanceOf(CompletionException.class)
+                .hasCauseInstanceOf(VaultConnectivityException.class);
 
-        // When
-        CompletionException exception = assertThrows(
-            CompletionException.class,
-            () -> provider.encryptionKeysFor("test-subject").join()
-        );
-
-        // Then - verify connectivity exception is thrown after retries
-        assertThat(exception.getCause()).isNotNull();
-
-        // Verify the correct number of retry attempts were made (maxRetries + 1 = 2 total attempts)
-        wireMockServer.verify(exactly(2), anyRequestedFor(urlMatching("/v1/transit/.*")));
-
-        provider.close();
+            // Verify the correct number of retry attempts were made (maxRetries + 1 = 2 total attempts)
+            wireMockServer.verify(exactly(2), anyRequestedFor(urlMatching("/v1/transit/.*")));
+        }
     }
 
     @Test
@@ -316,7 +283,7 @@ class VaultNetworkErrorHandlingTest {
         // Given - simulate connection timeout (retryable exception)
         simulateConnectionTimeout();
 
-        VaultCryptoConfiguration config = VaultCryptoConfiguration
+        var config = VaultCryptoConfiguration
             .builder()
             .vaultUrl("http://localhost:" + wireMockServer.port())
             .vaultToken("test-token")
@@ -328,30 +295,23 @@ class VaultNetworkErrorHandlingTest {
             .retryBackoffMs(Duration.ofMillis(10)) // Optimized for fast test execution
             .build();
 
-        VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config);
+        try (var provider = new VaultEncryptingMaterialsProvider(config)) {
+            // When & Then
+            assertThatThrownBy(() -> provider.encryptionKeysFor("test-subject").join())
+                .isInstanceOf(CompletionException.class)
+                .hasCauseInstanceOf(VaultConnectivityException.class);
 
-        // When
-        CompletionException exception = assertThrows(
-            CompletionException.class,
-            () -> provider.encryptionKeysFor("test-subject").join()
-        );
-
-        // Then - verify exception is thrown after retries
-        assertThat(exception.getCause()).isNotNull();
-
-        wireMockServer.verify(exactly(3), anyRequestedFor(urlMatching("/v1/transit/.*")));
-
-        provider.close();
+            wireMockServer.verify(exactly(3), anyRequestedFor(urlMatching("/v1/transit/.*")));
+        }
     }
 
     @Test
     @DisplayName("Should verify each retry attempt is observable through request counting")
     void shouldVerifyEachRetryAttemptIsObservable() {
         // Given - simulate persistent connection timeout (retryable exception)
-        // This test verifies that retry attempts are observable through WireMock request counting
         simulateConnectionTimeout();
 
-        VaultCryptoConfiguration config = VaultCryptoConfiguration
+        var config = VaultCryptoConfiguration
             .builder()
             .vaultUrl("http://localhost:" + wireMockServer.port())
             .vaultToken("test-token")
@@ -363,22 +323,15 @@ class VaultNetworkErrorHandlingTest {
             .retryBackoffMs(Duration.ofMillis(5)) // Optimized for fast test execution
             .build();
 
-        VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config);
+        try (var provider = new VaultEncryptingMaterialsProvider(config)) {
+            // When & Then - this should fail after exhausting retries
+            assertThatThrownBy(() -> provider.encryptionKeysFor("test-subject").join())
+                .isInstanceOf(CompletionException.class)
+                .hasCauseInstanceOf(VaultConnectivityException.class);
 
-        // When - this should fail after exhausting retries
-        CompletionException exception = assertThrows(
-            CompletionException.class,
-            () -> provider.encryptionKeysFor("test-subject").join()
-        );
-
-        // Then - verify exception is thrown after retries
-        assertThat(exception.getCause()).isNotNull();
-
-        // Verify retry attempts were made (implementation may vary in exact count)
-        // This replaces log-based retry verification with direct request counting
-        wireMockServer.verify(exactly(3), anyRequestedFor(urlMatching("/v1/transit/.*")));
-
-        provider.close();
+            // Verify retry attempts were made (implementation may vary in exact count)
+            wireMockServer.verify(exactly(3), anyRequestedFor(urlMatching("/v1/transit/.*")));
+        }
     }
 
     @Test
@@ -387,7 +340,7 @@ class VaultNetworkErrorHandlingTest {
         // Given - simulate persistent connection timeout (retryable exception)
         simulateConnectionTimeout();
 
-        VaultCryptoConfiguration config = VaultCryptoConfiguration
+        var config = VaultCryptoConfiguration
             .builder()
             .vaultUrl("http://localhost:" + wireMockServer.port())
             .vaultToken("test-token")
@@ -399,22 +352,15 @@ class VaultNetworkErrorHandlingTest {
             .retryBackoffMs(Duration.ofMillis(5)) // Optimized for fast test execution
             .build();
 
-        VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config);
+        try (var provider = new VaultEncryptingMaterialsProvider(config)) {
+            // When & Then
+            assertThatThrownBy(() -> provider.encryptionKeysFor("test-subject").join())
+                .isInstanceOf(CompletionException.class)
+                .hasCauseInstanceOf(VaultConnectivityException.class);
 
-        // When
-        CompletionException exception = assertThrows(
-            CompletionException.class,
-            () -> provider.encryptionKeysFor("test-subject").join()
-        );
-
-        // Then - verify exception indicates retry exhaustion
-        assertThat(exception.getCause()).isNotNull();
-
-        // Verify exactly maxRetries + 1 attempts were made (3 total attempts)
-        // This replaces log-based retry verification with direct request counting
-        wireMockServer.verify(exactly(3), anyRequestedFor(urlMatching("/v1/transit/.*")));
-
-        provider.close();
+            // Verify exactly maxRetries + 1 attempts were made (3 total attempts)
+            wireMockServer.verify(exactly(3), anyRequestedFor(urlMatching("/v1/transit/.*")));
+        }
     }
 
     @Test
@@ -423,19 +369,15 @@ class VaultNetworkErrorHandlingTest {
         // Test 1: Retryable connection timeout should trigger retries
         simulateConnectionTimeout();
 
-        VaultCryptoConfiguration config = createTestConfig(); // maxRetries = 2
-        VaultEncryptingMaterialsProvider provider1 = new VaultEncryptingMaterialsProvider(config);
+        var config = createTestConfig(); // maxRetries = 2
+        try (var provider1 = new VaultEncryptingMaterialsProvider(config)) {
+            assertThatThrownBy(() -> provider1.encryptionKeysFor("test-subject-1").join())
+                .isInstanceOf(CompletionException.class)
+                .hasCauseInstanceOf(VaultConnectivityException.class);
 
-        CompletionException retryableException = assertThrows(
-            CompletionException.class,
-            () -> provider1.encryptionKeysFor("test-subject-1").join()
-        );
-
-        // Verify retryable exception triggered retries (3 total attempts)
-        wireMockServer.verify(exactly(3), anyRequestedFor(urlMatching("/v1/transit/.*")));
-        assertThat(retryableException.getCause()).isNotNull();
-
-        provider1.close();
+            // Verify retryable exception triggered retries (3 total attempts)
+            wireMockServer.verify(exactly(3), anyRequestedFor(urlMatching("/v1/transit/.*")));
+        }
 
         // Reset WireMock for next test
         wireMockServer.resetRequests();
@@ -443,18 +385,14 @@ class VaultNetworkErrorHandlingTest {
         // Test 2: Non-retryable authentication error should not trigger retries
         simulateAuthenticationFailure();
 
-        VaultEncryptingMaterialsProvider provider2 = new VaultEncryptingMaterialsProvider(config);
+        try (var provider2 = new VaultEncryptingMaterialsProvider(config)) {
+            assertThatThrownBy(() -> provider2.encryptionKeysFor("test-subject-2").join())
+                .isInstanceOf(CompletionException.class)
+                .hasCauseInstanceOf(VaultAuthenticationException.class);
 
-        CompletionException nonRetryableException = assertThrows(
-            CompletionException.class,
-            () -> provider2.encryptionKeysFor("test-subject-2").join()
-        );
-
-        // Verify non-retryable exception did not trigger retries (1 attempt only)
-        wireMockServer.verify(exactly(1), anyRequestedFor(urlMatching("/v1/transit/.*")));
-        assertThat(nonRetryableException.getCause()).isInstanceOf(VaultAuthenticationException.class);
-
-        provider2.close();
+            // Verify non-retryable exception did not trigger retries (1 attempt only)
+            wireMockServer.verify(exactly(1), anyRequestedFor(urlMatching("/v1/transit/.*")));
+        }
     }
 
     @Test
@@ -463,24 +401,18 @@ class VaultNetworkErrorHandlingTest {
         // Given - simulate authentication failure
         simulateAuthenticationFailure();
 
-        VaultCryptoConfiguration config = createTestConfig();
-        VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config);
-
-        // When & Then
-        CompletionException exception = assertThrows(
-            CompletionException.class,
-            () -> provider.encryptionKeysFor("test-subject").join()
-        );
-
-        // Verify we get VaultAuthenticationException
-        assertThat(exception.getCause()).isInstanceOf(VaultAuthenticationException.class);
-        VaultAuthenticationException authException = (VaultAuthenticationException) exception.getCause();
-
-        // Verify error message contains useful information but no sensitive data
-        assertThat(authException.getMessage()).doesNotContain("test-token");
-        assertThat(authException.getMessage()).containsAnyOf("permission denied", "Authentication failed");
-
-        provider.close();
+        var config = createTestConfig();
+        try (var provider = new VaultEncryptingMaterialsProvider(config)) {
+            // When & Then
+            assertThatThrownBy(() -> provider.encryptionKeysFor("test-subject").join())
+                .isInstanceOf(CompletionException.class)
+                .hasCauseInstanceOf(VaultAuthenticationException.class)
+                .satisfies(ex -> {
+                    var authException = (VaultAuthenticationException) ex.getCause();
+                    assertThat(authException.getMessage()).doesNotContain("test-token");
+                    assertThat(authException.getMessage()).containsAnyOf("permission denied", "Authentication failed");
+                });
+        }
     }
 
     @Test
@@ -489,24 +421,19 @@ class VaultNetworkErrorHandlingTest {
         // Given - simulate server error
         simulateServerError();
 
-        VaultCryptoConfiguration config = createTestConfig();
-        VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config);
-
-        // When
-        CompletionException exception = assertThrows(
-            CompletionException.class,
-            () -> provider.encryptionKeysFor("test-subject-123").join()
-        );
-
-        // Then - verify exception contains useful context
-        assertThat(exception.getCause()).isInstanceOf(VaultConnectivityException.class);
-        VaultConnectivityException vaultException = (VaultConnectivityException) exception.getCause();
-
-        // Verify error message contains context but no sensitive data
-        assertThat(vaultException.getMessage()).doesNotContain("test-token");
-        assertThat(vaultException.getMessage()).containsAnyOf("Failed to", "internal server error", "operation failed");
-
-        provider.close();
+        var config = createTestConfig();
+        try (var provider = new VaultEncryptingMaterialsProvider(config)) {
+            // When & Then
+            assertThatThrownBy(() -> provider.encryptionKeysFor("test-subject-123").join())
+                .isInstanceOf(CompletionException.class)
+                .hasCauseInstanceOf(VaultConnectivityException.class)
+                .satisfies(ex -> {
+                    var vaultException = (VaultConnectivityException) ex.getCause();
+                    assertThat(vaultException.getMessage()).doesNotContain("test-token");
+                    assertThat(vaultException.getMessage())
+                        .containsAnyOf("Failed to", "internal server error", "operation failed");
+                });
+        }
     }
 
     @Test
@@ -517,33 +444,26 @@ class VaultNetworkErrorHandlingTest {
             any(urlMatching("/v1/transit/.*"))
                 .willReturn(
                     aResponse()
-                        .withFixedDelay(120) // Delay longer than request timeout (100ms) to ensure timeout, optimized for speed
+                        .withFixedDelay(300) // Increased delay to make timeout more reliable
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody("{\"data\":{\"keys\":{\"1\":{\"creation_time\":\"2023-01-01T00:00:00Z\"}}}}")
                 )
         );
 
-        VaultCryptoConfiguration config = createTestConfig();
-        VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config);
-
-        // When & Then - this should timeout due to the controlled delay
-        // This demonstrates deterministic control over network conditions
-        CompletionException exception = assertThrows(
-            CompletionException.class,
-            () -> provider.encryptionKeysFor("test-subject").join()
-        );
-
-        // Verify we get a timeout-related exception
-        assertThat(exception.getCause()).isNotNull();
-
-        // Verify error message doesn't contain sensitive data
-        String errorMessage = exception.getCause().getMessage();
-        if (errorMessage != null) {
-            assertThat(errorMessage).doesNotContain("test-token");
+        var config = createTestConfig();
+        try (var provider = new VaultEncryptingMaterialsProvider(config)) {
+            // When & Then - this should timeout due to the controlled delay
+            assertThatThrownBy(() -> provider.encryptionKeysFor("test-subject").join())
+                .isInstanceOf(CompletionException.class)
+                .hasCauseInstanceOf(VaultConnectivityException.class)
+                .satisfies(ex -> {
+                    var causeMessage = ex.getCause().getMessage();
+                    if (causeMessage != null) {
+                        assertThat(causeMessage).doesNotContain("test-token");
+                    }
+                });
         }
-
-        provider.close();
     }
 
     @Test
@@ -552,33 +472,21 @@ class VaultNetworkErrorHandlingTest {
         // Given - simulate server error to get detailed exception
         simulateServerError();
 
-        VaultCryptoConfiguration config = createTestConfig();
-        VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config);
-
-        // When
-        CompletionException exception = assertThrows(
-            CompletionException.class,
-            () -> provider.encryptionKeysFor("test-subject-123").join()
-        );
-
-        // Then - verify exception contains useful information
-        assertThat(exception.getCause()).isInstanceOf(VaultConnectivityException.class);
-        VaultConnectivityException vaultException = (VaultConnectivityException) exception.getCause();
-
-        // Verify exception message contains useful debugging information
-        String message = vaultException.getMessage();
-        assertThat(message).isNotNull();
-        assertThat(message)
-            .containsAnyOf("operation failed", "statusCode=500", "internal server error", "Vault errors");
-
-        // Verify URL information is present but sanitized (no sensitive data)
-        assertThat(message).doesNotContain("test-token");
-        assertThat(message).doesNotContain("X-Vault-Token");
-
-        // Verify operation context is included
-        assertThat(message).containsAnyOf("encrypt", "operation", "failed");
-
-        provider.close();
+        var config = createTestConfig();
+        try (var provider = new VaultEncryptingMaterialsProvider(config)) {
+            // When & Then
+            assertThatThrownBy(() -> provider.encryptionKeysFor("test-subject-123").join())
+                .isInstanceOf(CompletionException.class)
+                .hasCauseInstanceOf(VaultConnectivityException.class)
+                .satisfies(ex -> {
+                    var message = ex.getCause().getMessage();
+                    assertThat(message).isNotNull();
+                    assertThat(message)
+                        .containsAnyOf("operation failed", "statusCode=500", "internal server error", "Vault errors");
+                    assertThat(message).doesNotContain("test-token", "X-Vault-Token");
+                    assertThat(message).containsAnyOf("encrypt", "operation", "failed");
+                });
+        }
     }
 
     @Test
@@ -587,7 +495,7 @@ class VaultNetworkErrorHandlingTest {
         // Given - simulate connection timeout with specific configuration
         simulateConnectionTimeout();
 
-        VaultCryptoConfiguration config = VaultCryptoConfiguration
+        var config = VaultCryptoConfiguration
             .builder()
             .vaultUrl("http://localhost:" + wireMockServer.port())
             .vaultToken("sensitive-token-12345")
@@ -599,39 +507,22 @@ class VaultNetworkErrorHandlingTest {
             .retryBackoffMs(Duration.ofMillis(5)) // Optimized for fast test execution
             .build();
 
-        VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config);
-
-        // When
-        CompletionException exception = assertThrows(
-            CompletionException.class,
-            () -> provider.encryptionKeysFor("test-subject").join()
-        );
-
-        // Then - verify timeout context is preserved in exception
-        assertThat(exception.getCause()).isNotNull();
-
-        // Verify sensitive token is not exposed in any exception message
-        String rootMessage = exception.getMessage();
-        String causeMessage = exception.getCause().getMessage();
-
-        if (rootMessage != null) {
-            assertThat(rootMessage).doesNotContain("sensitive-token-12345");
-            assertThat(rootMessage).doesNotContain("X-Vault-Token");
+        try (var provider = new VaultEncryptingMaterialsProvider(config)) {
+            // When & Then
+            assertThatThrownBy(() -> provider.encryptionKeysFor("test-subject").join())
+                .isInstanceOf(CompletionException.class)
+                .hasCauseInstanceOf(VaultConnectivityException.class)
+                .satisfies(ex -> {
+                    verifyNoSensitiveDataInException(ex, "sensitive-token-12345");
+                });
         }
-
-        if (causeMessage != null) {
-            assertThat(causeMessage).doesNotContain("sensitive-token-12345");
-            assertThat(causeMessage).doesNotContain("X-Vault-Token");
-        }
-
-        provider.close();
     }
 
     @Test
     @DisplayName("Should ensure sensitive information is not exposed in exception messages")
     void shouldEnsureSensitiveInformationIsNotExposedInExceptionMessages() {
         // Given - configuration with sensitive data
-        VaultCryptoConfiguration config = VaultCryptoConfiguration
+        var config = VaultCryptoConfiguration
             .builder()
             .vaultUrl("http://localhost:" + wireMockServer.port())
             .vaultToken("hvs.CAESIJ1234567890abcdef-very-sensitive-token")
@@ -643,54 +534,41 @@ class VaultNetworkErrorHandlingTest {
             .retryBackoffMs(Duration.ofMillis(2)) // Optimized for fast test execution
             .build();
 
-        // Test multiple error scenarios to ensure token sanitization
-
         // Test 1: Authentication failure
         simulateAuthenticationFailure();
-        VaultEncryptingMaterialsProvider provider1 = new VaultEncryptingMaterialsProvider(config);
-
-        CompletionException authException = assertThrows(
-            CompletionException.class,
-            () -> provider1.encryptionKeysFor("test-subject").join()
-        );
-
-        // Verify no sensitive data in authentication exception
-        assertThat(authException.getCause()).isInstanceOf(VaultAuthenticationException.class);
-        verifyNoSensitiveDataInException(authException, "hvs.CAESIJ1234567890abcdef-very-sensitive-token");
-        provider1.close();
+        try (var provider1 = new VaultEncryptingMaterialsProvider(config)) {
+            assertThatThrownBy(() -> provider1.encryptionKeysFor("test-subject").join())
+                .isInstanceOf(CompletionException.class)
+                .hasCauseInstanceOf(VaultAuthenticationException.class)
+                .satisfies(ex -> verifyNoSensitiveDataInException(ex, "hvs.CAESIJ1234567890abcdef-very-sensitive-token")
+                );
+        }
 
         // Reset for next test
         wireMockServer.resetAll();
 
         // Test 2: Server error
         simulateServerError();
-        VaultEncryptingMaterialsProvider provider2 = new VaultEncryptingMaterialsProvider(config);
-
-        CompletionException serverException = assertThrows(
-            CompletionException.class,
-            () -> provider2.encryptionKeysFor("test-subject").join()
-        );
-
-        // Verify no sensitive data in server error exception
-        assertThat(serverException.getCause()).isInstanceOf(VaultConnectivityException.class);
-        verifyNoSensitiveDataInException(serverException, "hvs.CAESIJ1234567890abcdef-very-sensitive-token");
-        provider2.close();
+        try (var provider2 = new VaultEncryptingMaterialsProvider(config)) {
+            assertThatThrownBy(() -> provider2.encryptionKeysFor("test-subject").join())
+                .isInstanceOf(CompletionException.class)
+                .hasCauseInstanceOf(VaultConnectivityException.class)
+                .satisfies(ex -> verifyNoSensitiveDataInException(ex, "hvs.CAESIJ1234567890abcdef-very-sensitive-token")
+                );
+        }
 
         // Reset for next test
         wireMockServer.resetAll();
 
         // Test 3: Connection timeout
         simulateConnectionTimeout();
-        VaultEncryptingMaterialsProvider provider3 = new VaultEncryptingMaterialsProvider(config);
-
-        CompletionException timeoutException = assertThrows(
-            CompletionException.class,
-            () -> provider3.encryptionKeysFor("test-subject").join()
-        );
-
-        // Verify no sensitive data in timeout exception
-        verifyNoSensitiveDataInException(timeoutException, "hvs.CAESIJ1234567890abcdef-very-sensitive-token");
-        provider3.close();
+        try (var provider3 = new VaultEncryptingMaterialsProvider(config)) {
+            assertThatThrownBy(() -> provider3.encryptionKeysFor("test-subject").join())
+                .isInstanceOf(CompletionException.class)
+                .hasCauseInstanceOf(VaultConnectivityException.class)
+                .satisfies(ex -> verifyNoSensitiveDataInException(ex, "hvs.CAESIJ1234567890abcdef-very-sensitive-token")
+                );
+        }
     }
 
     @Test
@@ -699,31 +577,18 @@ class VaultNetworkErrorHandlingTest {
         // Given - simulate server error to get exception with cause chain
         simulateServerError();
 
-        VaultCryptoConfiguration config = createTestConfig();
-        VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config);
-
-        // When
-        CompletionException exception = assertThrows(
-            CompletionException.class,
-            () -> provider.encryptionKeysFor("test-subject").join()
-        );
-
-        // Then - verify exception chain is properly preserved
-        assertThat(exception).isNotNull();
-        assertThat(exception.getCause()).isNotNull();
-        assertThat(exception.getCause()).isInstanceOf(VaultConnectivityException.class);
-
-        // Verify the exception chain preserves context
-        VaultConnectivityException vaultException = (VaultConnectivityException) exception.getCause();
-
-        // The VaultConnectivityException should have meaningful message
-        assertThat(vaultException.getMessage()).isNotNull();
-        assertThat(vaultException.getMessage()).isNotEmpty();
-
-        // Verify stack trace is preserved for debugging
-        assertThat(vaultException.getStackTrace()).isNotEmpty();
-
-        provider.close();
+        var config = createTestConfig();
+        try (var provider = new VaultEncryptingMaterialsProvider(config)) {
+            // When & Then
+            assertThatThrownBy(() -> provider.encryptionKeysFor("test-subject").join())
+                .isInstanceOf(CompletionException.class)
+                .hasCauseInstanceOf(VaultConnectivityException.class)
+                .satisfies(ex -> {
+                    var vaultException = (VaultConnectivityException) ex.getCause();
+                    assertThat(vaultException.getMessage()).isNotNull().isNotEmpty();
+                    assertThat(vaultException.getStackTrace()).isNotEmpty();
+                });
+        }
     }
 
     @Test
@@ -732,91 +597,75 @@ class VaultNetworkErrorHandlingTest {
         // Given - simulate authentication failure to get detailed exception
         simulateAuthenticationFailure();
 
-        VaultCryptoConfiguration config = createTestConfig();
-        VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config);
-
-        // When
-        CompletionException exception = assertThrows(
-            CompletionException.class,
-            () -> provider.encryptionKeysFor("test-subject-with-context").join()
-        );
-
-        // Then - verify exception contains operational context
-        assertThat(exception.getCause()).isInstanceOf(VaultAuthenticationException.class);
-        VaultAuthenticationException authException = (VaultAuthenticationException) exception.getCause();
-
-        String message = authException.getMessage();
-        assertThat(message).isNotNull();
-
-        // Verify operation context is included
-        assertThat(message)
-            .containsAnyOf("operation failed", "Authentication failed", "permission denied", "statusCode=403");
-
-        // Verify request correlation information is present
-        assertThat(message).containsAnyOf("requestId=", "Vault", "failed");
-
-        // Verify no sensitive information is leaked
-        assertThat(message).doesNotContain("test-token");
-        assertThat(message).doesNotContain("X-Vault-Token");
-
-        provider.close();
+        var config = createTestConfig();
+        try (var provider = new VaultEncryptingMaterialsProvider(config)) {
+            // When & Then
+            assertThatThrownBy(() -> provider.encryptionKeysFor("test-subject-with-context").join())
+                .isInstanceOf(CompletionException.class)
+                .hasCauseInstanceOf(VaultAuthenticationException.class)
+                .satisfies(ex -> {
+                    var message = ex.getCause().getMessage();
+                    assertThat(message).isNotNull();
+                    assertThat(message)
+                        .containsAnyOf(
+                            "operation failed",
+                            "Authentication failed",
+                            "permission denied",
+                            "statusCode=403"
+                        );
+                    assertThat(message).containsAnyOf("requestId=", "Vault", "failed");
+                    assertThat(message).doesNotContain("test-token", "X-Vault-Token");
+                });
+        }
     }
 
     @Test
     @DisplayName("Should verify different exception types contain appropriate error details")
     void shouldVerifyDifferentExceptionTypesContainAppropriateErrorDetails() {
-        VaultCryptoConfiguration config = createTestConfig();
+        var config = createTestConfig();
 
         // Test 1: IllegalArgumentException for null subject ID
-        VaultEncryptingMaterialsProvider provider1 = new VaultEncryptingMaterialsProvider(config);
-
-        CompletionException nullSubjectException = assertThrows(
-            CompletionException.class,
-            () -> provider1.encryptionKeysFor(null).join()
-        );
-
-        assertThat(nullSubjectException.getCause()).isInstanceOf(IllegalArgumentException.class);
-        assertThat(nullSubjectException.getCause().getMessage()).contains("Subject ID cannot be null or empty");
-        provider1.close();
+        try (var provider1 = new VaultEncryptingMaterialsProvider(config)) {
+            assertThatThrownBy(() -> provider1.encryptionKeysFor(null).join())
+                .isInstanceOf(CompletionException.class)
+                .cause()
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Subject ID cannot be null or empty");
+        }
 
         // Test 2: VaultAuthenticationException for auth failure
         simulateAuthenticationFailure();
-        VaultEncryptingMaterialsProvider provider2 = new VaultEncryptingMaterialsProvider(config);
-
-        CompletionException authException = assertThrows(
-            CompletionException.class,
-            () -> provider2.encryptionKeysFor("test-subject").join()
-        );
-
-        assertThat(authException.getCause()).isInstanceOf(VaultAuthenticationException.class);
-        String authMessage = authException.getCause().getMessage();
-        assertThat(authMessage).containsAnyOf("permission denied", "Authentication failed", "403");
-        assertThat(authMessage).doesNotContain("test-token");
-        provider2.close();
+        try (var provider2 = new VaultEncryptingMaterialsProvider(config)) {
+            assertThatThrownBy(() -> provider2.encryptionKeysFor("test-subject").join())
+                .isInstanceOf(CompletionException.class)
+                .hasCauseInstanceOf(VaultAuthenticationException.class)
+                .satisfies(ex -> {
+                    var authMessage = ex.getCause().getMessage();
+                    assertThat(authMessage).containsAnyOf("permission denied", "Authentication failed", "403");
+                    assertThat(authMessage).doesNotContain("test-token");
+                });
+        }
 
         // Reset for next test
         wireMockServer.resetAll();
 
         // Test 3: VaultConnectivityException for server error
         simulateServerError();
-        VaultEncryptingMaterialsProvider provider3 = new VaultEncryptingMaterialsProvider(config);
-
-        CompletionException serverException = assertThrows(
-            CompletionException.class,
-            () -> provider3.encryptionKeysFor("test-subject").join()
-        );
-
-        assertThat(serverException.getCause()).isInstanceOf(VaultConnectivityException.class);
-        String serverMessage = serverException.getCause().getMessage();
-        assertThat(serverMessage).containsAnyOf("internal server error", "500", "operation failed");
-        assertThat(serverMessage).doesNotContain("test-token");
-        provider3.close();
+        try (var provider3 = new VaultEncryptingMaterialsProvider(config)) {
+            assertThatThrownBy(() -> provider3.encryptionKeysFor("test-subject").join())
+                .isInstanceOf(CompletionException.class)
+                .hasCauseInstanceOf(VaultConnectivityException.class)
+                .satisfies(ex -> {
+                    var serverMessage = ex.getCause().getMessage();
+                    assertThat(serverMessage).containsAnyOf("internal server error", "500", "operation failed");
+                    assertThat(serverMessage).doesNotContain("test-token");
+                });
+        }
     }
 
-    private static void assertConnectivityException(CompletionException exception) {
-        Throwable actualException = exception.getCause();
-        assertThat(actualException).isNotNull();
-        assertThat(actualException).isInstanceOf(VaultConnectivityException.class);
+    private void assertConnectivityException(Throwable exception) {
+        var actualException = exception.getCause();
+        assertThat(actualException).isNotNull().isInstanceOf(VaultConnectivityException.class);
         assertThat(actualException.getMessage()).doesNotContain("test-token");
     }
 
@@ -825,17 +674,17 @@ class VaultNetworkErrorHandlingTest {
      * This checks the entire exception chain for sensitive information.
      */
     private void verifyNoSensitiveDataInException(Throwable exception, String sensitiveToken) {
-        Throwable current = exception;
+        var current = exception;
         while (current != null) {
-            String message = current.getMessage();
+            var message = current.getMessage();
             if (message != null) {
                 assertThat(message).doesNotContain(sensitiveToken);
                 assertThat(message).doesNotContain("X-Vault-Token");
                 assertThat(message).doesNotContain("Authorization");
                 // Check for partial token exposure
                 if (sensitiveToken.length() > 10) {
-                    String tokenPrefix = sensitiveToken.substring(0, 10);
-                    String tokenSuffix = sensitiveToken.substring(sensitiveToken.length() - 10);
+                    var tokenPrefix = sensitiveToken.substring(0, 10);
+                    var tokenSuffix = sensitiveToken.substring(sensitiveToken.length() - 10);
                     assertThat(message).doesNotContain(tokenPrefix);
                     assertThat(message).doesNotContain(tokenSuffix);
                 }

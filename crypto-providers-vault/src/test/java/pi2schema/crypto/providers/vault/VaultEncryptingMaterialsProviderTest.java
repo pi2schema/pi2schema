@@ -1,24 +1,21 @@
 package pi2schema.crypto.providers.vault;
 
-import com.google.crypto.tink.Aead;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import pi2schema.crypto.providers.EncryptionMaterial;
 
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -50,9 +47,9 @@ class VaultEncryptingMaterialsProviderTest {
     @Test
     void testSuccessfulEncryptionMaterialGeneration() {
         // Given
-        String subjectId = "user-12345";
-        String expectedKeyName = "pi2schema/subject/user-12345";
-        byte[] mockEncryptedDek = "encrypted-dek-data".getBytes();
+        var subjectId = "user-12345";
+        var expectedKeyName = "pi2schema/subject/user-12345";
+        var mockEncryptedDek = "encrypted-dek-data".getBytes();
 
         when(mockVaultClient.generateKeyName(subjectId)).thenReturn(expectedKeyName);
         when(mockVaultClient.encrypt(eq(expectedKeyName), any(byte[].class), anyString()))
@@ -61,24 +58,22 @@ class VaultEncryptingMaterialsProviderTest {
         provider = createProviderWithMockedClient();
 
         // When
-        CompletableFuture<EncryptionMaterial> future = provider.encryptionKeysFor(subjectId);
-        EncryptionMaterial result = future.join();
+        var future = provider.encryptionKeysFor(subjectId);
+        var result = future.join();
 
         // Then
-        assertNotNull(result);
-        assertNotNull(result.dataEncryptionKey());
-        assertArrayEquals(mockEncryptedDek, result.encryptedDataKey());
-        assertNotNull(result.encryptionContext());
+        assertThat(result).isNotNull();
+        assertThat(result.dataEncryptionKey()).isNotNull();
+        assertThat(result.encryptedDataKey()).isEqualTo(mockEncryptedDek);
+        assertThat(result.encryptionContext()).isNotNull();
 
         // Verify encryption context format
-        String context = result.encryptionContext();
-        assertTrue(context.contains("subjectId=" + subjectId));
-        assertTrue(context.contains("version=1.0"));
-        assertTrue(context.contains("timestamp="));
+        var context = result.encryptionContext();
+        assertThat(context).contains("subjectId=" + subjectId, "version=1.0", "timestamp=");
 
         // Verify DEK is functional
-        Aead aead = result.dataEncryptionKey();
-        assertNotNull(aead);
+        var aead = result.dataEncryptionKey();
+        assertThat(aead).isNotNull();
 
         // Verify Vault client interactions
         verify(mockVaultClient).generateKeyName(subjectId);
@@ -91,11 +86,13 @@ class VaultEncryptingMaterialsProviderTest {
         provider = createProviderWithMockedClient();
 
         // When & Then
-        CompletableFuture<EncryptionMaterial> future = provider.encryptionKeysFor(null);
+        var future = provider.encryptionKeysFor(null);
 
-        CompletionException exception = assertThrows(CompletionException.class, future::join);
-        assertTrue(exception.getCause() instanceof IllegalArgumentException);
-        assertEquals("Subject ID cannot be null or empty", exception.getCause().getMessage());
+        assertThatThrownBy(future::join)
+            .isInstanceOf(CompletionException.class)
+            .cause()
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("Subject ID cannot be null or empty");
 
         verifyNoInteractions(mockVaultClient);
     }
@@ -106,11 +103,13 @@ class VaultEncryptingMaterialsProviderTest {
         provider = createProviderWithMockedClient();
 
         // When & Then
-        CompletableFuture<EncryptionMaterial> future = provider.encryptionKeysFor("   ");
+        var future = provider.encryptionKeysFor("   ");
 
-        CompletionException exception = assertThrows(CompletionException.class, future::join);
-        assertTrue(exception.getCause() instanceof IllegalArgumentException);
-        assertEquals("Subject ID cannot be null or empty", exception.getCause().getMessage());
+        assertThatThrownBy(future::join)
+            .isInstanceOf(CompletionException.class)
+            .cause()
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("Subject ID cannot be null or empty");
 
         verifyNoInteractions(mockVaultClient);
     }
@@ -118,9 +117,9 @@ class VaultEncryptingMaterialsProviderTest {
     @Test
     void testVaultConnectivityFailure() {
         // Given
-        String subjectId = "user-12345";
-        String expectedKeyName = "pi2schema/subject/user-12345";
-        VaultConnectivityException vaultException = new VaultConnectivityException("Vault is unreachable");
+        var subjectId = "user-12345";
+        var expectedKeyName = "pi2schema/subject/user-12345";
+        var vaultException = new VaultConnectivityException("Vault is unreachable");
 
         when(mockVaultClient.generateKeyName(subjectId)).thenReturn(expectedKeyName);
         when(mockVaultClient.encrypt(eq(expectedKeyName), any(byte[].class), anyString()))
@@ -129,11 +128,13 @@ class VaultEncryptingMaterialsProviderTest {
         provider = createProviderWithMockedClient();
 
         // When & Then
-        CompletableFuture<EncryptionMaterial> future = provider.encryptionKeysFor(subjectId);
+        var future = provider.encryptionKeysFor(subjectId);
 
-        CompletionException exception = assertThrows(CompletionException.class, future::join);
-        assertTrue(exception.getCause() instanceof VaultConnectivityException);
-        assertEquals("Vault is unreachable", exception.getCause().getMessage());
+        assertThatThrownBy(future::join)
+            .isInstanceOf(CompletionException.class)
+            .cause()
+            .isInstanceOf(VaultConnectivityException.class)
+            .hasMessage("Vault is unreachable");
 
         verify(mockVaultClient).generateKeyName(subjectId);
         verify(mockVaultClient).encrypt(eq(expectedKeyName), any(byte[].class), anyString());
@@ -142,9 +143,9 @@ class VaultEncryptingMaterialsProviderTest {
     @Test
     void testVaultAuthenticationFailure() {
         // Given
-        String subjectId = "user-12345";
-        String expectedKeyName = "pi2schema/subject/user-12345";
-        VaultAuthenticationException authException = new VaultAuthenticationException("Invalid token");
+        var subjectId = "user-12345";
+        var expectedKeyName = "pi2schema/subject/user-12345";
+        var authException = new VaultAuthenticationException("Invalid token");
 
         when(mockVaultClient.generateKeyName(subjectId)).thenReturn(expectedKeyName);
         when(mockVaultClient.encrypt(eq(expectedKeyName), any(byte[].class), anyString()))
@@ -153,22 +154,24 @@ class VaultEncryptingMaterialsProviderTest {
         provider = createProviderWithMockedClient();
 
         // When & Then
-        CompletableFuture<EncryptionMaterial> future = provider.encryptionKeysFor(subjectId);
+        var future = provider.encryptionKeysFor(subjectId);
 
-        CompletionException exception = assertThrows(CompletionException.class, future::join);
-        assertTrue(exception.getCause() instanceof VaultAuthenticationException);
-        assertEquals("Invalid token", exception.getCause().getMessage());
+        assertThatThrownBy(future::join)
+            .isInstanceOf(CompletionException.class)
+            .cause()
+            .isInstanceOf(VaultAuthenticationException.class)
+            .hasMessage("Invalid token");
     }
 
     @Test
     void testConcurrentOperations() throws InterruptedException {
         // Given
-        int numberOfThreads = 10;
-        int operationsPerThread = 5;
-        ExecutorService executor = Executors.newFixedThreadPool(numberOfThreads);
-        CountDownLatch latch = new CountDownLatch(numberOfThreads * operationsPerThread);
-        AtomicInteger successCount = new AtomicInteger(0);
-        AtomicReference<Exception> firstException = new AtomicReference<>();
+        var numberOfThreads = 10;
+        var operationsPerThread = 5;
+        var executor = Executors.newFixedThreadPool(numberOfThreads);
+        var latch = new CountDownLatch(numberOfThreads * operationsPerThread);
+        var successCount = new AtomicInteger(0);
+        var firstException = new AtomicReference<Exception>();
 
         // Mock successful responses for all operations
         when(mockVaultClient.generateKeyName(anyString()))
@@ -184,14 +187,14 @@ class VaultEncryptingMaterialsProviderTest {
             executor.submit(() -> {
                 for (int j = 0; j < operationsPerThread; j++) {
                     try {
-                        String subjectId = "user-" + threadId + "-" + j;
-                        CompletableFuture<EncryptionMaterial> future = provider.encryptionKeysFor(subjectId);
-                        EncryptionMaterial result = future.get(5, TimeUnit.SECONDS);
+                        var subjectId = "user-" + threadId + "-" + j;
+                        var future = provider.encryptionKeysFor(subjectId);
+                        var result = future.get(5, TimeUnit.SECONDS);
 
-                        assertNotNull(result);
-                        assertNotNull(result.dataEncryptionKey());
-                        assertNotNull(result.encryptedDataKey());
-                        assertNotNull(result.encryptionContext());
+                        assertThat(result).isNotNull();
+                        assertThat(result.dataEncryptionKey()).isNotNull();
+                        assertThat(result.encryptedDataKey()).isNotNull();
+                        assertThat(result.encryptionContext()).isNotNull();
 
                         successCount.incrementAndGet();
                     } catch (Exception e) {
@@ -204,13 +207,12 @@ class VaultEncryptingMaterialsProviderTest {
         }
 
         // Then
-        assertTrue(latch.await(30, TimeUnit.SECONDS), "Operations did not complete within timeout");
+        assertThat(latch.await(30, TimeUnit.SECONDS))
+            .withFailMessage("Operations did not complete within timeout")
+            .isTrue();
 
-        if (firstException.get() != null) {
-            fail("Concurrent operation failed: " + firstException.get().getMessage(), firstException.get());
-        }
-
-        assertEquals(numberOfThreads * operationsPerThread, successCount.get());
+        assertThat(firstException.get()).isNull();
+        assertThat(successCount.get()).isEqualTo(numberOfThreads * operationsPerThread);
 
         // Verify all operations called the vault client
         verify(mockVaultClient, times(numberOfThreads * operationsPerThread)).generateKeyName(anyString());
@@ -223,9 +225,9 @@ class VaultEncryptingMaterialsProviderTest {
     @Test
     void testEncryptionContextFormat() {
         // Given
-        String subjectId = "test-user-123";
-        String expectedKeyName = "pi2schema/subject/test-user-123";
-        byte[] mockEncryptedDek = "encrypted-dek".getBytes();
+        var subjectId = "test-user-123";
+        var expectedKeyName = "pi2schema/subject/test-user-123";
+        var mockEncryptedDek = "encrypted-dek".getBytes();
 
         when(mockVaultClient.generateKeyName(subjectId)).thenReturn(expectedKeyName);
         when(mockVaultClient.encrypt(eq(expectedKeyName), any(byte[].class), anyString()))
@@ -234,35 +236,33 @@ class VaultEncryptingMaterialsProviderTest {
         provider = createProviderWithMockedClient();
 
         // When
-        EncryptionMaterial result = provider.encryptionKeysFor(subjectId).join();
+        var result = provider.encryptionKeysFor(subjectId).join();
 
         // Then
-        String context = result.encryptionContext();
-        String[] parts = context.split(";");
+        var context = result.encryptionContext();
+        var parts = context.split(";");
 
-        assertEquals(3, parts.length);
+        assertThat(parts).hasSize(3);
 
         // Verify subject ID
-        assertTrue(parts[0].startsWith("subjectId="));
-        assertEquals(subjectId, parts[0].substring("subjectId=".length()));
+        assertThat(parts[0]).startsWith("subjectId=").endsWith(subjectId);
 
         // Verify timestamp is a valid number
-        assertTrue(parts[1].startsWith("timestamp="));
-        String timestampStr = parts[1].substring("timestamp=".length());
-        assertDoesNotThrow(() -> Long.parseLong(timestampStr));
+        assertThat(parts[1]).startsWith("timestamp=");
+        var timestampStr = parts[1].substring("timestamp=".length());
+        assertThatCode(() -> Long.parseLong(timestampStr)).doesNotThrowAnyException();
 
         // Verify version
-        assertTrue(parts[2].startsWith("version="));
-        assertEquals("1.0", parts[2].substring("version=".length()));
+        assertThat(parts[2]).startsWith("version=").endsWith("1.0");
     }
 
     @Test
     void testDifferentSubjectsGetDifferentKeys() {
         // Given
-        String subjectId1 = "user-1";
-        String subjectId2 = "user-2";
-        byte[] encryptedDek1 = "encrypted-dek-1".getBytes();
-        byte[] encryptedDek2 = "encrypted-dek-2".getBytes();
+        var subjectId1 = "user-1";
+        var subjectId2 = "user-2";
+        var encryptedDek1 = "encrypted-dek-1".getBytes();
+        var encryptedDek2 = "encrypted-dek-2".getBytes();
 
         when(mockVaultClient.generateKeyName("user-1")).thenReturn("pi2schema/subject/user-1");
         when(mockVaultClient.generateKeyName("user-2")).thenReturn("pi2schema/subject/user-2");
@@ -274,13 +274,13 @@ class VaultEncryptingMaterialsProviderTest {
         provider = createProviderWithMockedClient();
 
         // When
-        EncryptionMaterial result1 = provider.encryptionKeysFor(subjectId1).join();
-        EncryptionMaterial result2 = provider.encryptionKeysFor(subjectId2).join();
+        var result1 = provider.encryptionKeysFor(subjectId1).join();
+        var result2 = provider.encryptionKeysFor(subjectId2).join();
 
         // Then
-        assertNotEquals(result1.dataEncryptionKey(), result2.dataEncryptionKey());
-        assertFalse(java.util.Arrays.equals(result1.encryptedDataKey(), result2.encryptedDataKey()));
-        assertNotEquals(result1.encryptionContext(), result2.encryptionContext());
+        assertThat(result1.dataEncryptionKey()).isNotEqualTo(result2.dataEncryptionKey());
+        assertThat(result1.encryptedDataKey()).isNotEqualTo(result2.encryptedDataKey());
+        assertThat(result1.encryptionContext()).isNotEqualTo(result2.encryptionContext());
 
         // Verify different vault keys were used
         verify(mockVaultClient).encrypt(eq("pi2schema/subject/user-1"), any(byte[].class), anyString());
@@ -293,7 +293,7 @@ class VaultEncryptingMaterialsProviderTest {
         provider = createProviderWithMockedClient();
 
         // When
-        assertDoesNotThrow(() -> provider.close());
+        assertThatCode(provider::close).doesNotThrowAnyException();
 
         // Then
         verify(mockVaultClient).close();
@@ -306,7 +306,7 @@ class VaultEncryptingMaterialsProviderTest {
         provider = createProviderWithMockedClient();
 
         // When & Then
-        assertDoesNotThrow(() -> provider.close()); // Should not propagate exception
+        assertThatCode(provider::close).doesNotThrowAnyException(); // Should not propagate exception
 
         verify(mockVaultClient).close();
     }
@@ -314,99 +314,84 @@ class VaultEncryptingMaterialsProviderTest {
     @Test
     void testNullConfigurationThrowsException() {
         // When & Then
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
-            () -> new VaultEncryptingMaterialsProvider(null)
-        );
-
-        assertEquals("Configuration cannot be null", exception.getMessage());
+        assertThatThrownBy(() -> new VaultEncryptingMaterialsProvider(null))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("Configuration cannot be null");
     }
 
     @Test
     void testInvalidVaultUrlThrowsException() {
         // When & Then
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
-            () -> VaultCryptoConfiguration.builder().vaultUrl("invalid-url").vaultToken("test-token").build()
-        );
-
-        assertEquals("Vault URL must start with http:// or https://", exception.getMessage());
+        assertThatThrownBy(() ->
+                VaultCryptoConfiguration.builder().vaultUrl("invalid-url").vaultToken("test-token").build()
+            )
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("Vault URL must start with http:// or https://");
     }
 
     @Test
     void testVaultTokenWithWhitespaceThrowsException() {
         // When & Then
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
-            () ->
+        assertThatThrownBy(() ->
                 VaultCryptoConfiguration
                     .builder()
                     .vaultUrl("https://vault.example.com")
                     .vaultToken(" test-token ")
                     .build()
-        );
-
-        assertEquals("Vault token cannot contain leading or trailing whitespace", exception.getMessage());
+            )
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("Vault token cannot contain leading or trailing whitespace");
     }
 
     @Test
     void testInvalidKeyPrefixThrowsException() {
         // When & Then
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
-            () ->
+        assertThatThrownBy(() ->
                 VaultCryptoConfiguration
                     .builder()
                     .vaultUrl("https://vault.example.com")
                     .vaultToken("test-token")
                     .keyPrefix("invalid/prefix")
                     .build()
-        );
-
-        assertEquals(
-            "Key prefix can only contain alphanumeric characters, underscores, and hyphens",
-            exception.getMessage()
-        );
+            )
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("Key prefix can only contain alphanumeric characters, underscores, and hyphens");
     }
 
     @Test
     void testExcessiveConnectionTimeoutThrowsException() {
         // When & Then
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
-            () ->
+        assertThatThrownBy(() ->
                 VaultCryptoConfiguration
                     .builder()
                     .vaultUrl("https://vault.example.com")
                     .vaultToken("test-token")
                     .connectionTimeout(Duration.ofMinutes(10)) // Exceeds 5 minute limit
                     .build()
-        );
-
-        assertEquals("Connection timeout cannot exceed 5 minutes", exception.getMessage());
+            )
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("Connection timeout cannot exceed 5 minutes");
     }
 
     @Test
     void testExcessiveRequestTimeoutThrowsException() {
         // When & Then
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
-            () ->
+        assertThatThrownBy(() ->
                 VaultCryptoConfiguration
                     .builder()
                     .vaultUrl("https://vault.example.com")
                     .vaultToken("test-token")
                     .requestTimeout(Duration.ofMinutes(15)) // Exceeds 10 minute limit
                     .build()
-        );
-
-        assertEquals("Request timeout cannot exceed 10 minutes", exception.getMessage());
+            )
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("Request timeout cannot exceed 10 minutes");
     }
 
     @Test
     void testValidConfigurationAccepted() {
         // Given
-        VaultCryptoConfiguration validConfig = VaultCryptoConfiguration
+        var validConfig = VaultCryptoConfiguration
             .builder()
             .vaultUrl("https://vault.example.com")
             .vaultToken("valid-token")
@@ -416,32 +401,34 @@ class VaultEncryptingMaterialsProviderTest {
             .build();
 
         // When & Then
-        assertDoesNotThrow(() -> new VaultEncryptingMaterialsProvider(validConfig));
+        assertThatCode(() -> new VaultEncryptingMaterialsProvider(validConfig)).doesNotThrowAnyException();
     }
 
     @Test
     void testResourceLifecycle_tryWithResources() {
         // Test that the provider works properly with try-with-resources
-        assertDoesNotThrow(() -> {
-            try (VaultEncryptingMaterialsProvider testProvider = new VaultEncryptingMaterialsProvider(config)) {
-                // Use the provider
-                assertNotNull(testProvider);
-            }
-            // close() should be called automatically
-        });
+        assertThatCode(() -> {
+                try (var testProvider = new VaultEncryptingMaterialsProvider(config)) {
+                    // Use the provider
+                    assertThat(testProvider).isNotNull();
+                }
+                // close() should be called automatically
+            })
+            .doesNotThrowAnyException();
     }
 
     @Test
     void testClose_canBeCalledMultipleTimes() {
         // Given
-        VaultEncryptingMaterialsProvider testProvider = new VaultEncryptingMaterialsProvider(config);
+        var testProvider = new VaultEncryptingMaterialsProvider(config);
 
         // When & Then - close() should be idempotent
-        assertDoesNotThrow(() -> {
-            testProvider.close();
-            testProvider.close();
-            testProvider.close();
-        });
+        assertThatCode(() -> {
+                testProvider.close();
+                testProvider.close();
+                testProvider.close();
+            })
+            .doesNotThrowAnyException();
     }
 
     /**
@@ -450,12 +437,11 @@ class VaultEncryptingMaterialsProviderTest {
      * without actually creating a real VaultTransitClient.
      */
     private VaultEncryptingMaterialsProvider createProviderWithMockedClient() {
-        VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config);
+        var provider = new VaultEncryptingMaterialsProvider(config);
 
         // Use reflection to replace the vaultClient field with our mock
         try {
-            java.lang.reflect.Field vaultClientField =
-                VaultEncryptingMaterialsProvider.class.getDeclaredField("vaultClient");
+            var vaultClientField = VaultEncryptingMaterialsProvider.class.getDeclaredField("vaultClient");
             vaultClientField.setAccessible(true);
             vaultClientField.set(provider, mockVaultClient);
         } catch (Exception e) {

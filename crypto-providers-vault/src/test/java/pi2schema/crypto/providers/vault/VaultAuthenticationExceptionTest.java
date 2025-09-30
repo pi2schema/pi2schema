@@ -3,46 +3,45 @@ package pi2schema.crypto.providers.vault;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class VaultAuthenticationExceptionTest {
 
     @Test
     @DisplayName("Should create authentication exception with message")
     void shouldCreateAuthenticationExceptionWithMessage() {
-        String message = "Authentication failed";
-        VaultAuthenticationException exception = new VaultAuthenticationException(message);
+        var message = "Authentication failed";
+        var exception = new VaultAuthenticationException(message);
 
-        assertEquals(message, exception.getMessage());
-        assertNull(exception.getCause());
+        assertThat(exception.getMessage()).isEqualTo(message);
+        assertThat(exception.getCause()).isNull();
     }
 
     @Test
     @DisplayName("Should create authentication exception with message and cause")
     void shouldCreateAuthenticationExceptionWithMessageAndCause() {
-        String message = "Authentication failed";
-        Throwable cause = new RuntimeException("Invalid token");
-        VaultAuthenticationException exception = new VaultAuthenticationException(message, cause);
+        var message = "Authentication failed";
+        var cause = new RuntimeException("Invalid token");
+        var exception = new VaultAuthenticationException(message, cause);
 
-        assertEquals(message, exception.getMessage());
-        assertEquals(cause, exception.getCause());
+        assertThat(exception.getMessage()).isEqualTo(message);
+        assertThat(exception.getCause()).isEqualTo(cause);
     }
 
     @Test
     @DisplayName("Should create authentication exception with cause only")
     void shouldCreateAuthenticationExceptionWithCauseOnly() {
-        Throwable cause = new RuntimeException("Invalid token");
-        VaultAuthenticationException exception = new VaultAuthenticationException(cause);
+        var cause = new RuntimeException("Invalid token");
+        var exception = new VaultAuthenticationException(cause);
 
-        assertEquals(cause, exception.getCause());
-        assertTrue(exception.getMessage().contains("RuntimeException"));
+        assertThat(exception.getCause()).isEqualTo(cause);
+        assertThat(exception.getMessage()).contains("RuntimeException");
     }
 
     @Test
     @DisplayName("Should be instance of VaultCryptoException")
     void shouldBeInstanceOfVaultCryptoException() {
-        VaultAuthenticationException exception = new VaultAuthenticationException("Test message");
-        assertInstanceOf(VaultCryptoException.class, exception);
-        assertInstanceOf(RuntimeException.class, exception);
+        var exception = new VaultAuthenticationException("Test message");
+        assertThat(exception).isInstanceOf(VaultCryptoException.class).isInstanceOf(RuntimeException.class);
     }
 }
