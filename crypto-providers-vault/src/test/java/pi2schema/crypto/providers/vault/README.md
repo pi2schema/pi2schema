@@ -24,28 +24,14 @@ These tests use Testcontainers to spin up a real Vault instance and test all fun
 
 ### 2. Simple Integration Tests (`VaultCryptoProviderSimpleIntegrationTest`)
 
-These tests run against a local Vault dev server and provide a lightweight alternative when Docker is not available.
+These tests also use Testcontainers but with a simpler test setup for faster execution.
 
 **Requirements:**
-- HashiCorp Vault binary installed locally
-- Local Vault dev server running
-
-**Setup:**
-1. Install Vault: https://www.vaultproject.io/downloads
-2. Start Vault in dev mode:
-   ```bash
-   vault server -dev -dev-root-token-id=test-token
-   ```
-3. In another terminal, enable transit engine:
-   ```bash
-   export VAULT_ADDR='http://127.0.0.1:8200'
-   export VAULT_TOKEN='test-token'
-   vault secrets enable transit
-   ```
+- Docker must be installed and running
 
 **Running:**
 ```bash
-./gradlew :crypto-providers-vault:test --tests "*VaultCryptoProviderSimpleIntegrationTest*" -Dvault.integration.enabled=true
+./gradlew :crypto-providers-vault:test --tests "*VaultCryptoProviderSimpleIntegrationTest*"
 ```
 
 ## Test Coverage
@@ -118,27 +104,12 @@ Test configurations can be adjusted by modifying the setup methods in each test 
 
 ## CI/CD Integration
 
-For continuous integration environments:
+For continuous integration environments, all tests use Testcontainers with Docker:
 
-1. **With Docker**: Use the full integration tests
-2. **Without Docker**: Use unit tests only, or set up a dedicated Vault instance
-3. **Hybrid**: Run simple integration tests against a shared Vault dev server
-
-Example CI configuration:
 ```yaml
-# Run full integration tests if Docker is available
-- name: Integration Tests (Docker)
-  run: ./gradlew :crypto-providers-vault:test --tests "*VaultCryptoProviderIntegrationTest*"
-  if: ${{ env.DOCKER_AVAILABLE == 'true' }}
-
-# Fallback to simple tests with local Vault
-- name: Integration Tests (Local Vault)
-  run: |
-    vault server -dev -dev-root-token-id=test-token &
-    sleep 5
-    export VAULT_ADDR='http://127.0.0.1:8200'
-    export VAULT_TOKEN='test-token'
-    vault secrets enable transit
-    ./gradlew :crypto-providers-vault:test --tests "*VaultCryptoProviderSimpleIntegrationTest*" -Dvault.integration.enabled=true
-  if: ${{ env.DOCKER_AVAILABLE != 'true' }}
+# Run integration tests
+- name: Integration Tests
+  run: ./gradlew :crypto-providers-vault:test
 ```
+
+Both test suites require Docker to be available in the CI environment.

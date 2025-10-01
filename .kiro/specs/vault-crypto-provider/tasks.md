@@ -16,7 +16,7 @@
   - Create VaultTransitClient class with Java's built-in HttpClient for Vault API calls
   - Implement authentication, encrypt, decrypt, and key management methods
   - Add connection pooling, timeout handling, and retry logic with exponential backoff
-  - Write comprehensive unit tests with mocked Vault responses
+  - Write comprehensive unit tests with mocked Vault responses using WireMock
   - _Requirements: 1.4, 3.2, 3.3, 4.2, 4.3, 4.5, 5.1, 5.3_
 
 - [x] 4. Implement VaultEncryptingMaterialsProvider
