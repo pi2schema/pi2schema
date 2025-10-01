@@ -212,31 +212,6 @@ class VaultAuthenticationErrorHandlingTest {
     }
 
     @Test
-    @DisplayName("Should log configuration validation success")
-    void shouldLogConfigurationValidationSuccess() {
-        // Given - valid configuration
-        var config = VaultCryptoConfiguration
-            .builder()
-            .vaultUrl("https://vault.example.com:8200")
-            .vaultToken("valid-token")
-            .transitEnginePath("transit")
-            .keyPrefix("test-prefix")
-            .connectionTimeout(Duration.ofSeconds(5))
-            .requestTimeout(Duration.ofSeconds(10))
-            .maxRetries(2)
-            .retryBackoffMs(Duration.ofMillis(100))
-            .build();
-
-        // When
-        try (var provider = new VaultEncryptingMaterialsProvider(config)) {
-            // Then - verify successful initialization is logged
-            var debugLogs = logAppender.list.stream().filter(event -> event.getLevel() == Level.DEBUG).toList();
-
-            assertThat(debugLogs).anyMatch(event -> event.getMessage().contains("Configuration validation successful"));
-        }
-    }
-
-    @Test
     @DisplayName("Should handle subject ID sanitization logging")
     void shouldHandleSubjectIdSanitizationLogging() {
         var config = VaultCryptoConfiguration

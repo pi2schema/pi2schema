@@ -52,6 +52,7 @@ Implements `EncryptingMaterialsProvider` interface.
 - Generate new DEKs using Tink's AEAD primitive
 - Encrypt DEKs using Vault's transit encryption with subject-specific keys
 - Return EncryptionMaterial with plaintext DEK, encrypted DEK, and context
+- Configuration validation is handled by VaultCryptoConfiguration.Builder during configuration creation
 
 **Key Methods:**
 ```java
@@ -66,6 +67,7 @@ Implements `DecryptingMaterialsProvider` interface.
 - Decrypt encrypted DEKs using Vault's transit encryption
 - Reconstruct Tink AEAD primitives from decrypted DEK material
 - Handle subject-specific key isolation
+- Configuration validation is handled by VaultCryptoConfiguration.Builder during configuration creation
 
 **Key Methods:**
 ```java
@@ -144,6 +146,7 @@ public class InvalidEncryptionContextException extends VaultCryptoException
 3. **Key Not Found**: For decryption, throw SubjectKeyNotFoundException
 4. **Invalid Context**: Validate context format and throw appropriate exception
 5. **Network Timeouts**: Retry with backoff, respect timeout configurations
+6. **Configuration Errors**: Handled during VaultCryptoConfiguration creation with immediate failure
 
 #### Retry Strategy
 
@@ -204,12 +207,19 @@ public class InvalidEncryptionContextException extends VaultCryptoException
 - Token should be provided via secure configuration (environment variables, files)
 - Future: Support for additional auth methods (AWS IAM, Kubernetes, etc.)
 
+### Configuration Security
+
+- Configuration validation occurs during VaultCryptoConfiguration.Builder.build()
+- Sensitive configuration data (tokens) are sanitized in logs and toString() methods
+- Configuration objects are immutable after creation
+
 ### Audit and Logging
 
 - Log all Vault operations (without sensitive data)
 - Include request IDs for correlation
 - Log timing information for performance monitoring
 - Ensure no plaintext keys or sensitive data appear in logs
+- Simplified logging to avoid duplication while maintaining security visibility
 
 ### Network Security
 

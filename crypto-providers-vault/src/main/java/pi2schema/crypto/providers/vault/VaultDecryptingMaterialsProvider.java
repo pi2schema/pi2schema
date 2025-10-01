@@ -79,7 +79,6 @@ import java.util.regex.Pattern;
 public class VaultDecryptingMaterialsProvider implements DecryptingMaterialsProvider {
 
     private static final Logger logger = LoggerFactory.getLogger(VaultDecryptingMaterialsProvider.class);
-    private static final String PROVIDER_VERSION = "1.0";
 
     // Pattern for validating encryption context format: subjectId=value;timestamp=value;version=value
     private static final Pattern ENCRYPTION_CONTEXT_PATTERN = Pattern.compile(
@@ -87,7 +86,6 @@ public class VaultDecryptingMaterialsProvider implements DecryptingMaterialsProv
     );
 
     private final VaultTransitClient vaultClient;
-    private final VaultCryptoConfiguration config;
 
     static {
         try {
@@ -100,11 +98,12 @@ public class VaultDecryptingMaterialsProvider implements DecryptingMaterialsProv
     /**
      * Creates a new VaultDecryptingMaterialsProvider with the specified configuration.
      *
-     * <p>This constructor initializes the Vault client and validates the configuration.
+     * <p>This constructor initializes the Vault client. Configuration validation is handled
+     * by the VaultCryptoConfiguration.Builder during configuration creation.
      * The Tink AEAD configuration is automatically registered during class loading.</p>
      *
      * @param config the Vault configuration containing connection details and settings
-     * @throws IllegalArgumentException if configuration is null or invalid
+     * @throws IllegalArgumentException if configuration is null
      * @throws VaultCryptoException if Tink AEAD configuration fails to register
      */
     public VaultDecryptingMaterialsProvider(VaultCryptoConfiguration config) {
@@ -112,10 +111,6 @@ public class VaultDecryptingMaterialsProvider implements DecryptingMaterialsProv
             throw new IllegalArgumentException("Configuration cannot be null");
         }
 
-        // Validate configuration during initialization
-        validateConfiguration(config);
-
-        this.config = config;
         this.vaultClient = new VaultTransitClient(config);
 
         logger.info(
@@ -185,19 +180,7 @@ public class VaultDecryptingMaterialsProvider implements DecryptingMaterialsProv
         );
 
         return CompletableFuture
-            .supplyAsync(() -> {
-                try {
-                    return validateEncryptionContext(subjectId, encryptionContext);
-                } catch (Exception e) {
-                    logger.error(
-                        "Encryption context validation failed [subjectId={}, error={}]",
-                        subjectId,
-                        e.getMessage(),
-                        e
-                    );
-                    throw e;
-                }
-            })
+            .supplyAsync(() -> validateEncryptionContext(subjectId, encryptionContext))
             .thenCompose(validatedContext -> decryptDataEncryptionKey(subjectId, encryptedDataKey, validatedContext))
             .thenApply(dekBytes -> {
                 try {
@@ -393,20 +376,6 @@ public class VaultDecryptingMaterialsProvider implements DecryptingMaterialsProv
         } catch (GeneralSecurityException e) {
             throw new VaultCryptoException("Failed to reconstruct AEAD primitive from decrypted DEK", e);
         }
-    }
-
-    /**
-     * Validates the configuration to ensure all required parameters are properly set.
-     * Note: Most validation is done in VaultCryptoConfiguration.Builder, this is for
-     * additional runtime validation if needed.
-     *
-     * @param config the configuration to validate
-     * @throws IllegalArgumentException if configuration is invalid
-     */
-    private void validateConfiguration(VaultCryptoConfiguration config) {
-        // Configuration validation is primarily handled in the builder
-        // This method is kept for any additional runtime validation needs
-        logger.debug("Configuration validation successful");
     }
 
     /**
