@@ -39,7 +39,7 @@ The provider will implement both the `EncryptingMaterialsProvider` and `Decrypti
 
 1. WHEN initializing the provider THEN it SHALL accept Vault connection configuration including URL, authentication method, and transit engine path
 2. WHEN authenticating with Vault THEN the provider SHALL support token-based authentication as the primary method
-3. WHEN configured THEN the provider SHALL validate the Vault connection and transit engine accessibility during initialization
+3. WHEN configured THEN the configuration SHALL be validated during VaultCryptoConfiguration creation with clear error messages
 4. IF configuration is invalid THEN the provider SHALL fail fast with clear error messages
 5. WHEN the provider is closed THEN it SHALL properly clean up Vault connections and resources
 

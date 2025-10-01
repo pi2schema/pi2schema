@@ -14,50 +14,69 @@ import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Implementation of EncryptingMaterialsProvider that uses HashiCorp Vault's transit encryption
+ * Implementation of EncryptingMaterialsProvider that uses HashiCorp Vault's
+ * transit encryption
  * to manage Key Encryption Keys (KEKs) for subject-specific data encryption.
  *
- * <p>This provider generates Data Encryption Keys (DEKs) using Tink's AEAD primitive and encrypts
- * them using Vault's transit engine with subject-specific keys for GDPR compliance.</p>
+ * <p>
+ * This provider generates Data Encryption Keys (DEKs) using Tink's AEAD
+ * primitive and encrypts
+ * them using Vault's transit engine with subject-specific keys for GDPR
+ * compliance.
+ * </p>
  *
  * <h3>Key Management Architecture:</h3>
  * <ol>
- *   <li>Generate a new 256-bit DEK using Tink's AES-GCM AEAD primitive</li>
- *   <li>Encrypt the DEK using Vault's transit engine with a subject-specific KEK</li>
- *   <li>Return EncryptionMaterial containing the plaintext DEK, encrypted DEK, and context</li>
+ * <li>Generate a new 256-bit DEK using Tink's AES-GCM AEAD primitive</li>
+ * <li>Encrypt the DEK using Vault's transit engine with a subject-specific
+ * KEK</li>
+ * <li>Return EncryptionMaterial containing the plaintext DEK, encrypted DEK,
+ * and context</li>
  * </ol>
  *
  * <h3>Subject Isolation:</h3>
- * <p>Each subject gets a unique key in Vault following the pattern: {@code {keyPrefix}/subject/{subjectId}}.
- * This ensures cryptographic isolation between subjects and enables GDPR right-to-be-forgotten
- * compliance through selective key deletion.</p>
+ * <p>
+ * Each subject gets a unique key in Vault following the pattern:
+ * {@code {keyPrefix}/subject/{subjectId}}.
+ * This ensures cryptographic isolation between subjects and enables GDPR
+ * right-to-be-forgotten
+ * compliance through selective key deletion.
+ * </p>
  *
  * <h3>Example Usage:</h3>
+ *
  * <pre>{@code
  * VaultCryptoConfiguration config = VaultCryptoConfiguration.builder()
- *     .vaultUrl("https://vault.example.com:8200")
- *     .vaultToken("hvs.CAESIJ...")
- *     .build();
+ *         .vaultUrl("https://vault.example.com:8200")
+ *         .vaultToken("hvs.CAESIJ...")
+ *         .build();
  *
  * try (VaultEncryptingMaterialsProvider provider = new VaultEncryptingMaterialsProvider(config)) {
  *     CompletableFuture<EncryptionMaterial> future = provider.encryptionKeysFor("user-12345");
  *     EncryptionMaterial material = future.get();
  *
  *     // Use material.aead() for encrypting data
- *     // Store material.encryptedDataKey() and material.encryptionContext() with encrypted data
+ *     // Store material.encryptedDataKey() and material.encryptionContext() with
+ *     // encrypted data
  * }
  * }</pre>
  *
  * <h3>Thread Safety:</h3>
- * <p>This class is thread-safe and designed for concurrent use. All operations are asynchronous
- * and return CompletableFuture instances.</p>
+ * <p>
+ * This class is thread-safe and designed for concurrent use. All operations are
+ * asynchronous
+ * and return CompletableFuture instances.
+ * </p>
  *
  * <h3>Error Handling:</h3>
- * <p>Operations may throw the following exceptions:
+ * <p>
+ * Operations may throw the following exceptions:
  * <ul>
- *   <li>{@link VaultAuthenticationException} - Invalid or expired Vault token</li>
- *   <li>{@link VaultConnectivityException} - Network or connectivity issues</li>
- *   <li>{@link VaultCryptoException} - General cryptographic or Vault operation errors</li>
+ * <li>{@link VaultAuthenticationException} - Invalid or expired Vault
+ * token</li>
+ * <li>{@link VaultConnectivityException} - Network or connectivity issues</li>
+ * <li>{@link VaultCryptoException} - General cryptographic or Vault operation
+ * errors</li>
  * </ul>
  *
  * @since 1.0
@@ -72,7 +91,6 @@ public class VaultEncryptingMaterialsProvider implements EncryptingMaterialsProv
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final VaultTransitClient vaultClient;
-    private final VaultCryptoConfiguration config;
 
     static {
         try {
@@ -83,24 +101,26 @@ public class VaultEncryptingMaterialsProvider implements EncryptingMaterialsProv
     }
 
     /**
-     * Creates a new VaultEncryptingMaterialsProvider with the specified configuration.
+     * Creates a new VaultEncryptingMaterialsProvider with the specified
+     * configuration.
      *
-     * <p>This constructor initializes the Vault client and validates the configuration.
-     * The Tink AEAD configuration is automatically registered during class loading.</p>
+     * <p>
+     * This constructor initializes the Vault client. Configuration validation is
+     * handled
+     * by the VaultCryptoConfiguration.Builder during configuration creation.
+     * The Tink AEAD configuration is automatically registered during class loading.
+     * </p>
      *
-     * @param config the Vault configuration containing connection details and settings
-     * @throws IllegalArgumentException if configuration is null or invalid
-     * @throws VaultCryptoException if Tink AEAD configuration fails to register
+     * @param config the Vault configuration containing connection details and
+     *               settings
+     * @throws IllegalArgumentException if configuration is null
+     * @throws VaultCryptoException     if Tink AEAD configuration fails to register
      */
     public VaultEncryptingMaterialsProvider(VaultCryptoConfiguration config) {
         if (config == null) {
             throw new IllegalArgumentException("Configuration cannot be null");
         }
 
-        // Validate configuration during initialization
-        validateConfiguration(config);
-
-        this.config = config;
         this.vaultClient = new VaultTransitClient(config);
 
         logger.info(
@@ -112,41 +132,37 @@ public class VaultEncryptingMaterialsProvider implements EncryptingMaterialsProv
     }
 
     /**
-     * Validates the configuration to ensure all required parameters are properly set.
-     * Note: Most validation is done in VaultCryptoConfiguration.Builder, this is for
-     * additional runtime validation if needed.
-     *
-     * @param config the configuration to validate
-     * @throws IllegalArgumentException if configuration is invalid
-     */
-    private void validateConfiguration(VaultCryptoConfiguration config) {
-        // Configuration validation is primarily handled in the builder
-        // This method is kept for any additional runtime validation needs
-        logger.debug("Configuration validation successful");
-    }
-
-    /**
      * Generates encryption materials for the specified subject.
      *
-     * <p>This method performs the following operations asynchronously:
+     * <p>
+     * This method performs the following operations asynchronously:
      * <ol>
-     *   <li>Generates a new 256-bit DEK using Tink's AES-GCM AEAD primitive</li>
-     *   <li>Encrypts the DEK using Vault's transit engine with a subject-specific key</li>
-     *   <li>Returns EncryptionMaterial containing the plaintext DEK, encrypted DEK, and context</li>
+     * <li>Generates a new 256-bit DEK using Tink's AES-GCM AEAD primitive</li>
+     * <li>Encrypts the DEK using Vault's transit engine with a subject-specific
+     * key</li>
+     * <li>Returns EncryptionMaterial containing the plaintext DEK, encrypted DEK,
+     * and context</li>
      * </ol>
      *
-     * <p>The subject-specific key in Vault follows the pattern: {@code {keyPrefix}/subject/{subjectId}}.
-     * If the key doesn't exist, it will be automatically created.</p>
+     * <p>
+     * The subject-specific key in Vault follows the pattern:
+     * {@code {keyPrefix}/subject/{subjectId}}.
+     * If the key doesn't exist, it will be automatically created.
+     * </p>
      *
-     * <p>The encryption context includes the subject ID, timestamp, and provider version
-     * for validation during decryption.</p>
+     * <p>
+     * The encryption context includes the subject ID, timestamp, and provider
+     * version
+     * for validation during decryption.
+     * </p>
      *
-     * @param subjectId the subject identifier for key isolation (must not be null or empty)
+     * @param subjectId the subject identifier for key isolation (must not be null
+     *                  or empty)
      * @return a CompletableFuture containing the encryption materials
-     * @throws IllegalArgumentException if subjectId is null or empty
+     * @throws IllegalArgumentException     if subjectId is null or empty
      * @throws VaultAuthenticationException if Vault authentication fails
-     * @throws VaultConnectivityException if Vault is unreachable
-     * @throws VaultCryptoException if DEK generation or encryption fails
+     * @throws VaultConnectivityException   if Vault is unreachable
+     * @throws VaultCryptoException         if DEK generation or encryption fails
      */
     @Override
     public CompletableFuture<EncryptionMaterial> encryptionKeysFor(String subjectId) {
@@ -159,14 +175,7 @@ public class VaultEncryptingMaterialsProvider implements EncryptingMaterialsProv
         logger.debug("Generating encryption materials for subject: {}", subjectId);
 
         return CompletableFuture
-            .supplyAsync(() -> {
-                try {
-                    return generateDataEncryptionKey();
-                } catch (Exception e) {
-                    logger.error("Failed to generate DEK for subject: {}", subjectId, e);
-                    throw e;
-                }
-            })
+            .supplyAsync(this::generateDataEncryptionKey)
             .thenCompose(dekMaterial -> encryptDataEncryptionKey(subjectId, dekMaterial))
             .whenComplete((result, throwable) -> {
                 if (throwable != null) {
@@ -189,7 +198,8 @@ public class VaultEncryptingMaterialsProvider implements EncryptingMaterialsProv
     /**
      * Generates a new Data Encryption Key using Tink's AEAD primitive.
      *
-     * @return a DataEncryptionKeyMaterial containing the AEAD primitive and raw key bytes
+     * @return a DataEncryptionKeyMaterial containing the AEAD primitive and raw key
+     *         bytes
      */
     private DataEncryptionKeyMaterial generateDataEncryptionKey() {
         try {
@@ -206,6 +216,7 @@ public class VaultEncryptingMaterialsProvider implements EncryptingMaterialsProv
 
             return new DataEncryptionKeyMaterial(aead, keyBytes);
         } catch (GeneralSecurityException e) {
+            logger.error("Failed to generate DEK", e);
             throw new VaultCryptoException("Failed to generate data encryption key", e);
         }
     }
@@ -213,7 +224,7 @@ public class VaultEncryptingMaterialsProvider implements EncryptingMaterialsProv
     /**
      * Encrypts the Data Encryption Key using Vault's transit engine.
      *
-     * @param subjectId the subject identifier
+     * @param subjectId   the subject identifier
      * @param dekMaterial the DEK material to encrypt
      * @return a CompletableFuture containing the complete EncryptionMaterial
      */
@@ -233,18 +244,12 @@ public class VaultEncryptingMaterialsProvider implements EncryptingMaterialsProv
 
         return vaultClient
             .encrypt(keyName, dekMaterial.keyBytes(), encryptionContext)
-            .thenApply(encryptedDek -> {
-                logger.debug(
-                    "Successfully encrypted DEK [subjectId={}, encryptedDekSize={}]",
-                    subjectId,
-                    encryptedDek.length
-                );
-                return new EncryptionMaterial(dekMaterial.aead(), encryptedDek, encryptionContext);
-            });
+            .thenApply(encryptedDek -> new EncryptionMaterial(dekMaterial.aead(), encryptedDek, encryptionContext));
     }
 
     /**
-     * Generates an encryption context string containing subject ID, timestamp, and version.
+     * Generates an encryption context string containing subject ID, timestamp, and
+     * version.
      *
      * @param subjectId the subject identifier
      * @return the encryption context string
@@ -272,29 +277,6 @@ public class VaultEncryptingMaterialsProvider implements EncryptingMaterialsProv
         }
 
         return url.replaceAll("token=[^&]*", "token=[REDACTED]");
-    }
-
-    /**
-     * Sanitizes log messages to ensure no sensitive data is exposed.
-     *
-     * @param message the message to sanitize
-     * @return the sanitized message safe for logging
-     */
-    private String sanitizeLogMessage(String message) {
-        if (message == null) {
-            return "null";
-        }
-
-        // Remove base64-encoded data that might be keys or sensitive content
-        String sanitized = message.replaceAll("[A-Za-z0-9+/]{32,}={0,2}", "[REDACTED_BASE64]");
-
-        // Remove potential token patterns
-        sanitized = sanitized.replaceAll("(?i)token[=:]\\s*[A-Za-z0-9._-]+", "token=[REDACTED]");
-
-        // Remove potential key material patterns
-        sanitized = sanitized.replaceAll("(?i)(key|secret|password)[=:]\\s*[A-Za-z0-9._-]+", "$1=[REDACTED]");
-
-        return sanitized;
     }
 
     @Override

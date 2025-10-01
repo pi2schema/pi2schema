@@ -38,7 +38,7 @@
 - [x] 6. Implement resource management and lifecycle
   - Add proper close() method implementations for both provider classes
   - Implement connection cleanup and resource disposal in VaultTransitClient
-  - Add configuration validation during provider initialization
+  - Configuration validation is handled by VaultCryptoConfiguration.Builder during configuration creation
   - Write tests for resource lifecycle and cleanup scenarios
   - _Requirements: 3.3, 3.4_
 
