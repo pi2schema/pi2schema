@@ -4,6 +4,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
+import com.github.tomakehurst.wiremock.WireMockServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -15,6 +16,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.assertj.core.api.Assertions.*;
 
 /**
@@ -31,12 +33,17 @@ class VaultErrorHandlingAndLoggingTest {
     private Logger transitClientLogger;
     private Logger encryptingProviderLogger;
     private Logger decryptingProviderLogger;
+    private WireMockServer wireMockServer;
 
     private VaultCryptoConfiguration validConfig;
     private VaultCryptoConfiguration invalidConfig;
 
     @BeforeEach
     void setUp() {
+        // Set up WireMock server
+        wireMockServer = new WireMockServer(0);
+        wireMockServer.start();
+
         // Set up log capture
         logAppender = new ListAppender<>();
         logAppender.start();
@@ -54,32 +61,32 @@ class VaultErrorHandlingAndLoggingTest {
         encryptingProviderLogger.setLevel(Level.DEBUG);
         decryptingProviderLogger.setLevel(Level.DEBUG);
 
-        // Create valid configuration
+        // Create valid configuration with WireMock server and optimized timeouts
         validConfig =
             VaultCryptoConfiguration
                 .builder()
-                .vaultUrl("https://vault.example.com:8200")
+                .vaultUrl("http://localhost:" + wireMockServer.port())
                 .vaultToken("test-token-12345")
                 .transitEnginePath("transit")
                 .keyPrefix("test-prefix")
-                .connectionTimeout(Duration.ofSeconds(5))
-                .requestTimeout(Duration.ofSeconds(10))
+                .connectionTimeout(Duration.ofMillis(80)) // Short timeouts for fast deterministic failure
+                .requestTimeout(Duration.ofMillis(120))
                 .maxRetries(2)
-                .retryBackoffMs(Duration.ofMillis(100))
+                .retryBackoffMs(Duration.ofMillis(10)) // Optimized for fast test execution
                 .build();
 
-        // Create invalid configuration for testing
+        // Create invalid configuration for testing with WireMock server and optimized timeouts
         invalidConfig =
             VaultCryptoConfiguration
                 .builder()
-                .vaultUrl("http://invalid-vault-url:9999")
+                .vaultUrl("http://localhost:" + wireMockServer.port())
                 .vaultToken("invalid-token")
                 .transitEnginePath("transit")
                 .keyPrefix("test-prefix")
-                .connectionTimeout(Duration.ofMillis(100))
-                .requestTimeout(Duration.ofMillis(200))
+                .connectionTimeout(Duration.ofMillis(80)) // Short timeouts for fast deterministic failure
+                .requestTimeout(Duration.ofMillis(120))
                 .maxRetries(1)
-                .retryBackoffMs(Duration.ofMillis(50))
+                .retryBackoffMs(Duration.ofMillis(10)) // Optimized for fast test execution
                 .build();
     }
 
@@ -90,6 +97,10 @@ class VaultErrorHandlingAndLoggingTest {
             encryptingProviderLogger.detachAppender(logAppender);
             decryptingProviderLogger.detachAppender(logAppender);
             logAppender.stop();
+        }
+
+        if (wireMockServer != null && wireMockServer.isRunning()) {
+            wireMockServer.stop();
         }
     }
 
@@ -253,17 +264,31 @@ class VaultErrorHandlingAndLoggingTest {
     @Test
     @DisplayName("Should log request IDs for correlation")
     void shouldLogRequestIdsForCorrelation() {
-        try (var provider = new VaultEncryptingMaterialsProvider(invalidConfig)) {
-            // When - this will fail but should generate request IDs
+        // Stub a server error so that the operation fails quickly but still triggers request/operation logging
+        wireMockServer.stubFor(
+            any(urlMatching("/v1/transit/.*"))
+                .willReturn(
+                    aResponse()
+                        .withStatus(500)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("{\"errors\":[\"internal server error\"]}")
+                )
+        );
+
+        try (var provider = new VaultEncryptingMaterialsProvider(validConfig)) {
             var future = provider.encryptionKeysFor("test-subject");
 
-            assertThatThrownBy(() -> future.get(3, TimeUnit.SECONDS)).isInstanceOf(ExecutionException.class);
+            // Expect failure due to server error; use join to avoid additional timing complexity
+            assertThatThrownBy(future::join)
+                .isInstanceOf(CompletionException.class)
+                .hasCauseInstanceOf(VaultConnectivityException.class);
 
-            // Then
-            var debugLogs = logAppender.list.stream().filter(event -> event.getLevel() == Level.DEBUG).toList();
+            // Collect DEBUG logs and verify at least one contains requestId= pattern
+            var debugLogs = logAppender.list.stream().filter(e -> e.getLevel() == Level.DEBUG).toList();
 
-            // Verify request IDs are present in logs
-            assertThat(debugLogs).anyMatch(event -> event.getMessage().contains("requestId="));
+            assertThat(debugLogs)
+                .as("Expected at least one debug log containing requestId for correlation")
+                .anyMatch(event -> event.getMessage().contains("requestId="));
         }
     }
 
