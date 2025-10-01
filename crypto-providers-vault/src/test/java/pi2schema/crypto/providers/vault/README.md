@@ -4,7 +4,7 @@ This directory contains integration tests for the Vault crypto providers that ve
 
 ## Test Types
 
-### 1. Full Integration Tests (`VaultCryptoProviderIntegrationTest`)
+### Integration Tests (`VaultCryptoProviderIntegrationTest`)
 
 These tests use Testcontainers to spin up a real Vault instance and test all functionality including:
 - Complete encrypt/decrypt cycles with subject isolation
@@ -12,6 +12,8 @@ These tests use Testcontainers to spin up a real Vault instance and test all fun
 - Concurrent operations and performance characteristics
 - Real Vault API interactions
 - Error handling with invalid configurations
+- Encryption context validation
+- Provider resource lifecycle management
 
 **Requirements:**
 - Docker must be installed and running
@@ -22,21 +24,9 @@ These tests use Testcontainers to spin up a real Vault instance and test all fun
 ./gradlew :crypto-providers-vault:test --tests "*VaultCryptoProviderIntegrationTest*"
 ```
 
-### 2. Simple Integration Tests (`VaultCryptoProviderSimpleIntegrationTest`)
-
-These tests also use Testcontainers but with a simpler test setup for faster execution.
-
-**Requirements:**
-- Docker must be installed and running
-
-**Running:**
-```bash
-./gradlew :crypto-providers-vault:test --tests "*VaultCryptoProviderSimpleIntegrationTest*"
-```
-
 ## Test Coverage
 
-Both test suites verify:
+The integration test suite verifies:
 
 ### Core Functionality
 - ✅ Basic encrypt/decrypt cycle
@@ -44,12 +34,12 @@ Both test suites verify:
 - ✅ Encryption context validation
 - ✅ Provider resource lifecycle management
 
-### GDPR Compliance (Full tests only)
+### GDPR Compliance
 - ✅ Key deletion scenarios
 - ✅ Data inaccessibility after key deletion
 - ✅ Subject-specific key management
 
-### Performance & Concurrency (Full tests only)
+### Performance & Concurrency
 - ✅ Concurrent operations handling
 - ✅ Performance characteristics under load
 - ✅ Asynchronous operation handling
@@ -74,9 +64,9 @@ The integration tests verify the following requirements from the specification:
 
 ### Docker Issues
 If you encounter Docker-related issues (certificate expiration, connectivity):
-1. Try using the simple integration tests instead
-2. Update Docker to the latest version
-3. Check system time synchronization
+1. Update Docker to the latest version
+2. Check system time synchronization
+3. Verify Docker daemon is running
 
 ### Vault Connection Issues
 If tests fail with connectivity errors:
@@ -93,9 +83,9 @@ If tests timeout or run slowly:
 
 ## Configuration
 
-Test configurations can be adjusted by modifying the setup methods in each test class:
+Test configurations can be adjusted by modifying the setup methods in the test class:
 
-- **Vault URL**: Default `http://127.0.0.1:8200` for simple tests, container URL for full tests
+- **Vault URL**: Container URL provided by Testcontainers
 - **Vault Token**: Default `test-token`
 - **Transit Engine Path**: Default `transit`
 - **Key Prefix**: Test-specific prefixes to avoid conflicts
@@ -104,7 +94,7 @@ Test configurations can be adjusted by modifying the setup methods in each test 
 
 ## CI/CD Integration
 
-For continuous integration environments, all tests use Testcontainers with Docker:
+For continuous integration environments, the tests use Testcontainers with Docker:
 
 ```yaml
 # Run integration tests
@@ -112,4 +102,4 @@ For continuous integration environments, all tests use Testcontainers with Docke
   run: ./gradlew :crypto-providers-vault:test
 ```
 
-Both test suites require Docker to be available in the CI environment.
+The test suite requires Docker to be available in the CI environment.
