@@ -2,7 +2,7 @@
 
 - [x] 1. Set up project structure and dependencies
   - Create the crypto-providers-vault module structure following existing patterns
-  - Add necessary dependencies for Vault client, Tink crypto, and testing frameworks
+  - Add necessary dependencies for Tink crypto, Jackson JSON processing, and testing frameworks
   - Configure Gradle build file with proper dependencies and test configurations
   - _Requirements: 1.1, 3.1_
 
@@ -13,7 +13,7 @@
   - _Requirements: 3.1, 3.4, 5.2, 5.3, 5.5_
 
 - [x] 3. Implement VaultTransitClient for Vault API interactions
-  - Create VaultTransitClient class with HTTP client for Vault API calls
+  - Create VaultTransitClient class with Java's built-in HttpClient for Vault API calls
   - Implement authentication, encrypt, decrypt, and key management methods
   - Add connection pooling, timeout handling, and retry logic with exponential backoff
   - Write comprehensive unit tests with mocked Vault responses

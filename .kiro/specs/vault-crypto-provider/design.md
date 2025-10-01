@@ -230,9 +230,9 @@ All Vault operations return CompletableFuture to enable:
 
 ### Connection Management
 
-- HTTP connection pooling for Vault API calls
+- Java's built-in HttpClient with connection pooling for Vault API calls
 - Keep-alive connections to reduce handshake overhead
-- Configurable connection limits
+- Configurable connection and request timeouts
 - Proper connection cleanup on provider close
 
 ### Caching Strategy

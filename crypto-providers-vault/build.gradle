@@ -2,7 +2,6 @@ dependencies {
     // Core dependencies
     implementation project(':crypto-spi')
     implementation libs.tink
-    implementation libs.vault.java.driver
     
     // JSON processing for Vault API
     implementation libs.jackson.core
