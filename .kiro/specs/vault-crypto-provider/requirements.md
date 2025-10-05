@@ -15,8 +15,8 @@ The provider will implement both the `EncryptingMaterialsProvider` and `Decrypti
 #### Acceptance Criteria
 
 1. WHEN the system needs encryption materials for a subject THEN the provider SHALL generate a new Data Encryption Key (DEK) using Tink's AEAD primitive
-2. WHEN a DEK is generated THEN the provider SHALL encrypt the DEK using Vault's transit encryption engine with the subject ID as the encryption context
-3. WHEN encryption materials are requested THEN the provider SHALL return an EncryptionMaterial object containing the plaintext DEK, encrypted DEK, and encryption context
+2. WHEN a DEK is generated THEN the provider SHALL encrypt the DEK using Vault's transit encryption engine with subject-specific keys
+3. WHEN encryption materials are requested THEN the provider SHALL return an EncryptionMaterial object containing the plaintext DEK and encrypted DEK
 4. IF Vault is unavailable THEN the provider SHALL throw a meaningful exception indicating the connectivity issue
 
 ### Requirement 2
@@ -26,10 +26,10 @@ The provider will implement both the `EncryptingMaterialsProvider` and `Decrypti
 #### Acceptance Criteria
 
 1. WHEN decryption is requested for a subject THEN the provider SHALL use Vault's transit encryption to decrypt the provided encrypted DEK
-2. WHEN decrypting THEN the provider SHALL use the subject ID and encryption context to ensure proper key isolation
+2. WHEN decrypting THEN the provider SHALL use the subject ID to locate the appropriate key in Vault for proper key isolation
 3. WHEN decryption is successful THEN the provider SHALL return a ready-to-use Tink AEAD primitive
 4. IF the encrypted DEK cannot be decrypted THEN the provider SHALL throw a meaningful exception
-5. IF the subject ID or encryption context is invalid THEN the provider SHALL throw a validation exception
+5. IF the subject ID is invalid THEN the provider SHALL throw a validation exception
 
 ### Requirement 3
 
@@ -64,7 +64,7 @@ The provider will implement both the `EncryptingMaterialsProvider` and `Decrypti
 1. WHEN Vault operations fail THEN the provider SHALL log detailed error information without exposing sensitive data
 2. WHEN authentication fails THEN the provider SHALL provide clear error messages indicating the authentication issue
 3. WHEN network issues occur THEN the provider SHALL distinguish between temporary and permanent failures
-4. WHEN encryption context validation fails THEN the provider SHALL log the validation error with sufficient detail for debugging
+4. WHEN input validation fails THEN the provider SHALL log the validation error with sufficient detail for debugging
 5. IF unexpected errors occur THEN the provider SHALL wrap them in appropriate custom exceptions with meaningful messages
 
 ### Requirement 6

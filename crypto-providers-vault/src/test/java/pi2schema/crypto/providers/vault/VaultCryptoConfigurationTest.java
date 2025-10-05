@@ -322,4 +322,63 @@ class VaultCryptoConfigurationTest {
             .contains("[REDACTED]")
             .contains("https://vault.example.com");
     }
+
+    @Test
+    @DisplayName("Should handle token with whitespace")
+    void shouldHandleTokenWithWhitespace() {
+        // Token with leading/trailing spaces should be rejected
+        assertThatThrownBy(() ->
+                VaultCryptoConfiguration
+                    .builder()
+                    .vaultUrl("https://vault.example.com:8200")
+                    .vaultToken("  token-with-spaces  ")
+                    .transitEnginePath("transit")
+                    .keyPrefix("test-prefix")
+                    .build()
+            )
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("Vault token cannot contain leading or trailing whitespace");
+    }
+
+    @Test
+    @DisplayName("Should validate URL format")
+    void shouldValidateUrlFormat() {
+        // Test invalid URL schemes
+        assertThatThrownBy(() ->
+                VaultCryptoConfiguration
+                    .builder()
+                    .vaultUrl("ftp://vault.example.com:8200") // Invalid scheme
+                    .vaultToken("token")
+                    .build()
+            )
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("Vault URL must start with http:// or https://");
+
+        // Test missing scheme
+        assertThatThrownBy(() ->
+                VaultCryptoConfiguration
+                    .builder()
+                    .vaultUrl("vault.example.com:8200") // Missing scheme
+                    .vaultToken("token")
+                    .build()
+            )
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("Vault URL must start with http:// or https://");
+    }
+
+    @Test
+    @DisplayName("Should validate key prefix format")
+    void shouldValidateKeyPrefixFormat() {
+        // Test invalid key prefix with special characters
+        assertThatThrownBy(() ->
+                VaultCryptoConfiguration
+                    .builder()
+                    .vaultUrl("https://vault.example.com")
+                    .vaultToken("token")
+                    .keyPrefix("invalid@prefix")
+                    .build()
+            )
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("Key prefix can only contain alphanumeric characters");
+    }
 }

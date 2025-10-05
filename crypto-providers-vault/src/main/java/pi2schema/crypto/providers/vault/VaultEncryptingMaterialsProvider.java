@@ -10,7 +10,6 @@ import pi2schema.crypto.providers.EncryptionMaterial;
 
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
-import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -87,7 +86,7 @@ import java.util.concurrent.CompletableFuture;
 public class VaultEncryptingMaterialsProvider implements EncryptingMaterialsProvider {
 
     private static final Logger logger = LoggerFactory.getLogger(VaultEncryptingMaterialsProvider.class);
-    private static final String PROVIDER_VERSION = "1.0";
+
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final VaultTransitClient vaultClient;
@@ -140,20 +139,13 @@ public class VaultEncryptingMaterialsProvider implements EncryptingMaterialsProv
      * <li>Generates a new 256-bit DEK using Tink's AES-GCM AEAD primitive</li>
      * <li>Encrypts the DEK using Vault's transit engine with a subject-specific
      * key</li>
-     * <li>Returns EncryptionMaterial containing the plaintext DEK, encrypted DEK,
-     * and context</li>
+     * <li>Returns EncryptionMaterial containing the plaintext DEK and encrypted DEK</li>
      * </ol>
      *
      * <p>
      * The subject-specific key in Vault follows the pattern:
      * {@code {keyPrefix}/subject/{subjectId}}.
      * If the key doesn't exist, it will be automatically created.
-     * </p>
-     *
-     * <p>
-     * The encryption context includes the subject ID, timestamp, and provider
-     * version
-     * for validation during decryption.
      * </p>
      *
      * @param subjectId the subject identifier for key isolation (must not be null
@@ -186,11 +178,7 @@ public class VaultEncryptingMaterialsProvider implements EncryptingMaterialsProv
                         throwable
                     );
                 } else {
-                    logger.debug(
-                        "Successfully generated encryption materials [subjectId={}, contextLength={}]",
-                        subjectId,
-                        result != null ? result.encryptionContext().length() : 0
-                    );
+                    logger.debug("Successfully generated encryption materials [subjectId={}]", subjectId);
                 }
             });
     }
@@ -233,30 +221,12 @@ public class VaultEncryptingMaterialsProvider implements EncryptingMaterialsProv
         DataEncryptionKeyMaterial dekMaterial
     ) {
         String keyName = vaultClient.generateKeyName(subjectId);
-        String encryptionContext = generateEncryptionContext(subjectId);
 
-        logger.debug(
-            "Encrypting DEK with Vault [subjectId={}, keyName={}, contextLength={}]",
-            subjectId,
-            keyName,
-            encryptionContext.length()
-        );
+        logger.debug("Encrypting DEK with Vault [subjectId={}, keyName={}]", subjectId, keyName);
 
         return vaultClient
-            .encrypt(keyName, dekMaterial.keyBytes(), encryptionContext)
-            .thenApply(encryptedDek -> new EncryptionMaterial(dekMaterial.aead(), encryptedDek, encryptionContext));
-    }
-
-    /**
-     * Generates an encryption context string containing subject ID, timestamp, and
-     * version.
-     *
-     * @param subjectId the subject identifier
-     * @return the encryption context string
-     */
-    private String generateEncryptionContext(String subjectId) {
-        long timestamp = Instant.now().toEpochMilli();
-        return String.format("subjectId=%s;timestamp=%d;version=%s", subjectId, timestamp, PROVIDER_VERSION);
+            .encrypt(keyName, dekMaterial.keyBytes(), null)
+            .thenApply(encryptedDek -> new EncryptionMaterial(dekMaterial.aead(), encryptedDek, null));
     }
 
     /**

@@ -169,10 +169,10 @@ public class ErrorHandlingExample {
     }
 
     /**
-     * Demonstrates handling of invalid encryption context errors.
+     * Demonstrates handling of basic decryption errors.
      */
-    public static void demonstrateInvalidEncryptionContextErrors() {
-        System.out.println("\n=== Invalid Encryption Context Error Handling ===");
+    public static void demonstrateBasicDecryptionErrors() {
+        System.out.println("\n=== Basic Decryption Error Handling ===");
 
         VaultCryptoConfiguration config = VaultCryptoConfiguration
             .builder()
@@ -183,34 +183,15 @@ public class ErrorHandlingExample {
         try (VaultDecryptingMaterialsProvider provider = new VaultDecryptingMaterialsProvider(config)) {
             byte[] fakeEncryptedKey = "fake-encrypted-key".getBytes();
 
-            // Test various invalid contexts
-            String[] invalidContexts = {
-                "invalid-format",
-                "subjectId=user1", // Missing timestamp and version
-                "subjectId=user1;timestamp=abc;version=1.0", // Invalid timestamp
-                "subjectId=user1;timestamp=1234567890;version=", // Empty version
-                "subjectId=user2;timestamp=1234567890;version=1.0", // Subject ID mismatch
-            };
-
-            for (String invalidContext : invalidContexts) {
-                try {
-                    CompletableFuture<com.google.crypto.tink.Aead> future = provider.decryptionKeysFor(
-                        "user1",
-                        fakeEncryptedKey,
-                        invalidContext
-                    );
-                    future.get();
-                } catch (Exception e) {
-                    Throwable cause = e.getCause();
-                    if (cause instanceof InvalidEncryptionContextException) {
-                        InvalidEncryptionContextException iece = (InvalidEncryptionContextException) cause;
-                        System.out.println("✓ Caught invalid context error:");
-                        System.out.println("  Context: " + iece.getEncryptionContext());
-                        System.out.println("  Message: " + iece.getMessage());
-                    } else {
-                        System.out.println("✓ Caught validation error: " + e.getMessage());
-                    }
-                }
+            try {
+                CompletableFuture<com.google.crypto.tink.Aead> future = provider.decryptionKeysFor(
+                    "user1",
+                    fakeEncryptedKey,
+                    null // encryption context not used
+                );
+                future.get();
+            } catch (Exception e) {
+                System.out.println("✓ Caught decryption error: " + e.getMessage());
             }
         } catch (Exception e) {
             System.out.println("✓ Provider error: " + e.getMessage());
@@ -302,7 +283,7 @@ public class ErrorHandlingExample {
         demonstrateAuthenticationErrors();
         demonstrateConnectivityErrors();
         demonstrateSubjectKeyNotFoundErrors();
-        demonstrateInvalidEncryptionContextErrors();
+        demonstrateBasicDecryptionErrors();
         demonstrateRetryPatterns();
         demonstrateGracefulDegradation();
 

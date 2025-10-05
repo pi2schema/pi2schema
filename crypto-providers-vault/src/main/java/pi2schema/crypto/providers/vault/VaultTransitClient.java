@@ -1036,11 +1036,7 @@ public class VaultTransitClient implements AutoCloseable {
                 (throwable.getCause() instanceof IOException));
 
         // Don't retry on authentication or validation errors
-        if (
-            throwable instanceof VaultAuthenticationException ||
-            throwable instanceof InvalidEncryptionContextException ||
-            throwable instanceof IllegalArgumentException
-        ) {
+        if (throwable instanceof VaultAuthenticationException || throwable instanceof IllegalArgumentException) {
             isRetryable = false;
         }
 

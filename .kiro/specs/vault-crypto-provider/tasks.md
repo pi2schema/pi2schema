@@ -22,7 +22,7 @@
 - [x] 4. Implement VaultEncryptingMaterialsProvider
   - Create class implementing EncryptingMaterialsProvider interface
   - Implement encryptionKeysFor method with DEK generation using Tink AEAD
-  - Add Vault KEK encryption of DEKs with proper subject isolation and encryption context
+  - Add Vault KEK encryption of DEKs with proper subject isolation
   - Handle asynchronous operations using CompletableFuture
   - Write unit tests covering success cases, error scenarios, and concurrent operations
   - _Requirements: 1.1, 1.2, 1.3, 4.1, 4.4, 6.3_
@@ -30,7 +30,7 @@
 - [x] 5. Implement VaultDecryptingMaterialsProvider
   - Create class implementing DecryptingMaterialsProvider interface
   - Implement decryptionKeysFor method with Vault KEK decryption and DEK reconstruction
-  - Add encryption context validation and subject ID verification
+  - Add subject ID verification (encryption context parameter accepted but ignored for MVP)
   - Handle error cases for invalid keys, missing subjects, and Vault failures
   - Write unit tests for successful decryption, validation failures, and error handling
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 4.1, 5.4_
