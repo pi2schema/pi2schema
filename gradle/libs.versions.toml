@@ -8,7 +8,7 @@ protobuf-gradle-plugin = "0.9.5"
 jsonschema2pojo = "1.2.2"
 
 # Core dependencies
-protobuf-java = "4.32.0"
+protobuf-java = "4.32.1"
 protoc = "4.32.0"
 avro = "1.11.4"
 kryo = "5.6.2"
