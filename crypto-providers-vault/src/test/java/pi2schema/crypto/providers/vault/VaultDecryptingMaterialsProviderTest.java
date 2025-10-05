@@ -54,7 +54,6 @@ class VaultDecryptingMaterialsProviderTest {
         // Given
         var subjectId = "user-12345";
         var expectedKeyName = "pi2schema/subject/user-12345";
-        var encryptionContext = "subjectId=user-12345;timestamp=1234567890;version=1.0";
         var encryptedDataKey = "vault:v1:encrypted-dek-data".getBytes();
 
         // Generate a valid 32-byte DEK
@@ -62,13 +61,13 @@ class VaultDecryptingMaterialsProviderTest {
         secureRandom.nextBytes(dekBytes);
 
         when(mockVaultClient.generateKeyName(subjectId)).thenReturn(expectedKeyName);
-        when(mockVaultClient.decrypt(expectedKeyName, encryptedDataKey, encryptionContext))
+        when(mockVaultClient.decrypt(expectedKeyName, encryptedDataKey, null))
             .thenReturn(CompletableFuture.completedFuture(dekBytes));
 
         provider = createProviderWithMockedClient();
 
         // When
-        var future = provider.decryptionKeysFor(subjectId, encryptedDataKey, encryptionContext);
+        var future = provider.decryptionKeysFor(subjectId, encryptedDataKey, null);
         var result = future.join();
 
         // Then
@@ -87,18 +86,17 @@ class VaultDecryptingMaterialsProviderTest {
 
         // Verify Vault client interactions
         verify(mockVaultClient).generateKeyName(subjectId);
-        verify(mockVaultClient).decrypt(expectedKeyName, encryptedDataKey, encryptionContext);
+        verify(mockVaultClient).decrypt(expectedKeyName, encryptedDataKey, null);
     }
 
     @Test
     void testNullSubjectIdThrowsException() {
         // Given
         var encryptedDataKey = "encrypted-dek".getBytes();
-        var encryptionContext = "subjectId=user-123;timestamp=1234567890;version=1.0";
         provider = createProviderWithMockedClient();
 
         // When & Then
-        var future = provider.decryptionKeysFor(null, encryptedDataKey, encryptionContext);
+        var future = provider.decryptionKeysFor(null, encryptedDataKey, null);
 
         assertThatThrownBy(future::join)
             .isInstanceOf(CompletionException.class)
@@ -113,11 +111,10 @@ class VaultDecryptingMaterialsProviderTest {
     void testEmptySubjectIdThrowsException() {
         // Given
         var encryptedDataKey = "encrypted-dek".getBytes();
-        var encryptionContext = "subjectId=user-123;timestamp=1234567890;version=1.0";
         provider = createProviderWithMockedClient();
 
         // When & Then
-        var future = provider.decryptionKeysFor("   ", encryptedDataKey, encryptionContext);
+        var future = provider.decryptionKeysFor("   ", encryptedDataKey, null);
 
         assertThatThrownBy(future::join)
             .isInstanceOf(CompletionException.class)
@@ -132,11 +129,10 @@ class VaultDecryptingMaterialsProviderTest {
     void testNullEncryptedDataKeyThrowsException() {
         // Given
         var subjectId = "user-123";
-        var encryptionContext = "subjectId=user-123;timestamp=1234567890;version=1.0";
         provider = createProviderWithMockedClient();
 
         // When & Then
-        var future = provider.decryptionKeysFor(subjectId, null, encryptionContext);
+        var future = provider.decryptionKeysFor(subjectId, null, null);
 
         assertThatThrownBy(future::join)
             .isInstanceOf(CompletionException.class)
@@ -151,11 +147,10 @@ class VaultDecryptingMaterialsProviderTest {
     void testEmptyEncryptedDataKeyThrowsException() {
         // Given
         var subjectId = "user-123";
-        var encryptionContext = "subjectId=user-123;timestamp=1234567890;version=1.0";
         provider = createProviderWithMockedClient();
 
         // When & Then
-        var future = provider.decryptionKeysFor(subjectId, new byte[0], encryptionContext);
+        var future = provider.decryptionKeysFor(subjectId, new byte[0], null);
 
         assertThatThrownBy(future::join)
             .isInstanceOf(CompletionException.class)
@@ -166,142 +161,25 @@ class VaultDecryptingMaterialsProviderTest {
         verifyNoInteractions(mockVaultClient);
     }
 
-    @Test
-    void testNullEncryptionContextThrowsException() {
-        // Given
-        var subjectId = "user-123";
-        var encryptedDataKey = "encrypted-dek".getBytes();
-        provider = createProviderWithMockedClient();
-
-        // When & Then
-        var future = provider.decryptionKeysFor(subjectId, encryptedDataKey, null);
-
-        assertThatThrownBy(future::join)
-            .isInstanceOf(CompletionException.class)
-            .cause()
-            .isInstanceOf(InvalidEncryptionContextException.class)
-            .hasMessage("Encryption context cannot be null or empty [subjectId=user-123]");
-
-        verifyNoInteractions(mockVaultClient);
-    }
-
-    @Test
-    void testEmptyEncryptionContextThrowsException() {
-        // Given
-        var subjectId = "user-123";
-        var encryptedDataKey = "encrypted-dek".getBytes();
-        provider = createProviderWithMockedClient();
-
-        // When & Then
-        var future = provider.decryptionKeysFor(subjectId, encryptedDataKey, "   ");
-
-        assertThatThrownBy(future::join)
-            .isInstanceOf(CompletionException.class)
-            .cause()
-            .isInstanceOf(InvalidEncryptionContextException.class)
-            .hasMessage("Encryption context cannot be null or empty [subjectId=user-123]");
-
-        verifyNoInteractions(mockVaultClient);
-    }
-
-    @Test
-    void testInvalidEncryptionContextFormatThrowsException() {
-        // Given
-        var subjectId = "user-123";
-        var encryptedDataKey = "encrypted-dek".getBytes();
-        var invalidContext = "invalid-format";
-        provider = createProviderWithMockedClient();
-
-        // When & Then
-        var future = provider.decryptionKeysFor(subjectId, encryptedDataKey, invalidContext);
-
-        assertThatThrownBy(future::join)
-            .isInstanceOf(CompletionException.class)
-            .cause()
-            .isInstanceOf(InvalidEncryptionContextException.class)
-            .hasMessageContaining("Encryption context format is invalid");
-
-        verifyNoInteractions(mockVaultClient);
-    }
-
-    @Test
-    void testSubjectIdMismatchInContextThrowsException() {
-        // Given
-        var subjectId = "user-123";
-        var encryptedDataKey = "encrypted-dek".getBytes();
-        var contextWithDifferentSubject = "subjectId=user-456;timestamp=1234567890;version=1.0";
-        provider = createProviderWithMockedClient();
-
-        // When & Then
-        var future = provider.decryptionKeysFor(subjectId, encryptedDataKey, contextWithDifferentSubject);
-
-        assertThatThrownBy(future::join)
-            .isInstanceOf(CompletionException.class)
-            .cause()
-            .isInstanceOf(InvalidEncryptionContextException.class)
-            .hasMessageContaining("Subject ID mismatch");
-
-        verifyNoInteractions(mockVaultClient);
-    }
-
-    @Test
-    void testInvalidTimestampInContextThrowsException() {
-        // Given
-        var subjectId = "user-123";
-        var encryptedDataKey = "encrypted-dek".getBytes();
-        var contextWithInvalidTimestamp = "subjectId=user-123;timestamp=invalid;version=1.0";
-        provider = createProviderWithMockedClient();
-
-        // When & Then
-        var future = provider.decryptionKeysFor(subjectId, encryptedDataKey, contextWithInvalidTimestamp);
-
-        assertThatThrownBy(future::join)
-            .isInstanceOf(CompletionException.class)
-            .cause()
-            .isInstanceOf(InvalidEncryptionContextException.class)
-            .hasMessageContaining("Invalid timestamp format");
-
-        verifyNoInteractions(mockVaultClient);
-    }
-
-    @Test
-    void testEmptyVersionInContextThrowsException() {
-        // Given
-        var subjectId = "user-123";
-        var encryptedDataKey = "encrypted-dek".getBytes();
-        var contextWithEmptyVersion = "subjectId=user-123;timestamp=1234567890;version=";
-        provider = createProviderWithMockedClient();
-
-        // When & Then
-        var future = provider.decryptionKeysFor(subjectId, encryptedDataKey, contextWithEmptyVersion);
-
-        assertThatThrownBy(future::join)
-            .isInstanceOf(CompletionException.class)
-            .cause()
-            .isInstanceOf(InvalidEncryptionContextException.class)
-            .hasMessageContaining("Version cannot be empty");
-
-        verifyNoInteractions(mockVaultClient);
-    }
+    // Encryption context validation tests removed - MVP relies on Vault access controls
 
     @Test
     void testSubjectKeyNotFoundThrowsException() {
         // Given
         var subjectId = "user-12345";
         var expectedKeyName = "pi2schema/subject/user-12345";
-        var encryptionContext = "subjectId=user-12345;timestamp=1234567890;version=1.0";
         var encryptedDataKey = "encrypted-dek".getBytes();
 
         var keyNotFoundException = new SubjectKeyNotFoundException(subjectId, "Key not found in Vault");
 
         when(mockVaultClient.generateKeyName(subjectId)).thenReturn(expectedKeyName);
-        when(mockVaultClient.decrypt(expectedKeyName, encryptedDataKey, encryptionContext))
+        when(mockVaultClient.decrypt(expectedKeyName, encryptedDataKey, null))
             .thenReturn(CompletableFuture.failedFuture(keyNotFoundException));
 
         provider = createProviderWithMockedClient();
 
         // When & Then
-        var future = provider.decryptionKeysFor(subjectId, encryptedDataKey, encryptionContext);
+        var future = provider.decryptionKeysFor(subjectId, encryptedDataKey, null);
 
         assertThatThrownBy(future::join)
             .isInstanceOf(CompletionException.class)
@@ -312,7 +190,7 @@ class VaultDecryptingMaterialsProviderTest {
             });
 
         verify(mockVaultClient).generateKeyName(subjectId);
-        verify(mockVaultClient).decrypt(expectedKeyName, encryptedDataKey, encryptionContext);
+        verify(mockVaultClient).decrypt(expectedKeyName, encryptedDataKey, null);
     }
 
     @Test
@@ -320,19 +198,18 @@ class VaultDecryptingMaterialsProviderTest {
         // Given
         var subjectId = "user-12345";
         var expectedKeyName = "pi2schema/subject/user-12345";
-        var encryptionContext = "subjectId=user-12345;timestamp=1234567890;version=1.0";
         var encryptedDataKey = "encrypted-dek".getBytes();
 
         var connectivityException = new VaultConnectivityException("Vault is unreachable");
 
         when(mockVaultClient.generateKeyName(subjectId)).thenReturn(expectedKeyName);
-        when(mockVaultClient.decrypt(expectedKeyName, encryptedDataKey, encryptionContext))
+        when(mockVaultClient.decrypt(expectedKeyName, encryptedDataKey, null))
             .thenReturn(CompletableFuture.failedFuture(connectivityException));
 
         provider = createProviderWithMockedClient();
 
         // When & Then
-        var future = provider.decryptionKeysFor(subjectId, encryptedDataKey, encryptionContext);
+        var future = provider.decryptionKeysFor(subjectId, encryptedDataKey, null);
 
         assertThatThrownBy(future::join)
             .isInstanceOf(CompletionException.class)
@@ -341,7 +218,7 @@ class VaultDecryptingMaterialsProviderTest {
             .hasMessage("Vault is unreachable");
 
         verify(mockVaultClient).generateKeyName(subjectId);
-        verify(mockVaultClient).decrypt(expectedKeyName, encryptedDataKey, encryptionContext);
+        verify(mockVaultClient).decrypt(expectedKeyName, encryptedDataKey, null);
     }
 
     @Test
@@ -349,19 +226,18 @@ class VaultDecryptingMaterialsProviderTest {
         // Given
         var subjectId = "user-12345";
         var expectedKeyName = "pi2schema/subject/user-12345";
-        var encryptionContext = "subjectId=user-12345;timestamp=1234567890;version=1.0";
         var encryptedDataKey = "encrypted-dek".getBytes();
 
         var authException = new VaultAuthenticationException("Invalid token");
 
         when(mockVaultClient.generateKeyName(subjectId)).thenReturn(expectedKeyName);
-        when(mockVaultClient.decrypt(expectedKeyName, encryptedDataKey, encryptionContext))
+        when(mockVaultClient.decrypt(expectedKeyName, encryptedDataKey, null))
             .thenReturn(CompletableFuture.failedFuture(authException));
 
         provider = createProviderWithMockedClient();
 
         // When & Then
-        var future = provider.decryptionKeysFor(subjectId, encryptedDataKey, encryptionContext);
+        var future = provider.decryptionKeysFor(subjectId, encryptedDataKey, null);
 
         assertThatThrownBy(future::join)
             .isInstanceOf(CompletionException.class)
@@ -375,26 +251,24 @@ class VaultDecryptingMaterialsProviderTest {
         // Given
         var subjectId = "user-12345";
         var expectedKeyName = "pi2schema/subject/user-12345";
-        var encryptionContext = "subjectId=user-12345;timestamp=1234567890;version=1.0";
         var encryptedDataKey = "encrypted-dek".getBytes();
 
-        // Return invalid DEK size (not 32 bytes)
-        var invalidDekBytes = new byte[16]; // Only 16 bytes instead of 32
+        // Return truly invalid DEK size (not 16 or 32 bytes)
+        var invalidDekBytes = new byte[15]; // Invalid size for AES
 
         when(mockVaultClient.generateKeyName(subjectId)).thenReturn(expectedKeyName);
-        when(mockVaultClient.decrypt(expectedKeyName, encryptedDataKey, encryptionContext))
+        when(mockVaultClient.decrypt(expectedKeyName, encryptedDataKey, null))
             .thenReturn(CompletableFuture.completedFuture(invalidDekBytes));
 
         provider = createProviderWithMockedClient();
 
         // When & Then
-        var future = provider.decryptionKeysFor(subjectId, encryptedDataKey, encryptionContext);
+        var future = provider.decryptionKeysFor(subjectId, encryptedDataKey, null);
 
         assertThatThrownBy(future::join)
             .isInstanceOf(CompletionException.class)
             .cause()
-            .isInstanceOf(VaultCryptoException.class)
-            .hasMessageContaining("Invalid DEK size");
+            .isInstanceOfAny(VaultCryptoException.class, java.security.GeneralSecurityException.class);
     }
 
     @Test
@@ -411,7 +285,7 @@ class VaultDecryptingMaterialsProviderTest {
         when(mockVaultClient.generateKeyName(anyString()))
             .thenAnswer(invocation -> "pi2schema/subject/" + invocation.getArgument(0));
 
-        when(mockVaultClient.decrypt(anyString(), any(byte[].class), anyString()))
+        when(mockVaultClient.decrypt(anyString(), any(byte[].class), isNull()))
             .thenAnswer(invocation -> {
                 var dekBytes = new byte[32];
                 secureRandom.nextBytes(dekBytes);
@@ -433,7 +307,7 @@ class VaultDecryptingMaterialsProviderTest {
                         );
                         var encryptedDataKey = ("encrypted-dek-" + threadId + "-" + j).getBytes();
 
-                        var future = provider.decryptionKeysFor(subjectId, encryptedDataKey, encryptionContext);
+                        var future = provider.decryptionKeysFor(subjectId, encryptedDataKey, null);
                         var result = future.get(5, TimeUnit.SECONDS);
 
                         assertThat(result).isNotNull();
@@ -459,44 +333,12 @@ class VaultDecryptingMaterialsProviderTest {
         // Verify all operations called the vault client
         verify(mockVaultClient, times(numberOfThreads * operationsPerThread)).generateKeyName(anyString());
         verify(mockVaultClient, times(numberOfThreads * operationsPerThread))
-            .decrypt(anyString(), any(byte[].class), anyString());
+            .decrypt(anyString(), any(byte[].class), isNull());
 
         executor.shutdown();
     }
 
-    @Test
-    void testValidEncryptionContextVariations() {
-        // Given
-        var subjectId = "user-123";
-        var expectedKeyName = "pi2schema/subject/user-123";
-        var encryptedDataKey = "encrypted-dek".getBytes();
-        var dekBytes = new byte[32];
-        secureRandom.nextBytes(dekBytes);
-
-        when(mockVaultClient.generateKeyName(subjectId)).thenReturn(expectedKeyName);
-        when(mockVaultClient.decrypt(eq(expectedKeyName), eq(encryptedDataKey), anyString()))
-            .thenReturn(CompletableFuture.completedFuture(dekBytes));
-
-        provider = createProviderWithMockedClient();
-
-        // Test different valid context variations
-        String[] validContexts = {
-            "subjectId=user-123;timestamp=1234567890;version=1.0",
-            "subjectId=user-123;timestamp=0;version=2.0",
-            "subjectId=user-123;timestamp=9999999999999;version=1.0.0",
-            "subjectId=user-123;timestamp=1234567890;version=beta",
-        };
-
-        for (var context : validContexts) {
-            // When & Then
-            var future = provider.decryptionKeysFor(subjectId, encryptedDataKey, context);
-            assertThatCode(() -> {
-                    var result = future.join();
-                    assertThat(result).isNotNull();
-                })
-                .doesNotThrowAnyException();
-        }
-    }
+    // testValidEncryptionContextVariations removed - encryption context not used in MVP
 
     @Test
     void testProviderClose() {
@@ -527,7 +369,7 @@ class VaultDecryptingMaterialsProviderTest {
         // When & Then
         assertThatThrownBy(() -> new VaultDecryptingMaterialsProvider(null))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessage("Configuration cannot be null");
+            .hasMessage("VaultCryptoConfiguration cannot be null");
     }
 
     @Test

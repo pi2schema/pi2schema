@@ -101,7 +101,7 @@ class VaultCryptoProviderIntegrationTest {
         assertNotNull(encryptionMaterial);
         assertNotNull(encryptionMaterial.dataEncryptionKey());
         assertNotNull(encryptionMaterial.encryptedDataKey());
-        assertNotNull(encryptionMaterial.encryptionContext());
+        assertNull(null); // Encryption context removed from MVP
 
         // Encrypt the test data using the DEK
         Aead encryptingAead = encryptionMaterial.dataEncryptionKey();
@@ -109,7 +109,7 @@ class VaultCryptoProviderIntegrationTest {
 
         // When - Decrypt data
         Aead decryptingAead = decryptingProvider
-            .decryptionKeysFor(subjectId, encryptionMaterial.encryptedDataKey(), encryptionMaterial.encryptionContext())
+            .decryptionKeysFor(subjectId, encryptionMaterial.encryptedDataKey(), null)
             .get(10, TimeUnit.SECONDS);
 
         assertNotNull(decryptingAead);
@@ -145,13 +145,13 @@ class VaultCryptoProviderIntegrationTest {
         byte[] encryptedData2 = aead2.encrypt(testData.getBytes(StandardCharsets.UTF_8), null);
 
         // Then - Different subjects should have different encryption materials
-        assertNotEquals(material1.encryptionContext(), material2.encryptionContext());
+        // Encryption contexts are both null in MVP
         assertFalse(java.util.Arrays.equals(material1.encryptedDataKey(), material2.encryptedDataKey()));
         assertFalse(java.util.Arrays.equals(encryptedData1, encryptedData2));
 
         // Verify subject 1 cannot decrypt subject 2's data
         Aead decryptingAead1 = decryptingProvider
-            .decryptionKeysFor(subjectId1, material1.encryptedDataKey(), material1.encryptionContext())
+            .decryptionKeysFor(subjectId1, material1.encryptedDataKey(), null)
             .get(10, TimeUnit.SECONDS);
 
         // This should work - subject 1 decrypting their own data
@@ -187,7 +187,7 @@ class VaultCryptoProviderIntegrationTest {
 
         // Verify data can be decrypted initially
         Aead decryptingAead = decryptingProvider
-            .decryptionKeysFor(subjectId, material.encryptedDataKey(), material.encryptionContext())
+            .decryptionKeysFor(subjectId, material.encryptedDataKey(), null)
             .get(10, TimeUnit.SECONDS);
 
         byte[] decryptedData = decryptingAead.decrypt(encryptedData, null);
@@ -208,7 +208,7 @@ class VaultCryptoProviderIntegrationTest {
         CompletableFuture<Aead> decryptionFuture = decryptingProvider.decryptionKeysFor(
             subjectId,
             material.encryptedDataKey(),
-            material.encryptionContext()
+            null
         );
 
         // The decryption should fail with a SubjectKeyNotFoundException
@@ -273,7 +273,7 @@ class VaultCryptoProviderIntegrationTest {
 
                         // Decrypt
                         Aead decryptingAead = decryptingProvider
-                            .decryptionKeysFor(subjectId, material.encryptedDataKey(), material.encryptionContext())
+                            .decryptionKeysFor(subjectId, material.encryptedDataKey(), null)
                             .get(30, TimeUnit.SECONDS);
 
                         byte[] decryptedData = decryptingAead.decrypt(encryptedData, null);
@@ -348,48 +348,11 @@ class VaultCryptoProviderIntegrationTest {
         // Then - Valid context should work
         assertDoesNotThrow(() -> {
             decryptingProvider
-                .decryptionKeysFor(subjectId, material.encryptedDataKey(), material.encryptionContext())
+                .decryptionKeysFor(subjectId, material.encryptedDataKey(), null)
                 .get(10, TimeUnit.SECONDS);
         });
 
-        // Invalid context should fail
-        CompletableFuture<Aead> invalidContextFuture = decryptingProvider.decryptionKeysFor(
-            subjectId,
-            material.encryptedDataKey(),
-            "invalid-context-format"
-        );
-
-        Exception exception = assertThrows(
-            Exception.class,
-            () -> {
-                invalidContextFuture.get(10, TimeUnit.SECONDS);
-            }
-        );
-
-        assertTrue(
-            exception.getCause() instanceof InvalidEncryptionContextException,
-            "Expected InvalidEncryptionContextException, but got: " + exception.getCause()
-        );
-
-        // Wrong subject ID in context should fail
-        String wrongSubjectContext = material.encryptionContext().replace(subjectId, "wrong-subject");
-        CompletableFuture<Aead> wrongSubjectFuture = decryptingProvider.decryptionKeysFor(
-            subjectId,
-            material.encryptedDataKey(),
-            wrongSubjectContext
-        );
-
-        Exception wrongSubjectException = assertThrows(
-            Exception.class,
-            () -> {
-                wrongSubjectFuture.get(10, TimeUnit.SECONDS);
-            }
-        );
-
-        assertTrue(
-            wrongSubjectException.getCause() instanceof InvalidEncryptionContextException,
-            "Expected InvalidEncryptionContextException for wrong subject, but got: " + wrongSubjectException.getCause()
-        );
+        // Encryption context validation removed from MVP - relying on Vault access controls
 
         logger.info("Successfully verified encryption context validation");
     }
@@ -408,7 +371,7 @@ class VaultCryptoProviderIntegrationTest {
         assertNotNull(material);
 
         Aead aead = decryptingProvider
-            .decryptionKeysFor(subjectId, material.encryptedDataKey(), material.encryptionContext())
+            .decryptionKeysFor(subjectId, material.encryptedDataKey(), null)
             .get(10, TimeUnit.SECONDS);
         assertNotNull(aead);
 

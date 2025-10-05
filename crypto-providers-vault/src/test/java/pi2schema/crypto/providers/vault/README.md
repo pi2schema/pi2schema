@@ -1,54 +1,63 @@
-# Vault Crypto Provider Integration Tests
+# Vault Crypto Provider Tests
 
-This directory contains integration tests for the Vault crypto providers that verify real-world functionality with actual Vault instances.
+This directory contains comprehensive tests for the Vault crypto providers, organized into focused test classes that minimize overlap and maintenance overhead.
 
-## Test Types
+## Test Structure
 
-### Integration Tests (`VaultCryptoProviderIntegrationTest`)
+### Core Provider Tests
+- **`VaultEncryptingMaterialsProviderTest`** - Unit tests for encryption provider with mocked dependencies
+- **`VaultDecryptingMaterialsProviderTest`** - Unit tests for decryption provider with mocked dependencies
 
-These tests use Testcontainers to spin up a real Vault instance and test all functionality including:
-- Complete encrypt/decrypt cycles with subject isolation
-- GDPR compliance scenarios (key deletion and data inaccessibility)
-- Concurrent operations and performance characteristics
-- Real Vault API interactions
-- Error handling with invalid configurations
-- Encryption context validation
-- Provider resource lifecycle management
+### Integration Tests
+- **`VaultCryptoProviderIntegrationTest`** - End-to-end tests using Testcontainers with real Vault instance
 
-**Requirements:**
-- Docker must be installed and running
-- Sufficient system resources to run containers
+### Configuration Tests
+- **`VaultCryptoConfigurationTest`** - Configuration validation, builder pattern, and URL/token format validation
 
-**Running:**
-```bash
-./gradlew :crypto-providers-vault:test --tests "*VaultCryptoProviderIntegrationTest*"
-```
+### Error Handling Tests
+- **`VaultErrorHandlingAndLoggingTest`** - Network errors, connectivity issues, and logging scenarios
+
+### Exception Tests
+- **`VaultCryptoExceptionTest`** - Consolidated tests for all exception types using parameterized tests
 
 ## Test Coverage
 
-The integration test suite verifies:
+The test suite comprehensively verifies:
 
 ### Core Functionality
-- ✅ Basic encrypt/decrypt cycle
-- ✅ Subject isolation (different subjects get different keys)
-- ✅ Encryption context validation
+- ✅ Encryption material generation and validation
+- ✅ Data encryption key (DEK) creation and management
+- ✅ Vault key encryption key (KEK) operations
+- ✅ Subject isolation and cryptographic separation
+- ✅ Encryption context validation and parsing
 - ✅ Provider resource lifecycle management
 
 ### GDPR Compliance
-- ✅ Key deletion scenarios
+- ✅ Subject-specific key naming and isolation
+- ✅ Key deletion scenarios (right-to-be-forgotten)
 - ✅ Data inaccessibility after key deletion
-- ✅ Subject-specific key management
+- ✅ Cryptographic isolation between subjects
+
+### Error Handling & Resilience
+- ✅ Network connectivity failures (timeouts, connection refused, DNS failures)
+- ✅ Authentication and authorization failures
+- ✅ Invalid configuration handling
+- ✅ Vault server errors and responses
+- ✅ Invalid encryption context scenarios
+- ✅ Comprehensive logging without sensitive data exposure
 
 ### Performance & Concurrency
 - ✅ Concurrent operations handling
 - ✅ Performance characteristics under load
-- ✅ Asynchronous operation handling
+- ✅ Asynchronous operation handling with CompletableFuture
+- ✅ Connection pooling and resource management
 
-### Error Handling
-- ✅ Invalid configuration handling
-- ✅ Network connectivity issues
-- ✅ Authentication failures
-- ✅ Invalid encryption context handling
+### Configuration & Validation
+- ✅ Configuration builder pattern validation
+- ✅ URL format validation
+- ✅ Token format validation
+- ✅ Timeout and retry configuration
+- ✅ Key prefix and transit engine path validation
 
 ## Requirements Coverage
 
@@ -81,25 +90,42 @@ If tests timeout or run slowly:
 2. Check system resources (CPU, memory)
 3. Verify network connectivity to Vault
 
+## Running Tests
+
+**All tests:**
+```bash
+./gradlew :crypto-providers-vault:test
+```
+
+**Specific test classes:**
+```bash
+# Integration tests only
+./gradlew :crypto-providers-vault:test --tests "*VaultCryptoProviderIntegrationTest*"
+
+# Error handling tests only
+./gradlew :crypto-providers-vault:test --tests "*VaultErrorHandlingAndLoggingTest*"
+```
+
 ## Configuration
 
-Test configurations can be adjusted by modifying the setup methods in the test class:
+Test configurations can be adjusted by modifying the setup methods in each test class:
 
-- **Vault URL**: Container URL provided by Testcontainers
-- **Vault Token**: Default `test-token`
-- **Transit Engine Path**: Default `transit`
-- **Key Prefix**: Test-specific prefixes to avoid conflicts
-- **Timeouts**: Connection and request timeouts
-- **Retry Logic**: Maximum retries and backoff settings
+- **Integration Tests**: Use Testcontainers with dynamic Vault URLs
+- **Unit Tests**: Use mocked dependencies for fast execution
+- **Error Handling Tests**: Use WireMock for controlled error scenarios
+- **Timeouts**: Optimized for reliable test execution
+- **Retry Logic**: Configured for deterministic test behavior
 
 ## CI/CD Integration
 
-For continuous integration environments, the tests use Testcontainers with Docker:
+For continuous integration environments:
 
 ```yaml
-# Run integration tests
-- name: Integration Tests
+# Run all tests
+- name: Vault Crypto Provider Tests
   run: ./gradlew :crypto-providers-vault:test
 ```
 
-The test suite requires Docker to be available in the CI environment.
+**Requirements:**
+- Docker must be available for integration tests (Testcontainers)
+- Sufficient system resources for concurrent test execution

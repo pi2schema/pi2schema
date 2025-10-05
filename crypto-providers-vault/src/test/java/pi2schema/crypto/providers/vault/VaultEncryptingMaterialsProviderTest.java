@@ -52,7 +52,7 @@ class VaultEncryptingMaterialsProviderTest {
         var mockEncryptedDek = "encrypted-dek-data".getBytes();
 
         when(mockVaultClient.generateKeyName(subjectId)).thenReturn(expectedKeyName);
-        when(mockVaultClient.encrypt(eq(expectedKeyName), any(byte[].class), anyString()))
+        when(mockVaultClient.encrypt(eq(expectedKeyName), any(byte[].class), isNull()))
             .thenReturn(CompletableFuture.completedFuture(mockEncryptedDek));
 
         provider = createProviderWithMockedClient();
@@ -65,11 +65,7 @@ class VaultEncryptingMaterialsProviderTest {
         assertThat(result).isNotNull();
         assertThat(result.dataEncryptionKey()).isNotNull();
         assertThat(result.encryptedDataKey()).isEqualTo(mockEncryptedDek);
-        assertThat(result.encryptionContext()).isNotNull();
-
-        // Verify encryption context format
-        var context = result.encryptionContext();
-        assertThat(context).contains("subjectId=" + subjectId, "version=1.0", "timestamp=");
+        assertThat(result.encryptionContext()).isNull(); // Encryption context removed from MVP
 
         // Verify DEK is functional
         var aead = result.dataEncryptionKey();
@@ -77,7 +73,7 @@ class VaultEncryptingMaterialsProviderTest {
 
         // Verify Vault client interactions
         verify(mockVaultClient).generateKeyName(subjectId);
-        verify(mockVaultClient).encrypt(eq(expectedKeyName), any(byte[].class), anyString());
+        verify(mockVaultClient).encrypt(eq(expectedKeyName), any(byte[].class), isNull());
     }
 
     @Test
@@ -122,7 +118,7 @@ class VaultEncryptingMaterialsProviderTest {
         var vaultException = new VaultConnectivityException("Vault is unreachable");
 
         when(mockVaultClient.generateKeyName(subjectId)).thenReturn(expectedKeyName);
-        when(mockVaultClient.encrypt(eq(expectedKeyName), any(byte[].class), anyString()))
+        when(mockVaultClient.encrypt(eq(expectedKeyName), any(byte[].class), isNull()))
             .thenReturn(CompletableFuture.failedFuture(vaultException));
 
         provider = createProviderWithMockedClient();
@@ -137,7 +133,7 @@ class VaultEncryptingMaterialsProviderTest {
             .hasMessage("Vault is unreachable");
 
         verify(mockVaultClient).generateKeyName(subjectId);
-        verify(mockVaultClient).encrypt(eq(expectedKeyName), any(byte[].class), anyString());
+        verify(mockVaultClient).encrypt(eq(expectedKeyName), any(byte[].class), isNull());
     }
 
     @Test
@@ -148,7 +144,7 @@ class VaultEncryptingMaterialsProviderTest {
         var authException = new VaultAuthenticationException("Invalid token");
 
         when(mockVaultClient.generateKeyName(subjectId)).thenReturn(expectedKeyName);
-        when(mockVaultClient.encrypt(eq(expectedKeyName), any(byte[].class), anyString()))
+        when(mockVaultClient.encrypt(eq(expectedKeyName), any(byte[].class), isNull()))
             .thenReturn(CompletableFuture.failedFuture(authException));
 
         provider = createProviderWithMockedClient();
@@ -176,7 +172,7 @@ class VaultEncryptingMaterialsProviderTest {
         // Mock successful responses for all operations
         when(mockVaultClient.generateKeyName(anyString()))
             .thenAnswer(invocation -> "pi2schema/subject/" + invocation.getArgument(0));
-        when(mockVaultClient.encrypt(anyString(), any(byte[].class), anyString()))
+        when(mockVaultClient.encrypt(anyString(), any(byte[].class), isNull()))
             .thenReturn(CompletableFuture.completedFuture("encrypted-data".getBytes()));
 
         provider = createProviderWithMockedClient();
@@ -194,7 +190,7 @@ class VaultEncryptingMaterialsProviderTest {
                         assertThat(result).isNotNull();
                         assertThat(result.dataEncryptionKey()).isNotNull();
                         assertThat(result.encryptedDataKey()).isNotNull();
-                        assertThat(result.encryptionContext()).isNotNull();
+                        assertThat(result.encryptionContext()).isNull(); // Encryption context removed from MVP
 
                         successCount.incrementAndGet();
                     } catch (Exception e) {
@@ -217,44 +213,12 @@ class VaultEncryptingMaterialsProviderTest {
         // Verify all operations called the vault client
         verify(mockVaultClient, times(numberOfThreads * operationsPerThread)).generateKeyName(anyString());
         verify(mockVaultClient, times(numberOfThreads * operationsPerThread))
-            .encrypt(anyString(), any(byte[].class), anyString());
+            .encrypt(anyString(), any(byte[].class), isNull());
 
         executor.shutdown();
     }
 
-    @Test
-    void testEncryptionContextFormat() {
-        // Given
-        var subjectId = "test-user-123";
-        var expectedKeyName = "pi2schema/subject/test-user-123";
-        var mockEncryptedDek = "encrypted-dek".getBytes();
-
-        when(mockVaultClient.generateKeyName(subjectId)).thenReturn(expectedKeyName);
-        when(mockVaultClient.encrypt(eq(expectedKeyName), any(byte[].class), anyString()))
-            .thenReturn(CompletableFuture.completedFuture(mockEncryptedDek));
-
-        provider = createProviderWithMockedClient();
-
-        // When
-        var result = provider.encryptionKeysFor(subjectId).join();
-
-        // Then
-        var context = result.encryptionContext();
-        var parts = context.split(";");
-
-        assertThat(parts).hasSize(3);
-
-        // Verify subject ID
-        assertThat(parts[0]).startsWith("subjectId=").endsWith(subjectId);
-
-        // Verify timestamp is a valid number
-        assertThat(parts[1]).startsWith("timestamp=");
-        var timestampStr = parts[1].substring("timestamp=".length());
-        assertThatCode(() -> Long.parseLong(timestampStr)).doesNotThrowAnyException();
-
-        // Verify version
-        assertThat(parts[2]).startsWith("version=").endsWith("1.0");
-    }
+    // testEncryptionContextFormat removed - encryption context not used in MVP
 
     @Test
     void testDifferentSubjectsGetDifferentKeys() {
@@ -266,9 +230,9 @@ class VaultEncryptingMaterialsProviderTest {
 
         when(mockVaultClient.generateKeyName("user-1")).thenReturn("pi2schema/subject/user-1");
         when(mockVaultClient.generateKeyName("user-2")).thenReturn("pi2schema/subject/user-2");
-        when(mockVaultClient.encrypt(eq("pi2schema/subject/user-1"), any(byte[].class), anyString()))
+        when(mockVaultClient.encrypt(eq("pi2schema/subject/user-1"), any(byte[].class), isNull()))
             .thenReturn(CompletableFuture.completedFuture(encryptedDek1));
-        when(mockVaultClient.encrypt(eq("pi2schema/subject/user-2"), any(byte[].class), anyString()))
+        when(mockVaultClient.encrypt(eq("pi2schema/subject/user-2"), any(byte[].class), isNull()))
             .thenReturn(CompletableFuture.completedFuture(encryptedDek2));
 
         provider = createProviderWithMockedClient();
@@ -280,11 +244,11 @@ class VaultEncryptingMaterialsProviderTest {
         // Then
         assertThat(result1.dataEncryptionKey()).isNotEqualTo(result2.dataEncryptionKey());
         assertThat(result1.encryptedDataKey()).isNotEqualTo(result2.encryptedDataKey());
-        assertThat(result1.encryptionContext()).isNotEqualTo(result2.encryptionContext());
+        // Encryption context comparison removed - both are null in MVP
 
         // Verify different vault keys were used
-        verify(mockVaultClient).encrypt(eq("pi2schema/subject/user-1"), any(byte[].class), anyString());
-        verify(mockVaultClient).encrypt(eq("pi2schema/subject/user-2"), any(byte[].class), anyString());
+        verify(mockVaultClient).encrypt(eq("pi2schema/subject/user-1"), any(byte[].class), isNull());
+        verify(mockVaultClient).encrypt(eq("pi2schema/subject/user-2"), any(byte[].class), isNull());
     }
 
     @Test

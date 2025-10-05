@@ -10,6 +10,8 @@ This approach ensures that:
 - The system leverages Vault's enterprise-grade security features
 - Performance is optimized through asynchronous operations and connection pooling
 
+**MVP Scope Note:** The current implementation focuses on subject-based key isolation through Vault's transit engine. Encryption context functionality has been simplified for the MVP - the parameter is accepted for interface compatibility but not used for additional validation or key derivation.
+
 ## Architecture
 
 ### Key Management Hierarchy
@@ -51,7 +53,7 @@ Implements `EncryptingMaterialsProvider` interface.
 **Responsibilities:**
 - Generate new DEKs using Tink's AEAD primitive
 - Encrypt DEKs using Vault's transit encryption with subject-specific keys
-- Return EncryptionMaterial with plaintext DEK, encrypted DEK, and context
+- Return EncryptionMaterial with plaintext DEK and encrypted DEK
 - Configuration validation is handled by VaultCryptoConfiguration.Builder during configuration creation
 
 **Key Methods:**
@@ -66,13 +68,15 @@ Implements `DecryptingMaterialsProvider` interface.
 **Responsibilities:**
 - Decrypt encrypted DEKs using Vault's transit encryption
 - Reconstruct Tink AEAD primitives from decrypted DEK material
-- Handle subject-specific key isolation
+- Handle subject-specific key isolation through Vault access controls
 - Configuration validation is handled by VaultCryptoConfiguration.Builder during configuration creation
 
 **Key Methods:**
 ```java
 public CompletableFuture<Aead> decryptionKeysFor(String subjectId, byte[] encryptedDataKey, String encryptionContext)
 ```
+
+**Note:** The `encryptionContext` parameter is accepted for interface compatibility but is ignored in the current MVP implementation. The provider focuses on subject-based key isolation through Vault's transit engine rather than encryption context validation.
 
 ### VaultTransitClient
 
@@ -86,8 +90,8 @@ Handles all Vault API interactions.
 
 **Key Methods:**
 ```java
-CompletableFuture<byte[]> encrypt(String keyName, byte[] plaintext, String context)
-CompletableFuture<byte[]> decrypt(String keyName, byte[] ciphertext, String context)
+CompletableFuture<byte[]> encrypt(String keyName, byte[] plaintext)
+CompletableFuture<byte[]> decrypt(String keyName, byte[] ciphertext)
 CompletableFuture<Void> ensureKeyExists(String keyName)
 ```
 
@@ -118,14 +122,12 @@ This ensures:
 - Easy identification for GDPR deletion
 - Namespace separation from other Vault usage
 
-### Encryption Context Format
+### Security Model
 
-The encryption context will include:
-- Subject ID
-- Timestamp of key generation
-- Provider version for future compatibility
-
-Format: `subjectId={subjectId};timestamp={timestamp};version={version}`
+The provider relies on Vault's access controls and subject-specific key isolation for security:
+- Each subject gets a unique key in Vault's transit engine
+- Subject IDs are validated to prevent unauthorized access
+- Vault's built-in access controls provide additional security layers
 
 ### Error Handling
 
@@ -136,7 +138,7 @@ public class VaultCryptoException extends RuntimeException
 public class VaultAuthenticationException extends VaultCryptoException
 public class VaultConnectivityException extends VaultCryptoException
 public class SubjectKeyNotFoundException extends VaultCryptoException
-public class InvalidEncryptionContextException extends VaultCryptoException
+
 ```
 
 #### Error Scenarios
@@ -144,7 +146,7 @@ public class InvalidEncryptionContextException extends VaultCryptoException
 1. **Vault Unavailable**: Retry with exponential backoff, fail after max retries
 2. **Authentication Failure**: Fail fast with clear error message
 3. **Key Not Found**: For decryption, throw SubjectKeyNotFoundException
-4. **Invalid Context**: Validate context format and throw appropriate exception
+4. **Invalid Input**: Validate input parameters and throw appropriate exception
 5. **Network Timeouts**: Retry with backoff, respect timeout configurations
 6. **Configuration Errors**: Handled during VaultCryptoConfiguration creation with immediate failure
 
@@ -170,7 +172,7 @@ public class InvalidEncryptionContextException extends VaultCryptoException
    - Test successful decryption
    - Test invalid encrypted DEK handling
    - Test subject key not found scenarios
-   - Test encryption context validation
+   - Test input parameter validation
 
 3. **VaultTransitClientTest**
    - Test Vault API interactions (mocked)
@@ -199,7 +201,7 @@ public class InvalidEncryptionContextException extends VaultCryptoException
 
 - Each subject gets a unique key in Vault's transit engine
 - Subject IDs are validated to prevent path traversal attacks
-- Encryption context includes subject ID to prevent key confusion attacks
+- Subject-specific keys in Vault prevent key confusion attacks
 
 ### Authentication
 
