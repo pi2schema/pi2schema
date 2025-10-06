@@ -1,6 +1,7 @@
 dependencies {
 
     implementation project(':crypto-spi')
+    implementation project(':crypto-providers-vault')
     implementation project(':schema-spi')
 
     implementation libs.kafka.clients

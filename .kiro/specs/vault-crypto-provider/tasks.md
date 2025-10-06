@@ -69,7 +69,7 @@
   - Include notes about internal usage through adapters (not direct third-party usage)
   - _Requirements: 3.1, 3.2_
 
-- [ ] 11. Create Kafka adapter integration for Vault crypto provider
+- [x] 11. Create Kafka adapter integration for Vault crypto provider
   - Create VaultMaterialsProvider class implementing MaterialsProviderFactory interface
   - Implement configuration mapping from Kafka properties to VaultCryptoConfiguration
   - Add proper error handling and validation for Kafka-specific configuration
