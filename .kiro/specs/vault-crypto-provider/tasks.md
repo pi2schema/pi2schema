@@ -63,9 +63,16 @@
   - Write tests verifying cryptographic isolation between subjects
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
 
-- [x] 10. Create example usage and documentation
-  - Write example code demonstrating provider usage in typical scenarios
-  - Create configuration examples for different Vault setups
+- [x] 10. Add comprehensive JavaDoc documentation
   - Add JavaDoc documentation for all public classes and methods
-  - Write integration examples showing GDPR compliance workflows
+  - Document configuration options and their usage
+  - Include notes about internal usage through adapters (not direct third-party usage)
   - _Requirements: 3.1, 3.2_
+
+- [ ] 11. Create Kafka adapter integration for Vault crypto provider
+  - Create VaultMaterialsProvider class implementing MaterialsProviderFactory interface
+  - Implement configuration mapping from Kafka properties to VaultCryptoConfiguration
+  - Add proper error handling and validation for Kafka-specific configuration
+  - Write unit tests for the materials provider factory and configuration mapping
+  - Update Kafka adapter documentation to include Vault provider usage examples
+  - _Requirements: 3.1, 3.2, 3.3_

@@ -2,7 +2,9 @@
 
 ## Introduction
 
-This feature implements a new crypto provider that leverages HashiCorp Vault's transit encryption engine to provide GDPR-compliant encryption key management. The provider will use Vault's transit encryption to encrypt/decrypt Key Encryption Keys (KEKs) for each subject, ensuring that personal data encryption keys can be properly managed and deleted to meet GDPR requirements.
+This feature implements a new crypto provider that leverages HashiCorp Vault's transit encryption engine to provide GDPR-compliant encryption key management. The provider is designed for internal usage within the pi2schema library and will be accessed by third parties through adapters (such as the Kafka adapter) rather than being used directly.
+
+The provider will use Vault's transit encryption to encrypt/decrypt Key Encryption Keys (KEKs) for each subject, ensuring that personal data encryption keys can be properly managed and deleted to meet GDPR requirements.
 
 The provider will implement both the `EncryptingMaterialsProvider` and `DecryptingMaterialsProvider` interfaces from the crypto-spi module, providing a complete solution for subject-based encryption key management using Vault as the backend.
 
@@ -10,7 +12,7 @@ The provider will implement both the `EncryptingMaterialsProvider` and `Decrypti
 
 ### Requirement 1
 
-**User Story:** As a developer using the pi2schema library, I want to use HashiCorp Vault's transit encryption for managing encryption keys, so that I can leverage Vault's security features and compliance capabilities for GDPR requirements.
+**User Story:** As a developer working on pi2schema adapters (such as the Kafka adapter), I want to use HashiCorp Vault's transit encryption for managing encryption keys, so that I can leverage Vault's security features and compliance capabilities for GDPR requirements through the adapter interfaces.
 
 #### Acceptance Criteria
 

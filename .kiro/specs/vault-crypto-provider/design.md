@@ -2,7 +2,9 @@
 
 ## Overview
 
-The Vault Crypto Provider implements a secure, GDPR-compliant encryption key management system using HashiCorp Vault's transit encryption engine. The design follows a two-tier key hierarchy where Vault manages Key Encryption Keys (KEKs) per subject, and these KEKs encrypt Data Encryption Keys (DEKs) that are used for actual data encryption.
+The Vault Crypto Provider implements a secure, GDPR-compliant encryption key management system using HashiCorp Vault's transit encryption engine. This provider is designed for internal usage within the pi2schema library and is accessed by third parties through adapters (such as the Kafka adapter) rather than being used directly.
+
+The design follows a two-tier key hierarchy where Vault manages Key Encryption Keys (KEKs) per subject, and these KEKs encrypt Data Encryption Keys (DEKs) that are used for actual data encryption.
 
 This approach ensures that:
 - Each subject has cryptographically isolated encryption materials
