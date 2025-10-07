@@ -20,6 +20,7 @@ java {
 dependencies {
 	implementation(project(":schema-providers-avro"))
 	implementation(project(":serialization-adapters-kafka"))
+	implementation(project(":crypto-providers-vault"))
 
 	implementation libs.confluent.kafka.avro.serializer
 	implementation libs.avro

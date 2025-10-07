@@ -1,5 +1,5 @@
 version: '3.7'
-name: redpanda-owl-shop
+name: pi2schema-examples
 networks:
   redpanda_network:
     driver: bridge
@@ -51,12 +51,83 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
-      start_period: 5s
+      start_period: 10s
+
+  vault-init:
+    image: hashicorp/vault:1.20
+    container_name: vault-init
+    depends_on:
+      vault:
+        condition: service_healthy
+    environment:
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: myroot
+    networks:
+      - redpanda_network
+    command:
+      - sh
+      - -c
+      - |
+        echo "🔐 Initializing Vault for Pi2Schema examples..."
+        
+        # Wait a bit more for Vault to be fully ready
+        sleep 5
+        
+        # Enable transit secrets engine
+        echo "🔑 Enabling transit secrets engine..."
+        vault secrets enable transit || echo "Transit engine already enabled"
+        
+        # Create pi2schema policy using a temporary file
+        echo "📋 Creating pi2schema policy..."
+        cat > /tmp/pi2schema-policy.hcl << 'POLICY_EOF'
+        path "transit/encrypt/pi2schema-*" {
+          capabilities = ["create", "update"]
+        }
+        
+        path "transit/decrypt/pi2schema-*" {
+          capabilities = ["create", "update"]
+        }
+        
+        path "transit/keys/pi2schema-*" {
+          capabilities = ["create", "read", "update", "delete"]
+        }
+        
+        path "transit/keys" {
+          capabilities = ["list"]
+        }
+        POLICY_EOF
+        
+        vault policy write pi2schema-policy /tmp/pi2schema-policy.hcl
+        
+        # Test the setup
+        echo "🧪 Testing Vault setup..."
+        test_key="pi2schema-test_subject_test-user"
+        vault write -f "transit/keys/$${test_key}" > /dev/null
+        
+        # Test encryption/decryption
+        encrypted=$$(vault write -field=ciphertext "transit/encrypt/$${test_key}" plaintext=$$(echo -n "Hello Pi2Schema" | base64))
+        decrypted=$$(vault write -field=plaintext "transit/decrypt/$${test_key}" ciphertext="$${encrypted}" | base64 -d)
+        
+        if [ "$${decrypted}" = "Hello Pi2Schema" ]; then
+          echo "✅ Vault encryption/decryption test successful"
+        else
+          echo "❌ Vault test failed"
+          exit 1
+        fi
+        
+        # Clean up test key
+        vault delete "transit/keys/$${test_key}" > /dev/null
+        
+        echo "🎉 Vault initialization complete!"
+        echo "Environment variables for examples:"
+        echo "  VAULT_URL=http://localhost:8200"
+        echo "  VAULT_TOKEN=myroot"
+    restart: "no"
 
   console:
     image: docker.redpanda.com/redpandadata/console:v3.2.1
     entrypoint: /bin/sh
-    command: -c "echo \"$$CONSOLE_CONFIG_FILE\" > /tmp/config.yml; /app/console"
+    command: -c "echo \"$CONSOLE_CONFIG_FILE\" > /tmp/config.yml; /app/console"
     environment:
       CONFIG_FILEPATH: /tmp/config.yml
       CONSOLE_CONFIG_FILE: |
@@ -76,4 +147,4 @@ services:
       - redpanda_network
     depends_on:
       - redpanda
-      - vault
+      - vault-init

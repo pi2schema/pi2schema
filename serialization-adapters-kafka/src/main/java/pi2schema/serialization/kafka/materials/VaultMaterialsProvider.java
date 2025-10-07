@@ -28,7 +28,7 @@ import java.util.Map;
  * </p>
  *
  * <h3>Example Kafka Configuration:</h3>
- * 
+ *
  * <pre>{@code
  * pi2schema.personal.materials.provider=pi2schema.serialization.kafka.materials.VaultMaterialsProvider
  * pi2schema.vault.url=https://vault.example.com:8200
@@ -80,9 +80,10 @@ public class VaultMaterialsProvider implements MaterialsProviderFactory {
             Object provider = createProvider(vaultConfig, providerType);
 
             logger.info(
-                    "Successfully created Vault materials provider [type={}, vaultUrl={}]",
-                    providerType,
-                    sanitizeUrl(vaultConfig.getVaultUrl()));
+                "Successfully created Vault materials provider [type={}, vaultUrl={}]",
+                providerType,
+                sanitizeUrl(vaultConfig.getVaultUrl())
+            );
 
             return provider;
         } catch (Exception e) {
@@ -110,13 +111,14 @@ public class VaultMaterialsProvider implements MaterialsProviderFactory {
                 yield new VaultDecryptingMaterialsProvider(vaultConfig);
             }
             default -> throw new IllegalArgumentException(
-                    "Invalid provider type: " +
-                            providerType +
-                            ". Must be '" +
-                            VaultKafkaConfig.PROVIDER_TYPE_ENCRYPTING +
-                            "' or '" +
-                            VaultKafkaConfig.PROVIDER_TYPE_DECRYPTING +
-                            "'");
+                "Invalid provider type: " +
+                providerType +
+                ". Must be '" +
+                VaultKafkaConfig.PROVIDER_TYPE_ENCRYPTING +
+                "' or '" +
+                VaultKafkaConfig.PROVIDER_TYPE_DECRYPTING +
+                "'"
+            );
         };
     }
 

@@ -54,22 +54,48 @@ For defining a personal data field we wrap it with an oneOf tag and simply add a
 
 ## Key management
 
-> :warning: Not safe for production. Please for the time being consider integrating a 3rd party kms as aws kms, gcp
-> kms or Hashicorp Vault
+This example now uses **HashiCorp Vault** as the key management system for production-ready GDPR-compliant encryption. The Vault materials provider uses Vault's transit encryption engine to manage subject-specific keys.
 
+### Vault Configuration
 
-The key management that is currently used out of the box is a simple JCE based AES-256 local encryptor and decryptor
-. The secret key is stored in a kafka topic for durability.
+The example is configured to use Vault with the following settings:
+- **Vault URL**: `https://localhost:8200` (configurable via `VAULT_URL` environment variable)
+- **Authentication**: Token-based (set via `VAULT_TOKEN` environment variable)
+- **Transit Engine**: Uses the `transit` secrets engine
+- **Key Prefix**: `pi2schema-example` (isolates keys for this example)
+
+### Key Features
+
+- **Subject Isolation**: Each subject gets a unique encryption key in Vault
+- **GDPR Compliance**: Right-to-be-forgotten through selective key deletion
+- **Production Ready**: Uses industry-standard Vault for key management
+- **Automatic Key Creation**: Keys are created automatically when needed
 
 
 # Running the example
 
-## Local environment
-Start the local environment with: 
+## Prerequisites
+
+### 1. Start Infrastructure
+
+Start all services (Kafka, Schema Registry, Vault):
 
 ```shell
-docker compose -f examples/docker-compose.yaml up
+podman-compose -f examples/docker-compose.yaml up -d
 ```
+
+This automatically configures Vault with the transit secrets engine and necessary policies.
+
+### 2. Environment Variables
+
+Set the required environment variables:
+
+```shell
+export VAULT_URL="http://localhost:8200"
+export VAULT_TOKEN="myroot"
+```
+
+**Note**: Vault is automatically configured by Podman Compose. In production, use proper Vault authentication methods (AWS IAM, Kubernetes, etc.) instead of static tokens.
 
 ## Running the services
 

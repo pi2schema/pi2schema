@@ -8,25 +8,36 @@ import java.time.Duration;
 import java.util.Map;
 
 /**
- * Kafka configuration for Vault materials provider following Apache Kafka ConfigDef standards.
+ * Kafka configuration for Vault materials provider following Apache Kafka
+ * ConfigDef standards.
  *
  * <p>
- * This configuration class defines all Vault-related configuration properties using Kafka's
- * standard ConfigDef mechanism, providing automatic type conversion, validation, and
+ * This configuration class defines all Vault-related configuration properties
+ * using Kafka's
+ * standard ConfigDef mechanism, providing automatic type conversion,
+ * validation, and
  * documentation generation.
  * </p>
  *
  * <h3>Configuration Properties:</h3>
  * <ul>
  * <li><strong>pi2schema.vault.url</strong>: Vault server URL (required)</li>
- * <li><strong>pi2schema.vault.token</strong>: Vault authentication token (required)</li>
- * <li><strong>pi2schema.vault.transit.engine.path</strong>: Transit engine path (default: "transit")</li>
- * <li><strong>pi2schema.vault.key.prefix</strong>: Key prefix for subjects (default: "pi2schema")</li>
- * <li><strong>pi2schema.vault.connection.timeout.ms</strong>: Connection timeout in milliseconds (default: 10000)</li>
- * <li><strong>pi2schema.vault.request.timeout.ms</strong>: Request timeout in milliseconds (default: 30000)</li>
- * <li><strong>pi2schema.vault.max.retries</strong>: Maximum retry attempts (default: 3)</li>
- * <li><strong>pi2schema.vault.retry.backoff.ms</strong>: Base retry backoff in milliseconds (default: 100)</li>
- * <li><strong>pi2schema.vault.provider.type</strong>: Provider type - "encrypting" or "decrypting" (required)</li>
+ * <li><strong>pi2schema.vault.token</strong>: Vault authentication token
+ * (required)</li>
+ * <li><strong>pi2schema.vault.transit.engine.path</strong>: Transit engine path
+ * (default: "transit")</li>
+ * <li><strong>pi2schema.vault.key.prefix</strong>: Key prefix for subjects
+ * (default: "pi2schema")</li>
+ * <li><strong>pi2schema.vault.connection.timeout.ms</strong>: Connection
+ * timeout in milliseconds (default: 10000)</li>
+ * <li><strong>pi2schema.vault.request.timeout.ms</strong>: Request timeout in
+ * milliseconds (default: 30000)</li>
+ * <li><strong>pi2schema.vault.max.retries</strong>: Maximum retry attempts
+ * (default: 3)</li>
+ * <li><strong>pi2schema.vault.retry.backoff.ms</strong>: Base retry backoff in
+ * milliseconds (default: 100)</li>
+ * <li><strong>pi2schema.vault.provider.type</strong>: Provider type -
+ * "encrypting" or "decrypting" (required)</li>
  * </ul>
  *
  * @since 1.0
