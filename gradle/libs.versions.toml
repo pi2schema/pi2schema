@@ -16,7 +16,7 @@ kryo = "5.6.2"
 # Kafka and Confluent
 kafka-streams = "3.2.3"
 kafka-clients = "3.2.3"
-confluent = "8.0.0"
+confluent = "8.0.2"
 
 # JSON processing
 jackson = "2.18.4"
