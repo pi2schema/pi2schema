@@ -23,10 +23,6 @@ idea {
     }
 }
 
-// remove auto generated proto classes used for the serialization persistence.
-spotbugs {
-    onlyAnalyze = ['pi2schema.schema.providers.protobuf.*']
-}
 
 dependencies {
     implementation project(':crypto-spi')

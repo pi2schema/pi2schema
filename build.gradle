@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.release)
-    alias(libs.plugins.spotbugs) apply false
     alias(libs.plugins.spotless)
 
     //applied only in specific subprojects, yet important to define globally
@@ -16,7 +15,6 @@ allprojects {
 
     apply plugin: 'java'
     apply plugin: 'idea'
-    apply plugin: 'com.github.spotbugs'
     apply plugin: 'com.diffplug.spotless'
     apply plugin: 'maven-publish'
 
@@ -76,15 +74,6 @@ subprojects {
         }
     }
 
-// do not run spot bugs on test for the time being
-    spotbugsTest {
-        enabled false
-    }
-
-    spotbugs {
-        // https://github.com/spotbugs/spotbugs-gradle-plugin#readme
-        ignoreFailures = true // will not crash the build
-    }
 
 	publishing {
 		repositories {
