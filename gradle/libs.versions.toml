@@ -1,7 +1,6 @@
 [versions]
 # Build tools and plugins
 gradle-release = "3.0.2"
-spotbugs = "6.0.28"
 spotless = "6.23.3"
 avro-gradle-plugin = "1.9.1"
 protobuf-gradle-plugin = "0.9.5"
@@ -78,7 +77,6 @@ instancio-junit = { module = "org.instancio:instancio-junit", version.ref = "ins
 
 [plugins]
 release = { id = "net.researchgate.release", version.ref = "gradle-release" }
-spotbugs = { id = "com.github.spotbugs", version.ref = "spotbugs" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
 avro = { id = "com.github.davidmc24.gradle.plugin.avro", version.ref = "avro-gradle-plugin" }
 protobuf = { id = "com.google.protobuf", version.ref = "protobuf-gradle-plugin" }

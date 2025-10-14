@@ -72,7 +72,3 @@ protobuf {
 		artifact = "com.google.protobuf:protoc:${libs.versions.protoc.get()}"
 	}
 }
-
-spotbugs {
-	onlyAnalyze = ['com.acme.sample.*']
-}

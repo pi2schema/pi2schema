@@ -51,6 +51,3 @@ compileKotlin {
 }
 
 
-spotbugs {
-	onlyAnalyze = ['com.acme.sample.*']
-}

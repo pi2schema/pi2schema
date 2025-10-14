@@ -31,10 +31,6 @@ idea {
     }
 }
 
-// remove auto generated proto classes used for the serialization persistence.
-spotbugs {
-    onlyAnalyze = ['pi2schema.crypto.providers.kafkakms.*']
-}
 
 dependencies {
 
