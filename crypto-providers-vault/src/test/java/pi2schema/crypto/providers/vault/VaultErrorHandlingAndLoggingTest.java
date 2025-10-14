@@ -61,7 +61,7 @@ class VaultErrorHandlingAndLoggingTest {
         encryptingProviderLogger.setLevel(Level.DEBUG);
         decryptingProviderLogger.setLevel(Level.DEBUG);
 
-        // Create valid configuration with WireMock server and optimized timeouts
+        // Create valid configuration with WireMock server and CI/CD-friendly timeouts
         validConfig =
             VaultCryptoConfiguration
                 .builder()
@@ -69,13 +69,14 @@ class VaultErrorHandlingAndLoggingTest {
                 .vaultToken("test-token-12345")
                 .transitEnginePath("transit")
                 .keyPrefix("test-prefix")
-                .connectionTimeout(Duration.ofMillis(80)) // Short timeouts for fast deterministic failure
-                .requestTimeout(Duration.ofMillis(120))
+                .connectionTimeout(Duration.ofSeconds(5)) // 5 seconds for CI/CD reliability
+                .requestTimeout(Duration.ofSeconds(5))
                 .maxRetries(2)
-                .retryBackoffMs(Duration.ofMillis(10)) // Optimized for fast test execution
+                .retryBackoffMs(Duration.ofSeconds(1)) // 1 second retry backoff
                 .build();
 
-        // Create invalid configuration for testing with WireMock server and optimized timeouts
+        // Create invalid configuration for testing with WireMock server and
+        // CI/CD-friendly timeouts
         invalidConfig =
             VaultCryptoConfiguration
                 .builder()
@@ -83,10 +84,10 @@ class VaultErrorHandlingAndLoggingTest {
                 .vaultToken("invalid-token")
                 .transitEnginePath("transit")
                 .keyPrefix("test-prefix")
-                .connectionTimeout(Duration.ofMillis(80)) // Short timeouts for fast deterministic failure
-                .requestTimeout(Duration.ofMillis(120))
+                .connectionTimeout(Duration.ofSeconds(5)) // 5 seconds for CI/CD reliability
+                .requestTimeout(Duration.ofSeconds(5))
                 .maxRetries(1)
-                .retryBackoffMs(Duration.ofMillis(10)) // Optimized for fast test execution
+                .retryBackoffMs(Duration.ofSeconds(1)) // 1 second retry backoff
                 .build();
     }
 
@@ -216,7 +217,8 @@ class VaultErrorHandlingAndLoggingTest {
     @Test
     @DisplayName("Should log request IDs for correlation")
     void shouldLogRequestIdsForCorrelation() {
-        // Stub a server error so that the operation fails quickly but still triggers request/operation logging
+        // Stub a server error so that the operation fails quickly but still triggers
+        // request/operation logging
         wireMockServer.stubFor(
             any(urlMatching("/v1/transit/.*"))
                 .willReturn(
@@ -230,7 +232,8 @@ class VaultErrorHandlingAndLoggingTest {
         try (var provider = new VaultEncryptingMaterialsProvider(validConfig)) {
             var future = provider.encryptionKeysFor("test-subject");
 
-            // Expect failure due to server error; use join to avoid additional timing complexity
+            // Expect failure due to server error; use join to avoid additional timing
+            // complexity
             assertThatThrownBy(future::join)
                 .isInstanceOf(CompletionException.class)
                 .hasCauseInstanceOf(VaultConnectivityException.class);
@@ -306,7 +309,7 @@ class VaultErrorHandlingAndLoggingTest {
     @DisplayName("Should handle connection timeout with proper error handling")
     void shouldHandleConnectionTimeoutWithProperErrorHandling() {
         // Given - simulate connection timeout
-        wireMockServer.stubFor(any(urlMatching("/v1/transit/.*")).willReturn(aResponse().withFixedDelay(500)));
+        wireMockServer.stubFor(any(urlMatching("/v1/transit/.*")).willReturn(aResponse().withFixedDelay(6000)));
 
         var config = VaultCryptoConfiguration
             .builder()
@@ -314,10 +317,10 @@ class VaultErrorHandlingAndLoggingTest {
             .vaultToken("test-token")
             .transitEnginePath("transit")
             .keyPrefix("test-prefix")
-            .connectionTimeout(Duration.ofMillis(100))
-            .requestTimeout(Duration.ofMillis(100))
+            .connectionTimeout(Duration.ofSeconds(5))
+            .requestTimeout(Duration.ofSeconds(5))
             .maxRetries(0)
-            .retryBackoffMs(Duration.ofMillis(10))
+            .retryBackoffMs(Duration.ofSeconds(1))
             .build();
 
         try (var provider = new VaultEncryptingMaterialsProvider(config)) {
@@ -338,10 +341,10 @@ class VaultErrorHandlingAndLoggingTest {
             .vaultToken("test-token")
             .transitEnginePath("transit")
             .keyPrefix("test-prefix")
-            .connectionTimeout(Duration.ofMillis(100))
-            .requestTimeout(Duration.ofMillis(200))
+            .connectionTimeout(Duration.ofSeconds(5))
+            .requestTimeout(Duration.ofSeconds(5))
             .maxRetries(1)
-            .retryBackoffMs(Duration.ofMillis(10))
+            .retryBackoffMs(Duration.ofSeconds(1))
             .build();
 
         wireMockServer.stop();
@@ -364,10 +367,10 @@ class VaultErrorHandlingAndLoggingTest {
             .vaultToken("test-token")
             .transitEnginePath("transit")
             .keyPrefix("test-prefix")
-            .connectionTimeout(Duration.ofMillis(100))
-            .requestTimeout(Duration.ofMillis(200))
+            .connectionTimeout(Duration.ofSeconds(5))
+            .requestTimeout(Duration.ofSeconds(5))
             .maxRetries(1)
-            .retryBackoffMs(Duration.ofMillis(10))
+            .retryBackoffMs(Duration.ofSeconds(1))
             .build();
 
         try (var provider = new VaultEncryptingMaterialsProvider(config)) {

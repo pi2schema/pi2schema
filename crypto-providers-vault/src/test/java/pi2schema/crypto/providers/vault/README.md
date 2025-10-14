@@ -106,26 +106,6 @@ If tests timeout or run slowly:
 ./gradlew :crypto-providers-vault:test --tests "*VaultErrorHandlingAndLoggingTest*"
 ```
 
-## Configuration
-
-Test configurations can be adjusted by modifying the setup methods in each test class:
-
-- **Integration Tests**: Use Testcontainers with dynamic Vault URLs
-- **Unit Tests**: Use mocked dependencies for fast execution
-- **Error Handling Tests**: Use WireMock for controlled error scenarios
-- **Timeouts**: Optimized for reliable test execution
-- **Retry Logic**: Configured for deterministic test behavior
-
-## CI/CD Integration
-
-For continuous integration environments:
-
-```yaml
-# Run all tests
-- name: Vault Crypto Provider Tests
-  run: ./gradlew :crypto-providers-vault:test
-```
-
 **Requirements:**
 - Docker must be available for integration tests (Testcontainers)
 - Sufficient system resources for concurrent test execution
