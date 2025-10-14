@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Integration tests for Vault crypto providers using a real Vault instance via
- * Testcontainers.
+ * Testcontainers. <br />
  *
  * These tests verify:
  * - Complete encrypt/decrypt cycle with subject isolation
@@ -101,7 +101,6 @@ class VaultCryptoProviderIntegrationTest {
         assertNotNull(encryptionMaterial);
         assertNotNull(encryptionMaterial.dataEncryptionKey());
         assertNotNull(encryptionMaterial.encryptedDataKey());
-        assertNull(null); // Encryption context removed from MVP
 
         // Encrypt the test data using the DEK
         Aead encryptingAead = encryptionMaterial.dataEncryptionKey();
@@ -160,12 +159,7 @@ class VaultCryptoProviderIntegrationTest {
 
         // This should fail - subject 1 trying to decrypt subject 2's data with wrong
         // key
-        assertThrows(
-            Exception.class,
-            () -> {
-                decryptingAead1.decrypt(encryptedData2, null);
-            }
-        );
+        assertThrows(Exception.class, () -> decryptingAead1.decrypt(encryptedData2, null));
 
         logger.info("Successfully verified subject isolation between {} and {}", subjectId1, subjectId2);
     }
@@ -212,12 +206,7 @@ class VaultCryptoProviderIntegrationTest {
         );
 
         // The decryption should fail with a SubjectKeyNotFoundException
-        Exception exception = assertThrows(
-            Exception.class,
-            () -> {
-                decryptionFuture.get(10, TimeUnit.SECONDS);
-            }
-        );
+        Exception exception = assertThrows(Exception.class, () -> decryptionFuture.get(10, TimeUnit.SECONDS));
 
         // Verify the exception indicates the key was not found
         assertTrue(
@@ -318,7 +307,7 @@ class VaultCryptoProviderIntegrationTest {
 
         logger.info("Concurrent operations completed successfully:");
         logger.info("  Total operations: {}", successCount.get());
-        logger.info("  Average time per operation: {:.2f}ms", averageTime);
+        logger.info("  Average time per operation: {}ms", String.format("%.2f", averageTime));
         logger.info("  Min time: {}ms", minTime);
         logger.info("  Max time: {}ms", maxTime);
 
@@ -412,12 +401,7 @@ class VaultCryptoProviderIntegrationTest {
         CompletableFuture<EncryptionMaterial> future = invalidProvider.encryptionKeysFor("test-subject");
 
         // Then - Should fail with connectivity exception
-        Exception exception = assertThrows(
-            Exception.class,
-            () -> {
-                future.get(15, TimeUnit.SECONDS);
-            }
-        );
+        Exception exception = assertThrows(Exception.class, () -> future.get(15, TimeUnit.SECONDS));
 
         boolean isConnectivityError =
             exception.getCause() instanceof VaultConnectivityException ||
