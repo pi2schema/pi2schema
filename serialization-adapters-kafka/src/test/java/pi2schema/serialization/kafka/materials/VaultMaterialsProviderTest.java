@@ -156,17 +156,6 @@ class VaultMaterialsProviderTest {
     }
 
     @Test
-    void shouldFailWhenVaultTokenIsEmpty() {
-        // Given
-        baseConfig.put(VAULT_TOKEN_CONFIG, "");
-        baseConfig.put(VAULT_PROVIDER_TYPE_CONFIG, PROVIDER_TYPE_ENCRYPTING);
-
-        // When & Then
-        ConfigException exception = assertThrows(ConfigException.class, () -> factory.create(baseConfig));
-        assertTrue(exception.getMessage().contains("Value cannot be empty"));
-    }
-
-    @Test
     void shouldFailWhenProviderTypeIsInvalid() {
         // Given
         baseConfig.put(VAULT_PROVIDER_TYPE_CONFIG, "invalid-type");

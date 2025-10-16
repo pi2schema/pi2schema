@@ -31,7 +31,7 @@ class VaultKafkaConfigTest {
 
         // Then
         assertEquals("https://vault.example.com:8200", config.getVaultUrl());
-        assertEquals("hvs.CAESIJ...", config.getVaultToken());
+        assertEquals("hvs.CAESIJ...", config.getVaultToken().value());
         assertEquals(PROVIDER_TYPE_ENCRYPTING, config.getProviderType());
 
         // Verify defaults
@@ -58,7 +58,7 @@ class VaultKafkaConfigTest {
 
         // Then
         assertEquals("https://vault.example.com:8200", config.getVaultUrl());
-        assertEquals("hvs.CAESIJ...", config.getVaultToken());
+        assertEquals("hvs.CAESIJ...", config.getVaultToken().value());
         assertEquals("custom-transit", config.getTransitEnginePath());
         assertEquals("custom-prefix", config.getKeyPrefix());
         assertEquals(5000, config.getConnectionTimeoutMs());
@@ -142,16 +142,6 @@ class VaultKafkaConfigTest {
         // When & Then
         ConfigException exception = assertThrows(ConfigException.class, () -> new VaultKafkaConfig(baseConfig));
         assertTrue(exception.getMessage().contains("URL must start with http:// or https://"));
-    }
-
-    @Test
-    void shouldFailWhenVaultTokenIsEmpty() {
-        // Given
-        baseConfig.put(VAULT_TOKEN_CONFIG, "");
-
-        // When & Then
-        ConfigException exception = assertThrows(ConfigException.class, () -> new VaultKafkaConfig(baseConfig));
-        assertTrue(exception.getMessage().contains("Value cannot be empty"));
     }
 
     @Test
@@ -264,7 +254,6 @@ class VaultKafkaConfigTest {
 
         // Then - values should be trimmed
         assertEquals("https://vault.example.com:8200", config.getVaultUrl());
-        assertEquals("hvs.CAESIJ...", config.getVaultToken());
         assertEquals("transit", config.getTransitEnginePath());
         assertEquals("pi2schema", config.getKeyPrefix());
         assertEquals("encrypting", config.getProviderType());

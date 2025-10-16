@@ -2,6 +2,7 @@ package pi2schema.serialization.kafka.materials;
 
 import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;
+import org.apache.kafka.common.config.types.Password;
 import pi2schema.crypto.providers.vault.VaultCryptoConfiguration;
 
 import java.time.Duration;
@@ -89,7 +90,7 @@ public class VaultKafkaConfig extends AbstractConfig {
                 )
                 .define(
                     VAULT_TOKEN_CONFIG,
-                    ConfigDef.Type.STRING,
+                    ConfigDef.Type.PASSWORD,
                     ConfigDef.NO_DEFAULT_VALUE,
                     new NonEmptyStringValidator(),
                     ConfigDef.Importance.HIGH,
@@ -176,8 +177,8 @@ public class VaultKafkaConfig extends AbstractConfig {
      *
      * @return the Vault authentication token
      */
-    public String getVaultToken() {
-        return getString(VAULT_TOKEN_CONFIG);
+    public Password getVaultToken() {
+        return getPassword(VAULT_TOKEN_CONFIG);
     }
 
     /**
@@ -252,7 +253,7 @@ public class VaultKafkaConfig extends AbstractConfig {
         return VaultCryptoConfiguration
             .builder()
             .vaultUrl(getVaultUrl())
-            .vaultToken(getVaultToken())
+            .vaultToken(getVaultToken().value())
             .transitEnginePath(getTransitEnginePath())
             .keyPrefix(getKeyPrefix())
             .connectionTimeout(Duration.ofMillis(getConnectionTimeoutMs()))
