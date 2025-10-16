@@ -1,2 +1,18 @@
 dependencies {
+    // Core dependencies
+    implementation project(':crypto-spi')
+    implementation libs.tink
+    
+    // JSON processing for Vault API
+    implementation libs.jackson.core
+    implementation libs.jackson.databind
+    
+    // Logging
+    implementation libs.logback.classic
+    
+    // Testing dependencies
+    testImplementation libs.bundles.testing
+    testImplementation libs.testcontainers.vault
+    testImplementation libs.bundles.testcontainers
+    testImplementation libs.wiremock
 }
