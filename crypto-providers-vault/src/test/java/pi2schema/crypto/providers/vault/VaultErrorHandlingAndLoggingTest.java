@@ -284,8 +284,7 @@ class VaultErrorHandlingAndLoggingTest {
                 )
                 .isInstanceOf(ExecutionException.class)
                 .cause()
-                .hasMessageContaining("Encrypted data key cannot be null")
-                .hasMessageContaining("subjectId=test-subject");
+                .hasMessage("Encrypted data key cannot be null or empty [subjectId=test-subject]");
 
             // Test 2: Empty encrypted data key
             assertThatThrownBy(() ->
@@ -295,11 +294,21 @@ class VaultErrorHandlingAndLoggingTest {
                 .cause()
                 .hasMessageContaining("Encrypted data key cannot be null or empty");
 
-            // Test 3: Basic decryption with null context (should work)
+            // Test 3: Null context should be allowed (not cause validation error)
+            // but will fail due to lack of Vault backend - verify it's NOT a validation error
             assertThatThrownBy(() ->
                     provider.decryptionKeysFor("test-subject", "key".getBytes(), null).get(1, TimeUnit.SECONDS)
                 )
-                .isInstanceOf(ExecutionException.class);
+                .isInstanceOf(ExecutionException.class)
+                .satisfies(ex -> {
+                    // Verify it's NOT a validation error (IllegalArgumentException)
+                    assertThat(ex.getCause()).isNotInstanceOf(IllegalArgumentException.class);
+                    // Verify it's a Vault-related error (connectivity or crypto)
+                    assertThat(ex.getCause()).isInstanceOfAny(
+                        VaultConnectivityException.class,
+                        VaultCryptoException.class
+                    );
+                });
         }
     }
 
