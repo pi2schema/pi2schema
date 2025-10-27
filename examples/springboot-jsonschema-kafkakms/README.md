@@ -103,12 +103,6 @@ For defining personal data fields, add the `pi2schema-personal-data: true` exten
 }
 ```
 
-### Key Management
-
-> :warning: **Not safe for production**: Please consider integrating a third-party KMS such as AWS KMS, GCP KMS, or HashiCorp Vault for production use.
-
-The key management system uses a simple JCE-based AES-256 local encryptor and decryptor by default. The secret key is stored in a Kafka topic for durability.
-
 ### Configuration
 
 The application uses Confluent's JSON Schema serializers with pi2schema interceptors:
