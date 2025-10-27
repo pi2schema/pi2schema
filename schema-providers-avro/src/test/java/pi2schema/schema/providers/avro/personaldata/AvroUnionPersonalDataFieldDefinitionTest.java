@@ -13,8 +13,6 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-import javax.crypto.spec.IvParameterSpec;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 class AvroUnionPersonalDataFieldDefinitionTest {
@@ -29,11 +27,7 @@ class AvroUnionPersonalDataFieldDefinitionTest {
 
         Encryptor encryptor = (key, data) -> {
             if (key.equals(uuid) && getByteBufferAsString(data).equals("john.doe@email.com")) {
-                var encryptedData = new EncryptedData(
-                    encrypted,
-                    "unused-transformation",
-                    new IvParameterSpec("unused-salt".getBytes())
-                );
+                var encryptedData = new EncryptedData(encrypted, ByteBuffer.wrap(new byte[0]), null);
                 return CompletableFuture.completedFuture(encryptedData);
             }
             throw new IllegalArgumentException();
@@ -59,16 +53,16 @@ class AvroUnionPersonalDataFieldDefinitionTest {
         //given
         var uuid = UUID.randomUUID().toString();
         var encrypted = ByteBuffer.wrap("encryptedMocked".getBytes());
+        var edek = ByteBuffer.wrap("key".getBytes());
         var decrypted = "john.doe@email.com";
 
         EncryptedPersonalData encryptedPersonalData = EncryptedPersonalData
             .newBuilder()
             .setSubjectId(uuid)
             .setData(encrypted)
+            .setEncryptedDataKey(edek)
             .setPersonalDataFieldNumber("0")
             .setKmsId("unused")
-            .setUsedTransformation("unused")
-            .setInitializationVector(ByteBuffer.wrap("unused".getBytes()))
             .build();
 
         var validUser = UserValid
