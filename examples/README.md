@@ -56,14 +56,7 @@ This will automatically:
 - Create necessary policies
 - Test the setup
 
-### 3. Set Environment Variables
-
-```bash
-export VAULT_URL="http://localhost:8200"
-export VAULT_TOKEN="myroot"
-```
-
-### 4. Run Examples
+### 3. Run Examples
 
 Each example has two components:
 - **Registration Service** (Producer): Encrypts personal data
@@ -119,9 +112,9 @@ All examples use the following Vault configuration pattern:
 # Materials provider
 spring.kafka.properties.pi2schema.personal.materials.provider=pi2schema.serialization.kafka.materials.VaultMaterialsProvider
 
-# Vault connection
+# Vault connection with defaults to the docker compose values
 spring.kafka.properties.pi2schema.vault.url=${VAULT_URL:https://localhost:8200}
-spring.kafka.properties.pi2schema.vault.token=${VAULT_TOKEN:}
+spring.kafka.properties.pi2schema.vault.token=${VAULT_TOKEN:myroot}
 
 # Provider type (encrypting for producers, decrypting for consumers)
 spring.kafka.properties.pi2schema.vault.provider.type=encrypting
@@ -135,19 +128,6 @@ spring.kafka.properties.pi2schema.vault.max.retries=3
 spring.kafka.properties.pi2schema.vault.retry.backoff.ms=100
 ```
 
-### Environment Variables
-
-Set these environment variables:
-
-```bash
-# Required
-export VAULT_URL="http://localhost:8200"      # Vault server URL
-export VAULT_TOKEN="myroot"                   # Vault authentication token
-
-# Optional (examples use defaults)
-export VAULT_TRANSIT_ENGINE_PATH="transit"
-export VAULT_KEY_PREFIX="pi2schema"
-```
 
 ## GDPR Compliance
 

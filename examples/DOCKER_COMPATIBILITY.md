@@ -19,13 +19,6 @@ If you prefer to use Docker instead of Podman, you can easily adapt the commands
 # 1. Start all services
 docker compose -f examples/docker-compose.yaml up -d
 
-# 2. Set environment variables
-export VAULT_URL="http://localhost:8200"
-export VAULT_TOKEN="myroot"
-
-# 3. Run examples
-./gradlew examples:springboot-protobuf-kafkakms:bootRun --args='--spring.profiles.active=registration'
-```
 
 ### Why We Recommend Podman
 
