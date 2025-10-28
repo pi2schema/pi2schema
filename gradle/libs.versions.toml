@@ -18,7 +18,7 @@ kafka-clients = "3.2.3"
 confluent = "8.0.0"
 
 # JSON processing
-jackson = "2.18.4"
+jackson = "2.18.5"
 commons-beanutils = "1.11.0"
 
 # Testing
