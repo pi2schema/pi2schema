@@ -1,8 +1,8 @@
 dependencies {
 
     implementation project(':crypto-spi')
+    implementation project(':crypto-providers-vault')
     implementation project(':schema-spi')
-    compileOnly project(':crypto-providers-kafkakms') //todo service locator / dynamic factory
 
     implementation libs.kafka.clients
     implementation libs.bundles.confluent

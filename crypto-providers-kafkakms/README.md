@@ -1,1 +1,0 @@
-> :warning: **Development purpose**: This implementation stores the secrets within kafka and is intended for development purpose only

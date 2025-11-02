@@ -16,8 +16,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-import javax.crypto.spec.IvParameterSpec;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -62,8 +60,8 @@ class JsonPersonalDataFieldDefinitionTest {
         // Mock encryption response
         EncryptedData mockEncryptedData = new EncryptedData(
             ByteBuffer.wrap("encrypted_data".getBytes()),
-            "AES/GCM/NoPadding",
-            new IvParameterSpec("1234567890123456".getBytes())
+            ByteBuffer.wrap("key".getBytes()),
+            null
         );
         when(encryptor.encrypt(eq("user-123"), any(ByteBuffer.class)))
             .thenReturn(CompletableFuture.completedFuture(mockEncryptedData));
@@ -80,13 +78,12 @@ class JsonPersonalDataFieldDefinitionTest {
         String encryptedJson = (String) businessObject.get("email");
         var encryptedObject = objectMapper.readTree(encryptedJson);
         assertThat(encryptedObject.get("subjectId").asText()).isEqualTo("user-123");
-        assertThat(encryptedObject.get("usedTransformation").asText()).isEqualTo("AES/GCM/NoPadding");
         assertThat(encryptedObject.has("data")).isTrue();
-        assertThat(encryptedObject.has("initializationVector")).isTrue();
+        assertThat(encryptedObject.has("encryptedDataKey")).isTrue();
     }
 
     @Test
-    void shouldDecryptPiiField() throws Exception {
+    void shouldDecryptPiiField() {
         // Given: A business object with encrypted PII data
         Map<String, Object> businessObject = new HashMap<>();
         businessObject.put("userId", "user-123");
@@ -98,8 +95,8 @@ class JsonPersonalDataFieldDefinitionTest {
               "subjectId": "user-123",
               "data": "ZW5jcnlwdGVkX2RhdGE=",
               "personalDataFieldNumber": "email",
-              "usedTransformation": "AES/GCM/NoPadding",
-              "initializationVector": "MTIzNDU2Nzg5MDEyMzQ1Ng=="
+              "encryptedDataKey": "ZW5jcnlwdGVkS2V5",
+              "kmsId": "test-kms"
             }
             """;
         businessObject.put("email", encryptedJson);
@@ -173,7 +170,7 @@ class JsonPersonalDataFieldDefinitionTest {
         // When/Then: Attempting to decrypt should throw an exception (AC-007)
         var result = fieldDefinition.swapToDecrypted(decryptor, businessObject);
 
-        assertThrows(Exception.class, () -> result.join());
+        assertThrows(Exception.class, result::join);
     }
 
     @Test
@@ -212,7 +209,7 @@ class JsonPersonalDataFieldDefinitionTest {
         // When/Then: Should handle encryption failure gracefully
         var result = fieldDefinition.swapToEncrypted(encryptor, businessObject);
 
-        assertThrows(Exception.class, () -> result.join());
+        assertThrows(Exception.class, result::join);
     }
 
     @Test
@@ -227,8 +224,8 @@ class JsonPersonalDataFieldDefinitionTest {
               "subjectId": "user-123",
               "data": "ZW5jcnlwdGVkX2RhdGE=",
               "personalDataFieldNumber": "email",
-              "usedTransformation": "AES/GCM/NoPadding",
-              "initializationVector": "MTIzNDU2Nzg5MDEyMzQ1Ng=="
+              "encryptedDataKey": "ZW5jcnlwdGVkS2V5",
+              "kmsId": "test-kms"
             }
             """;
         businessObject.put("email", encryptedJson);
@@ -240,6 +237,6 @@ class JsonPersonalDataFieldDefinitionTest {
         // When/Then: Should handle decryption failure gracefully
         var result = fieldDefinition.swapToDecrypted(decryptor, businessObject);
 
-        assertThrows(Exception.class, () -> result.join());
+        assertThrows(Exception.class, result::join);
     }
 }

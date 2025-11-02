@@ -72,14 +72,17 @@ public class KafkaGdprAwareJsonSchemaInterceptorsTest {
     @Test
     void shouldEncryptJsonSchemaMessage() {
         // Create a test user object with personal data
-        var userData = new TestUserData(UUID.randomUUID().toString(), "john.doe@email.com", "John Doe", 42);
+        var johnDoe = new TestUserData(UUID.randomUUID().toString(), "john.doe@email.com", "John Doe", 42);
+        var janeDoe = new TestUserData(UUID.randomUUID().toString(), "jane.doe@email.com", "Jane Doe", 24);
 
-        var message = new ProducerRecord<String, TestUserData>(TOPIC_NAME, userData);
+        var johnDoeMessage = new ProducerRecord<String, TestUserData>(TOPIC_NAME, johnDoe);
+        var janeDoeMessage = new ProducerRecord<String, TestUserData>(TOPIC_NAME, janeDoe);
 
         // Serialization with personal data to be encrypted
-        var encryptedMessage = producerInterceptor.onSend(message);
+        var johnDoeEncryptedMessage = producerInterceptor.onSend(johnDoeMessage);
+        var janeDoeEncryptedMessage = producerInterceptor.onSend(janeDoeMessage);
 
-        assertThat(encryptedMessage.value())
+        assertThat(johnDoeEncryptedMessage.value())
             .satisfies(manipulatedPayload -> {
                 // In JSON Schema, encrypted personal data fields are replaced with JSON strings
                 // containing the encrypted data structure
@@ -99,7 +102,25 @@ public class KafkaGdprAwareJsonSchemaInterceptorsTest {
         ConsumerRecords<String, TestUserData> messages = new ConsumerRecords<>(
             Map.of(
                 new TopicPartition(TOPIC_NAME, 0),
-                List.of(new ConsumerRecord<>(TOPIC_NAME, 0, 1, encryptedMessage.key(), encryptedMessage.value()))
+                List.of(
+                    new ConsumerRecord<>(
+                        TOPIC_NAME,
+                        0,
+                        1,
+                        johnDoeEncryptedMessage.key(),
+                        johnDoeEncryptedMessage.value()
+                    )
+                ),
+                new TopicPartition(TOPIC_NAME, 1),
+                List.of(
+                    new ConsumerRecord<>(
+                        TOPIC_NAME,
+                        0,
+                        2,
+                        janeDoeEncryptedMessage.key(),
+                        janeDoeEncryptedMessage.value()
+                    )
+                )
             )
         );
 
@@ -108,7 +129,7 @@ public class KafkaGdprAwareJsonSchemaInterceptorsTest {
             .onConsume(messages)
             .records(TOPIC_NAME);
 
-        assertThat(decryptedMessages).hasSize(1);
+        assertThat(decryptedMessages).hasSize(2);
         assertThat(decryptedMessages)
             .first()
             .satisfies(record -> {

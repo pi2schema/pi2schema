@@ -2,42 +2,34 @@ package pi2schema.crypto;
 
 import java.nio.ByteBuffer;
 
-import javax.crypto.spec.IvParameterSpec;
-
-public final class EncryptedData {
-
-    private final ByteBuffer data;
-    private final String usedTransformation;
-    private final IvParameterSpec initializationVector;
-
-    public EncryptedData(ByteBuffer data, String usedTransformation, IvParameterSpec initializationVector) {
+public record EncryptedData(ByteBuffer data, ByteBuffer encryptedDataKey, String keysetHandle) {
+    public EncryptedData(ByteBuffer data, ByteBuffer encryptedDataKey, String keysetHandle) {
         this.data = data.asReadOnlyBuffer();
-        this.usedTransformation = usedTransformation;
-        this.initializationVector = initializationVector;
+        this.encryptedDataKey = encryptedDataKey.asReadOnlyBuffer();
+        this.keysetHandle = keysetHandle;
     }
 
     /**
      * @return The encrypted/ciphered data
      */
+    @Override
     public ByteBuffer data() {
         return data.asReadOnlyBuffer();
     }
 
     /**
-     * Transformation following the structure: {algo}/{mode}/{padding}
-     * For more details:
-     * <a href=https://docs.oracle.com/javase/7/docs/technotes/guides/security/StandardNames.html#Cipher>possible values</a>
-     *
-     * @return The used transformation
+     * @return The encrypted data encryption key (DEK) for envelope cryptography
      */
-    public String usedTransformation() {
-        return usedTransformation;
+    @Override
+    public ByteBuffer encryptedDataKey() {
+        return encryptedDataKey.asReadOnlyBuffer();
     }
 
     /**
-     * @return The used initialization vector in the data
+     * @return The keyset handle identifier used for encryption
      */
-    public IvParameterSpec initializationVector() {
-        return initializationVector;
+    @Override
+    public String keysetHandle() {
+        return keysetHandle;
     }
 }

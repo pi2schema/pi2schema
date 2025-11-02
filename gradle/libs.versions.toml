@@ -12,6 +12,9 @@ protoc = "4.32.0"
 avro = "1.11.5"
 kryo = "5.6.2"
 
+# Cryptography
+tink = "1.18.0"
+
 # Kafka and Confluent
 kafka-streams = "3.2.3"
 kafka-clients = "3.2.3"
@@ -29,6 +32,7 @@ awaitility = "4.2.2"
 mockito = "5.8.0"
 testcontainers = "1.20.6"
 instancio-junit = "5.5.1"
+wiremock = "3.9.1"
 
 # Logging
 logback = "1.4.14"
@@ -41,6 +45,9 @@ protobuf-gradle-plugin = { module = "com.google.protobuf:protobuf-gradle-plugin"
 protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf-java" }
 avro = { module = "org.apache.avro:avro", version.ref = "avro" }
 kryo = { module = "com.esotericsoftware:kryo", version.ref = "kryo" }
+
+# Cryptography
+tink = { module = "com.google.crypto.tink:tink", version.ref = "tink" }
 
 # Kafka and Confluent
 kafka-streams = { module = "org.apache.kafka:kafka-streams", version.ref = "kafka-streams" }
@@ -73,7 +80,9 @@ mockito-junit-jupiter = { module = "org.mockito:mockito-junit-jupiter", version.
 testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
 testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
 testcontainers-redpanda = { module = "org.testcontainers:redpanda", version.ref = "testcontainers" }
+testcontainers-vault = { module = "org.testcontainers:vault", version.ref = "testcontainers" }
 instancio-junit = { module = "org.instancio:instancio-junit", version.ref = "instancio-junit" }
+wiremock = { module = "org.wiremock:wiremock", version.ref = "wiremock" }
 
 [plugins]
 release = { id = "net.researchgate.release", version.ref = "gradle-release" }

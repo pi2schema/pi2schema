@@ -33,6 +33,7 @@ configurations.forEach {
 dependencies {
 	implementation(project(":schema-providers-protobuf"))
 	implementation(project(":serialization-adapters-kafka"))
+	implementation(project(":crypto-providers-vault"))
 
 	implementation libs.protobuf.java
 

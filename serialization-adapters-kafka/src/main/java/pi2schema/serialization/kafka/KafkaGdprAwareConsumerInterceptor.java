@@ -49,14 +49,10 @@ public final class KafkaGdprAwareConsumerInterceptor<K, V, S> implements Consume
                             record.leaderEpoch()
                         );
                     })
-                    .collect(Collectors.toList());
-                return Map.of(partition, decrypted);
+                    .toList();
+                return Map.entry(partition, decrypted);
             })
-            .reduce((m1, m2) -> {
-                m1.putAll(m2);
-                return m1;
-            })
-            .orElse(Map.of());
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         return new ConsumerRecords<>(decryptedRecords);
     }
 
