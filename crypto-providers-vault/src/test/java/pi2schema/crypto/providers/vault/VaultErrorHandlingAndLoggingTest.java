@@ -304,10 +304,8 @@ class VaultErrorHandlingAndLoggingTest {
                     // Verify it's NOT a validation error (IllegalArgumentException)
                     assertThat(ex.getCause()).isNotInstanceOf(IllegalArgumentException.class);
                     // Verify it's a Vault-related error (connectivity or crypto)
-                    assertThat(ex.getCause()).isInstanceOfAny(
-                        VaultConnectivityException.class,
-                        VaultCryptoException.class
-                    );
+                    assertThat(ex.getCause())
+                        .isInstanceOfAny(VaultConnectivityException.class, VaultCryptoException.class);
                 });
         }
     }
