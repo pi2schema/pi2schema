@@ -16,7 +16,7 @@ class SampleApplicationTests {
         @Container
         @ServiceConnection
         val redpandaContainer: RedpandaContainer =
-            RedpandaContainer("docker.redpanda.com/redpandadata/redpanda:v24.3.18")
+            RedpandaContainer("redpandadata/redpanda:v25.2.10")
     }
 
 
