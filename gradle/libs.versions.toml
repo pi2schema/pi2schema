@@ -3,7 +3,7 @@
 gradle-release = "3.0.2"
 spotless = "6.23.3"
 avro-gradle-plugin = "1.9.1"
-protobuf-gradle-plugin = "0.9.5"
+protobuf-gradle-plugin = "0.9.6"
 jsonschema2pojo = "1.2.2"
 
 # Core dependencies
